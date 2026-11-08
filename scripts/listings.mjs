@@ -34,3 +34,15 @@ export function parseOtherListed(txt) {
     .filter((r) => !DERIVATIVE.test(r["Security Name"]) && !/[$^+=]/.test(r["ACT Symbol"]))
     .map((r) => ({ ticker: r["ACT Symbol"], name: cleanName(r["Security Name"]), exchange: EXCHANGES[r.Exchange] }));
 }
+
+// Exchange-traded funds of both directories (NYSE Arca included). Shown only in the portfolio:
+// a fund has no financial statements of its own, so it gets no TeraScore.
+const ETF_EXCHANGES = { ...EXCHANGES, P: "NYSE Arca", V: "IEX" };
+export function parseEtfs(nasdaqTxt, otherTxt) {
+  const nasdaq = parseTable(nasdaqTxt).filter((r) => r["Test Issue"] === "N" && r.ETF === "Y")
+    .map((r) => ({ ticker: r.Symbol, name: r["Security Name"].trim(), exchange: EXCHANGES.Q }));
+  const other = parseTable(otherTxt).filter((r) => r["Test Issue"] === "N" && r.ETF === "Y" && ETF_EXCHANGES[r.Exchange] && !/[$^+=]/.test(r["ACT Symbol"]))
+    .map((r) => ({ ticker: r["ACT Symbol"], name: r["Security Name"].trim(), exchange: ETF_EXCHANGES[r.Exchange] }));
+  const seen = new Set();
+  return [...nasdaq, ...other].filter((x) => !seen.has(x.ticker) && seen.add(x.ticker));
+}

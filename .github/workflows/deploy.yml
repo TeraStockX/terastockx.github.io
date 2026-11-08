@@ -1,6 +1,6 @@
-# Publishes the website on GitHub Pages and refreshes the data every Monday and Thursday.
+# Publishes the website on GitHub Pages and refreshes the data every day.
 # - push to main: tests, then publish (with the latest data from the `data` branch)
-# - Mondays, Thursdays and manual runs (Actions → Run workflow): download all US-listed companies, save the
+# - daily runs and manual runs (Actions → Run workflow): download all US-listed companies, save the
 #   result to the `data` branch, then publish.
 # The `data` branch always holds a single commit with the latest snapshot, so the repository does not
 # grow with every weekly update.
@@ -10,7 +10,7 @@ on:
   push:
     branches: [main]
   schedule:
-    - cron: "17 4 * * 1,4"
+    - cron: "17 4 * * *"
   workflow_dispatch:
     inputs:
       tickers:
@@ -61,10 +61,14 @@ jobs:
           # The SEC asks automated clients to identify themselves (name + e-mail). Set it as a repository secret.
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
         run: |
+          # Insider data sets (published quarterly by the SEC) and ETF details (expense ratio, yield) change
+          # slowly: download them on Mondays and on manual runs only.
+          extra=""
+          if [ "${{ github.event_name }}" = "schedule" ] && [ "$(date -u +%u)" != "1" ]; then extra="--skip-insiders --skip-etf-details"; fi
           if [ -n "${{ github.event.inputs.tickers }}" ]; then
-            node scripts/update-data.mjs --tickers "${{ github.event.inputs.tickers }}"
+            node scripts/update-data.mjs --tickers "${{ github.event.inputs.tickers }}" $extra
           else
-            node scripts/update-data.mjs
+            node scripts/update-data.mjs $extra
           fi
 
       - name: Adatok mentése (data ág, csak a legfrissebb állapot)

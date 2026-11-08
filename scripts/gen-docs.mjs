@@ -191,7 +191,7 @@ ${Object.entries(DIVIDEND_WEIGHTS).map(([k, w]) => `| ${hu.dividend.parts[k]} | 
 
 ## 12. Portfólió
 
-${fill(hu.method.portfolioText, { p: "25%", s: "40%", n: 5 })} A portfólió csak a böngészőben tárolódik (\`localStorage\`), a szerverre nem kerül.
+${fill(hu.method.portfolioText, { p: "25%", s: "40%", n: 5 })} ${hu.method.portfolioEtfText} Az ETF-adatok: \`data/etfs.json\` (\`t\`, \`n\`, \`ex\`, \`px\` árfolyam, \`r1y\` 1 éves változás, \`er\` költséghányad, \`dy\` osztalékhozam, \`aum\` kezelt vagyon). A portfólió csak a böngészőben tárolódik (\`localStorage\`), a szerverre nem kerül.
 
 Index-mezők: \`px\` (árfolyam, USD), \`ds\` (osztalékbiztonság, 0–100).
 

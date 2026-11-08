@@ -21,10 +21,10 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseCompanyFacts } from "./sec-parse.mjs";
 import { sectorFromSic, sectorFromNasdaq, profileFor } from "./sectors.mjs";
-import { nasdaqScreener, priceHistory, priceBudgetLeft, fxToUsd } from "./market.mjs";
+import { nasdaqScreener, nasdaqEtfScreener, etfSummary, priceHistory, priceBudgetLeft, fxToUsd } from "./market.mjs";
 import { majorEvents } from "./events.mjs";
 import { fillMissingFilings } from "./xbrl-instance.mjs";
-import { parseNasdaqListed, parseOtherListed } from "./listings.mjs";
+import { parseNasdaqListed, parseOtherListed, parseEtfs } from "./listings.mjs";
 import { insiderActivity } from "./insider.mjs";
 import { analyze, computeBenchmarks, scoreHistory, ENGINE_VERSION, DIMENSIONS, dividendProfile } from "../assets/js/scoring.js";
 
@@ -38,6 +38,7 @@ const opt = (name) => { const i = args.indexOf(name); return i >= 0 ? args[i + 1
 const indexOnly = args.includes("--index-only");
 const skipPrices = args.includes("--skip-prices");
 const skipInsiders = args.includes("--skip-insiders");
+const skipEtfDetails = args.includes("--skip-etf-details");
 const limit = opt("--limit") ? Number(opt("--limit")) : Infinity;
 const onlyTickers = opt("--tickers") ? new Set(opt("--tickers").split(",").map((s) => s.trim().toUpperCase()).filter(Boolean)) : null;
 
@@ -175,6 +176,39 @@ async function updateCompanies() {
   console.log(`Done: ${ok} with financials, ${noData} without data, ${failed} errors, ${gapFilled} filled from filings missing in companyfacts, ${withPrices} price histories updated.`);
 }
 
+// ETFs (portfolio only): daily price and one-year change; expense ratio, assets and yield weekly.
+const ETF_DETAIL_BUDGET_MS = 25 * 60000;
+async function updateEtfs() {
+  const list = parseEtfs(await get("https://www.nasdaqtrader.com/dynamic/SymDir/nasdaqlisted.txt", "text"), await get("https://www.nasdaqtrader.com/dynamic/SymDir/otherlisted.txt", "text"));
+  const quotes = await nasdaqEtfScreener();
+  const file = join(DATA, "etfs.json");
+  const prev = new Map((existsSync(file) ? readJson(file).etfs || [] : []).map((e) => [e.t, e]));
+  const rows = list.map((x) => {
+    const q = quotes.get(x.ticker) || {}, p = prev.get(x.ticker) || {};
+    return { t: x.ticker, n: x.name, ex: x.exchange, px: q.price ?? p.px ?? null, r1y: q.return1y ?? p.r1y ?? null, er: p.er ?? null, dy: p.dy ?? null, aum: p.aum ?? null };
+  }).filter((r) => Number.isFinite(r.px));
+  if (!skipEtfDetails) {
+    const start = Date.now();
+    let next = 0, done = 0;
+    const worker = async () => {
+      while (next < rows.length && Date.now() - start < ETF_DETAIL_BUDGET_MS) {
+        const r = rows[next++];
+        const d = await etfSummary(r.t);
+        if (!d) continue;
+        r.er = d.expenseRatio ?? r.er;
+        r.dy = d.yield ?? r.dy;
+        r.aum = d.aum ?? r.aum;
+        done++;
+      }
+    };
+    await Promise.all(Array.from({ length: 8 }, worker));
+    console.log(`  ETF details: ${done} of ${rows.length}`);
+  }
+  for (const r of rows) for (const k of Object.keys(r)) if (r[k] === null) delete r[k];
+  writeFileSync(file, JSON.stringify({ generated: new Date().toISOString(), count: rows.length, etfs: rows }) + "\n");
+  console.log(`data/etfs.json: ${rows.length} ETFs (${rows.filter((r) => r.dy).length} with yield, ${rows.filter((r) => r.er !== undefined).length} with expense ratio)`);
+}
+
 // Phase 2: insider transactions for every company from the SEC Form 4 data sets.
 async function updateInsiders(tickers) {
   const activity = await insiderActivity({ userAgent: UA });
@@ -302,5 +336,6 @@ function buildIndex({ snapshot = false } = {}) {
 }
 
 if (!indexOnly) await updateCompanies();
+if (!indexOnly && !onlyTickers && limit === Infinity) await updateEtfs();
 // Weekly snapshots are recorded only by full data updates, not by index rebuilds.
 buildIndex({ snapshot: !indexOnly && !onlyTickers && limit === Infinity });

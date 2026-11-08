@@ -410,7 +410,7 @@ Az osztalékbiztonság 0–100 között azt méri, mennyire valószínű a jelen
 
 ## 12. Portfólió
 
-A portfólió TeraScore-ja, kockázata és osztalékhozama a pozíciók értékével súlyozott átlag; a P/E a teljes érték osztva a tételekre jutó eredménnyel (veszteséges cégek nélkül). Figyelmeztetések: 25% feletti egyedi pozíció, 40% feletti szektor, 5-nél kevesebb tétel, kritikus figyelmeztetés, magas csődkockázat és gyenge TeraScore. A portfólió csak a böngészőben tárolódik (`localStorage`), a szerverre nem kerül.
+A portfólió TeraScore-ja, kockázata és osztalékhozama a pozíciók értékével súlyozott átlag; a P/E a teljes érték osztva a tételekre jutó eredménnyel (veszteséges cégek nélkül). Figyelmeztetések: 25% feletti egyedi pozíció, 40% feletti szektor, 5-nél kevesebb tétel, kritikus figyelmeztetés, magas csődkockázat és gyenge TeraScore. ETF-ek (tőzsdén kereskedett alapok) is felvehetők: napi árfolyamon értékelődnek, nem kapnak TeraScore-t, és kimaradnak a pozíció-, szektor- és tételszám-ellenőrzésből, mivel egy alap eleve diverzifikált. Osztalékhozamuk a Nasdaqtól származik, ahol közlik; egyébként kézzel megadható. Az ETF-adatok: `data/etfs.json` (`t`, `n`, `ex`, `px` árfolyam, `r1y` 1 éves változás, `er` költséghányad, `dy` osztalékhozam, `aum` kezelt vagyon). A portfólió csak a böngészőben tárolódik (`localStorage`), a szerverre nem kerül.
 
 Index-mezők: `px` (árfolyam, USD), `ds` (osztalékbiztonság, 0–100).
 

@@ -337,3 +337,28 @@ test("Portfolio: weights, weighted TeraScore, income and concentration warnings"
   for (const id of ["position", "sector", "few", "critical", "distress", "weak"]) assert.ok(ids.includes(id), id);
   assert.ok(Math.abs(p.pe - (1500 / 1750) / ((1000 / 1750) / 20 + (500 / 1750) / 10)) < 1e-9);
 });
+
+test("Portfolio with ETFs: no TeraScore for funds, no concentration warning for them, yield override", async () => {
+  const { portfolioSummary } = await import("../assets/js/portfolio.js");
+  const p = portfolioSummary([
+    { t: "AAPL", shares: 10, row: { t: "AAPL", px: 100, s: "technology", sc: { overall: 80, risk: 30 }, dy: 0.01 } },
+    { t: "VOO", shares: 10, row: { t: "VOO", px: 400, etf: true } , dy: 0.013 },
+    { t: "QQQ", shares: 2, row: { t: "QQQ", px: 500, etf: true, dy: 0.005 } },
+  ]);
+  assert.equal(p.total, 6000);
+  assert.equal(p.score, 80, "only the company is scored");
+  assert.ok(Math.abs(p.scoreCovered - 1000 / 6000) < 1e-9);
+  assert.ok(Math.abs(p.etfWeight - 5000 / 6000) < 1e-9);
+  assert.ok(Math.abs(p.income - (10 + 4000 * 0.013 + 1000 * 0.005)) < 1e-9);
+  const ids = p.warnings.map((w) => w.id);
+  assert.ok(!ids.includes("position") && !ids.includes("few") && !ids.includes("unscored") && !ids.includes("sector"), ids.join());
+  assert.deepEqual(p.sectors.map((x) => x.s), ["etf", "technology"]);
+  assert.deepEqual(p.missingYield, []);
+});
+
+test("ETF listings: funds of both directories, NYSE Arca included", async () => {
+  const { parseEtfs } = await import("../scripts/listings.mjs");
+  const nasdaq = "Symbol|Security Name|Market Category|Test Issue|Financial Status|Round Lot Size|ETF|NextShares\nQQQ|Invesco QQQ Trust, Series 1|G|N|N|100|Y|N\nAAPL|Apple Inc. - Common Stock|Q|N|N|100|N|N\nFile Creation Time: 1108202600:00|||||||";
+  const other = "ACT Symbol|Security Name|Exchange|CQS Symbol|ETF|Round Lot Size|Test Issue|NASDAQ Symbol\nSPY|SPDR S&P 500 ETF Trust|P|SPY|Y|100|N|SPY\nZZT|Test ETF|P|ZZT|Y|100|Y|ZZT\nKO|Coca-Cola Company (The) Common Stock|N|KO|N|100|N|KO\nFile Creation Time: 1108202600:00|||||||";
+  assert.deepEqual(parseEtfs(nasdaq, other).map((e) => `${e.ticker}:${e.exchange}`), ["QQQ:NASDAQ", "SPY:NYSE Arca"]);
+});

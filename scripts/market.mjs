@@ -35,6 +35,39 @@ export async function nasdaqScreener(exchanges = ["nasdaq", "nyse", "amex"]) {
   return map;
 }
 
+// Last price and one-year change of every US-listed ETF (one request).
+export async function nasdaqEtfScreener() {
+  const map = new Map();
+  try {
+    const r = await fetch("https://api.nasdaq.com/api/screener/etf?tableonly=true&download=true", { headers: BROWSER_HEADERS, signal: AbortSignal.timeout(60000) });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const j = await r.json();
+    for (const row of j?.data?.data?.rows || j?.data?.rows || []) {
+      const pct = num(row.oneYearPercentage);
+      map.set(String(row.symbol).trim().toUpperCase().replace("/", "."), { price: num(row.lastSalePrice), return1y: pct === null ? null : pct / 100 });
+    }
+  } catch (e) {
+    console.warn(`  Nasdaq ETF screener unavailable: ${e.message}`);
+  }
+  return map;
+}
+
+// Expense ratio, assets under management and current yield of one ETF (Nasdaq quote summary).
+// The yield is only published for some funds (mostly Nasdaq-listed ones); missing values stay null.
+export async function etfSummary(symbol) {
+  try {
+    const r = await fetch(`https://api.nasdaq.com/api/quote/${encodeURIComponent(symbol)}/summary?assetclass=etf`, { headers: BROWSER_HEADERS, signal: AbortSignal.timeout(20000) });
+    if (!r.ok) return null;
+    const d = (await r.json())?.data?.summaryData;
+    if (!d) return null;
+    const pct = (x) => { const v = num(x?.value); return v === null ? null : v / 100; };
+    const aum = num(d.AUM?.value);
+    return { expenseRatio: pct(d.ExpenseRatio), yield: pct(d.Yield), aum: aum === null ? null : aum * 1000 };
+  } catch {
+    return null;
+  }
+}
+
 // Exchange rates: US dollars per one unit of each currency. ECB reference rates first,
 // open.er-api.com for currencies the ECB does not publish (e.g. TWD).
 export async function fxToUsd() {

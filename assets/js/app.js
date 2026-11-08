@@ -95,6 +95,14 @@ const starSvg = (on) => `<svg viewBox="0 0 24 24" width="18" height="18" aria-hi
 
 // ---------- Portfolio (per browser) ----------
 
+let etfCache = null;
+async function loadEtfs() {
+  if (!etfCache) {
+    try { const r = await fetch("data/etfs.json", { cache: "no-cache" }); etfCache = r.ok ? await r.json() : { etfs: [] }; } catch { etfCache = { etfs: [] }; }
+  }
+  return etfCache;
+}
+
 function getPortfolio() { try { return JSON.parse(localStorage.getItem("tsx-portfolio") || "[]").filter((h) => h && h.t); } catch { return []; } }
 function setPortfolio(list) { try { localStorage.setItem("tsx-portfolio", JSON.stringify(list)); } catch {} }
 
@@ -1011,8 +1019,9 @@ const PW_TEXT = {
 async function renderPortfolio(prefill = "") {
   document.title = `${t("ui.navPortfolio")} | TeraStockX`;
   app.innerHTML = `<div class="skeleton"></div>`;
-  const idx = await loadIndex();
+  const [idx, etfs] = await Promise.all([loadIndex(), loadEtfs()]);
   const rows = new Map(idx.companies.map((c) => [c.t, c]));
+  for (const e of etfs.etfs || []) if (!rows.has(e.t)) rows.set(e.t, { ...e, etf: true });
   const list = getPortfolio();
   const p = portfolioSummary(list.map((h) => ({ ...h, row: rows.get(h.t) })));
   const stat = (k, v, sub = "") => `<div class="hero-stat"><div class="v">${v}</div><div class="k">${esc(t(k))}${sub ? ` <span class="muted">${sub}</span>` : ""}</div></div>`;
@@ -1022,7 +1031,7 @@ async function renderPortfolio(prefill = "") {
     <div class="glass pad pf-summary">
       <div class="hero-stats">
         ${stat("ui.pfValue", p.total ? money(p.total) : "–")}
-        ${stat("ui.pfScore", scorePill(p.score))}
+        ${stat("ui.pfScore", scorePill(p.score), p.etfWeight > 0 && isNum(p.score) ? esc(t("ui.pfScoreCover", { p: fmt(p.scoreCovered, "pct0") })) : "")}
         ${stat("ui.risk", scorePill(p.risk, true))}
         ${stat("ui.pfIncome", p.income ? money(p.income) : "–", isNum(p.yield) && p.yield > 0 ? `(${fmt(p.yield, "pct")})` : "")}
         ${stat("ui.pfPe", isNum(p.pe) ? `${num(p.pe, 1)}×` : "–")}
@@ -1032,7 +1041,7 @@ async function renderPortfolio(prefill = "") {
     <div class="pf-grid">
       <div class="glass pad">
         <div class="score-name" style="margin-bottom:12px">${esc(t("ui.pfSectors"))}</div>
-        ${p.sectors.map((x) => `<div class="pf-bar"><span>${esc(x.s === "other" ? t("ui.pfOther") : sectorName(x.s))}</span><span class="num">${fmt(x.weight, "pct")}</span>
+        ${p.sectors.map((x) => `<div class="pf-bar"><span>${esc(x.s === "other" ? t("ui.pfOther") : x.s === "etf" ? t("ui.pfEtfs") : sectorName(x.s))}</span><span class="num">${fmt(x.weight, "pct")}</span>
           <div class="bar"><span style="width:${Math.round(x.weight * 100)}%"></span></div></div>`).join("") || `<p class="small muted">${esc(t("ui.notEnough"))}</p>`}
       </div>
       <div class="glass pad">
@@ -1044,26 +1053,31 @@ async function renderPortfolio(prefill = "") {
     <div class="glass table-wrap"><table class="list pf-table">
       <thead><tr><th>${esc(t("ui.company"))}</th><th class="num">${esc(t("ui.pfShares"))}</th><th class="num col-md">${esc(t("ui.pfPrice"))}</th><th class="num">${esc(t("ui.pfValueCol"))}</th>
         <th class="num col-md">${esc(t("ui.pfWeight"))}</th><th class="num">${esc(t("ui.overallScore"))}</th><th class="num col-lg">${esc(t("ui.risk"))}</th>
-        <th class="num col-lg">${esc(t("ui.dividendYieldShort"))}</th><th class="num col-xl">${esc(t("ui.dividendSafety"))}</th><th></th></tr></thead>
+        <th class="num">${esc(t("ui.dividendYieldShort"))}</th><th class="num col-xl">${esc(t("ui.dividendSafety"))}</th><th></th></tr></thead>
       <tbody>${p.positions.map((h) => `<tr>
-        <td><a href="#/c/${encodeURIComponent(h.t)}"><div class="tick">${esc(h.t)}</div><div class="cname">${esc(h.row?.n || t("ui.notFound", { t: h.t }))}</div></a></td>
+        <td>${h.row?.etf
+          ? `<div class="tick">${esc(h.t)} <span class="badge">ETF</span></div><div class="cname">${esc(h.row.n)}</div>${isNum(h.row.er) ? `<div class="small muted">${esc(t("ui.etfExpense", { v: `${num(h.row.er * 100, 2)}%` }))}</div>` : ""}`
+          : `<a href="#/c/${encodeURIComponent(h.t)}"><div class="tick">${esc(h.t)}</div><div class="cname">${esc(h.row?.n || t("ui.notFound", { t: h.t }))}</div></a>`}</td>
         <td class="num"><input class="pf-shares" type="number" min="0" step="any" inputmode="decimal" value="${esc(h.shares)}" data-t="${esc(h.t)}" aria-label="${esc(t("ui.pfShares"))} ${esc(h.t)}"></td>
         <td class="num col-md">${isNum(h.price) ? fmt(h.price, "usd") : "–"}</td>
         <td class="num">${isNum(h.value) ? money(h.value) : "–"}</td>
         <td class="num col-md">${isNum(h.weight) ? fmt(h.weight, "pct") : "–"}</td>
-        <td class="num">${scorePill(h.row?.sc?.overall)}</td>
-        <td class="num col-lg">${scorePill(h.row?.sc?.risk, true)}</td>
-        <td class="num col-lg">${isNum(h.row?.dy) ? fmt(h.row.dy, "pct") : "–"}</td>
+        <td class="num">${h.row?.etf ? `<span class="small muted" title="${esc(t("ui.etfNoScore"))}">–</span>` : scorePill(h.row?.sc?.overall)}</td>
+        <td class="num col-lg">${h.row?.etf ? "–" : scorePill(h.row?.sc?.risk, true)}</td>
+        <td class="num">${h.row?.etf
+          ? `<input class="pf-shares pf-dy" type="number" min="0" max="100" step="any" inputmode="decimal" data-t="${esc(h.t)}" value="${isNum(h.dy) ? +(h.dy * 100).toFixed(4) : ""}" placeholder="${isNum(h.row.dy) ? num(h.row.dy * 100, 2) : "%"}" aria-label="${esc(t("ui.etfYieldInput"))} ${esc(h.t)}">`
+          : isNum(h.row?.dy) ? fmt(h.row.dy, "pct") : "–"}</td>
         <td class="num col-xl">${isNum(h.row?.ds) ? `<span class="pill tone-${DIVIDEND_TONE[dividendLevelOf(h.row.ds)]}"><span class="dot"></span>${h.row.ds}</span>` : "–"}</td>
         <td><button class="icon-btn" data-rm="${esc(h.t)}" aria-label="${esc(t("ui.remove"))} ${esc(h.t)}">×</button></td></tr>`).join("")}</tbody>
     </table></div>
-    <p class="small muted" style="margin-top:12px">${esc(t("ui.pfNote", { d: date(idx.generated) }))}</p>` : `<div class="glass empty">${esc(t("ui.pfEmpty"))}</div>`;
+    <p class="small muted" style="margin-top:12px">${esc(t("ui.pfNote", { d: date(idx.generated) }))}${p.etfWeight > 0 ? ` ${esc(t("ui.etfNote"))}` : ""}</p>
+    ${p.missingYield.length ? `<div class="notice" style="margin-top:10px"><span>ℹ️</span><span>${esc(t("ui.etfYieldMissing", { list: p.missingYield.join(", ") }))}</span></div>` : ""}` : `<div class="glass empty">${esc(t("ui.pfEmpty"))}</div>`;
 
   app.innerHTML = `
     <div class="prose" style="max-width:none;margin-top:8px"><h1>${esc(t("ui.navPortfolio"))}</h1><p style="max-width:820px">${esc(t("ui.pfIntro"))}</p></div>
     <form class="glass pad pf-add" id="pf-add">
-      <input id="pf-t" list="pf-list" placeholder="${esc(t("ui.addCompany"))}" autocomplete="off" value="${esc(prefill)}" aria-label="${esc(t("ui.company"))}">
-      <datalist id="pf-list">${idx.companies.filter((c) => isNum(c.px)).map((c) => `<option value="${esc(c.t)}">${esc(c.n)}</option>`).join("")}</datalist>
+      <input id="pf-t" list="pf-list" placeholder="${esc(t("ui.pfAddPlaceholder"))}" autocomplete="off" value="${esc(prefill)}" aria-label="${esc(t("ui.company"))}">
+      <datalist id="pf-list">${idx.companies.filter((c) => isNum(c.px)).map((c) => `<option value="${esc(c.t)}">${esc(c.n)}</option>`).join("")}${(etfs.etfs || []).filter((e) => !idx.companies.some((c) => c.t === e.t)).map((e) => `<option value="${esc(e.t)}">ETF · ${esc(e.n)}</option>`).join("")}</datalist>
       <input id="pf-n" type="number" min="0" step="any" inputmode="decimal" placeholder="${esc(t("ui.pfShares"))}" aria-label="${esc(t("ui.pfShares"))}">
       <button class="btn btn-primary" type="submit">${esc(t("ui.pfAdd"))}</button>
       ${getWatch().length ? `<button class="btn" type="button" id="pf-watch">${esc(t("ui.pfFromWatch"))}</button>` : ""}
@@ -1090,7 +1104,11 @@ async function renderPortfolio(prefill = "") {
     for (const tk of getWatch()) if (rows.has(tk) && !cur.some((h) => h.t === tk)) cur.push({ t: tk, shares: 1 });
     save(cur);
   });
-  app.querySelectorAll(".pf-shares").forEach((inp) => inp.addEventListener("change", () => {
+  app.querySelectorAll(".pf-dy").forEach((inp) => inp.addEventListener("change", () => {
+    const v = inp.value.trim() === "" ? null : Number(inp.value) / 100;
+    save(getPortfolio().map((h) => (h.t === inp.dataset.t ? { t: h.t, shares: h.shares, ...(isNum(v) && v >= 0 && v < 1 ? { dy: v } : {}) } : h)));
+  }));
+  app.querySelectorAll(".pf-shares:not(.pf-dy)").forEach((inp) => inp.addEventListener("change", () => {
     const n = Number(inp.value);
     save(getPortfolio().map((h) => (h.t === inp.dataset.t ? { ...h, shares: n > 0 ? n : h.shares } : h)));
   }));
@@ -1283,7 +1301,7 @@ function renderMethod() {
     <h2>${esc(t("ui.peersTitle"))}</h2><p>${esc(t("method.peersText"))}</p>
     <h2>${esc(t("ui.dividendSafety"))}</h2><p>${esc(t("method.dividendText"))}</p>
     <div class="glass method-card"><table class="method-table"><tbody>${Object.entries(DIVIDEND_WEIGHTS).map(([k, w]) => `<tr><td><b>${esc(t(`dividend.parts.${k}`))}</b><br><span class="small">${esc(t(`dividend.partsText.${k}`))}</span></td><td class="n">${Math.round(w * 100)}%</td></tr>`).join("")}</tbody></table></div>
-    <h2>${esc(t("ui.navPortfolio"))}</h2><p>${esc(t("method.portfolioText", { p: fmt(PORTFOLIO_LIMITS.position, "pct0"), s: fmt(PORTFOLIO_LIMITS.sector, "pct0"), n: PORTFOLIO_LIMITS.minHoldings }))}</p>
+    <h2>${esc(t("ui.navPortfolio"))}</h2><p>${esc(t("method.portfolioText", { p: fmt(PORTFOLIO_LIMITS.position, "pct0"), s: fmt(PORTFOLIO_LIMITS.sector, "pct0"), n: PORTFOLIO_LIMITS.minHoldings }))} ${esc(t("method.portfolioEtfText"))}</p>
     <h2>${esc(t("ui.periodQuarterly"))}</h2><p>${esc(t("method.quarterlyText"))}</p>
     <h2>${esc(t("method.currencyTitle"))}</h2><p>${esc(t("method.currencyText"))}</p>
     <h2>${esc(t("method.sectorTitle"))}</h2><p>${esc(t("method.sectorText"))}</p>
