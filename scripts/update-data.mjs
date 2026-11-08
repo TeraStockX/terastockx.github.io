@@ -204,7 +204,11 @@ async function updateEtfs() {
     await Promise.all(Array.from({ length: 8 }, worker));
     console.log(`  ETF details: ${done} of ${rows.length}`);
   }
-  for (const r of rows) for (const k of Object.keys(r)) if (r[k] === null) delete r[k];
+  const round = (v, d) => (Number.isFinite(v) ? +v.toFixed(d) : v);
+  for (const r of rows) {
+    r.r1y = round(r.r1y, 4); r.er = round(r.er, 5); r.dy = round(r.dy, 5);
+    for (const k of Object.keys(r)) if (r[k] === null || r[k] === undefined) delete r[k];
+  }
   writeFileSync(file, JSON.stringify({ generated: new Date().toISOString(), count: rows.length, etfs: rows }) + "\n");
   console.log(`data/etfs.json: ${rows.length} ETFs (${rows.filter((r) => r.dy).length} with yield, ${rows.filter((r) => r.er !== undefined).length} with expense ratio)`);
 }
