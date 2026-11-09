@@ -1,7 +1,7 @@
 // TeraStockX service worker: makes the site installable and usable offline.
 // Network first for everything, so code and data are always current when online;
 // the cache is only a fallback (offline, or a failed request).
-const CACHE = "tsx-v3";
+const CACHE = "tsx-v4";
 const SHELL = [
   "./", "index.html", "manifest.webmanifest",
   "assets/css/style.css",
@@ -27,7 +27,9 @@ self.addEventListener("fetch", (e) => {
   e.respondWith((async () => {
     const cache = await caches.open(CACHE);
     try {
-      const res = await fetch(req);
+      // "no-cache" revalidates with the server (a quick 304 when unchanged), so a new version is never
+      // hidden behind the browser's HTTP cache (GitHub Pages caches files for up to 10 minutes).
+      const res = await fetch(req, sameOrigin ? { cache: "no-cache" } : undefined);
       if (res.ok && (sameOrigin || res.type === "cors" || res.type === "opaque")) cache.put(req, res.clone());
       return res;
     } catch (err) {
