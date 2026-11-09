@@ -1198,7 +1198,7 @@ async function renderReport(ticker) {
         ${flags.length ? `<ul class="report-flags">${flags.map((f) => { const ft = flagText(f, cur); return `<li class="lv-${f.level}"><b>${esc(ft.title)}</b> <span class="small">(${esc(tag[f.level])})</span> – ${esc(ft.text)}</li>`; }).join("")}</ul>` : `<p>${esc(t("ui.noFlags"))}</p>`}
       </section>
 
-      <footer class="report-foot">${esc(t("ui.footer"))}<br>${esc(t("ui.engine", { v: ENGINE_VERSION }))}${c.source?.retrieved ? ` · ${esc(t("ui.retrieved", { d: date(c.source.retrieved) }))}` : ""} · m1ksaaa.github.io/Banana</footer>
+      <footer class="report-foot">${esc(t("ui.footer"))}<br>${esc(t("ui.engine", { v: ENGINE_VERSION }))}${c.source?.retrieved ? ` · ${esc(t("ui.retrieved", { d: date(c.source.retrieved) }))}` : ""} · terastockx.github.io</footer>
     </article>`;
   document.getElementById("print").addEventListener("click", () => window.print());
 }

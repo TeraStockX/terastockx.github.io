@@ -32,7 +32,7 @@ import { analyze, computeBenchmarks, scoreHistory, ENGINE_VERSION, DIMENSIONS, d
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const DATA = join(ROOT, "data");
 const COMPANIES = join(DATA, "companies");
-const UA = process.env.SEC_USER_AGENT || "TeraStockX (github.com/m1ksaaa/Banana)";
+const UA = process.env.SEC_USER_AGENT || "TeraStockX (github.com/TeraStockX/terastockx.github.io)";
 
 const args = process.argv.slice(2);
 const opt = (name) => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : null; };
