@@ -6,10 +6,14 @@ jobs:
   d:
     runs-on: ubuntu-latest
     steps:
-      - run: |
-          UA="Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
+      - name: Fetch as Googlebot
+        run: |
+          UA='Mozilla/5.0 (compatible; Googlebot/2.1)'
           for u in sitemap.xml robots.txt c/AAPL/; do
-            echo "== /$u"; curl -s -A "$UA" -o /tmp/b -D - "https://terastockx.github.io/$u" | grep -iE "^HTTP|content-type|content-length|cache-control|location"; echo "bytes: $(wc -c < /tmp/b)"
+            echo "== /$u"
+            curl -s -A "$UA" -o body.txt -D headers.txt "https://terastockx.github.io/$u"
+            grep -iE '^HTTP|content-type|content-length' headers.txt
+            echo "bytes $(wc -c < body.txt)"
           done
-          curl -s -A "$UA" https://terastockx.github.io/sitemap.xml | head -c 300; echo
-          curl -s -A "$UA" https://terastockx.github.io/sitemap.xml | python3 -c "import sys,xml.etree.ElementTree as E; r=E.fromstring(sys.stdin.buffer.read()); print('parsed OK, urls:', len(r))"
+          curl -s -A "$UA" -o sm.xml https://terastockx.github.io/sitemap.xml
+          python3 -c 'import xml.etree.ElementTree as E; r=E.parse("sm.xml").getroot(); print("parsed OK urls", len(r))'
