@@ -7,9 +7,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          for i in $(seq 1 30); do
-            if curl -s "https://terastockx.github.io/?v=$i$RANDOM" | grep -q 'EuGE1ZDX92aqQsSlnA3NPL17MJ9lwHeAidkUWhawreg'; then echo "VERIFICATION TAG LIVE after $((i*20))s"; break; fi
-            sleep 20
+          UA="Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
+          for u in sitemap.xml robots.txt c/AAPL/; do
+            echo "== /$u"; curl -s -A "$UA" -o /tmp/b -D - "https://terastockx.github.io/$u" | grep -iE "^HTTP|content-type|content-length|cache-control|location"; echo "bytes: $(wc -c < /tmp/b)"
           done
-          curl -s https://terastockx.github.io/ | grep -o '<meta name="google-site-verification"[^>]*>' || echo "TAG NOT FOUND"
-          curl -s -o /dev/null -w "sitemap %{http_code}\n" https://terastockx.github.io/sitemap.xml
+          curl -s -A "$UA" https://terastockx.github.io/sitemap.xml | head -c 300; echo
+          curl -s -A "$UA" https://terastockx.github.io/sitemap.xml | python3 -c "import sys,xml.etree.ElementTree as E; r=E.fromstring(sys.stdin.buffer.read()); print('parsed OK, urls:', len(r))"
