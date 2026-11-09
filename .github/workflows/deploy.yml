@@ -51,8 +51,14 @@ jobs:
       - name: Tesztek
         run: npm test
 
+      # The site's address (used in the sitemap and in the search pages' canonical links).
+      - id: pages
+        uses: actions/configure-pages@v5
+
       - name: Index újraépítése (kódváltozás esetén)
         if: github.event_name == 'push'
+        env:
+          SITE_URL: ${{ steps.pages.outputs.base_url }}
         run: node scripts/update-data.mjs --index-only
 
       - name: Adatok frissítése (SEC EDGAR, Nasdaq, ECB)
@@ -60,6 +66,7 @@ jobs:
         env:
           # The SEC asks automated clients to identify themselves (name + e-mail). Set it as a repository secret.
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+          SITE_URL: ${{ steps.pages.outputs.base_url }}
         run: |
           # Insider data sets (published quarterly by the SEC) and ETF details (expense ratio, yield) change
           # slowly: download them on Mondays and on manual runs only.
@@ -87,7 +94,6 @@ jobs:
           git commit -qm "Adatfrissítés: $(date -u +%Y-%m-%d)"
           git push -q -f "https://x-access-token:${TOKEN}@github.com/${{ github.repository }}.git" data
 
-      - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
           path: .

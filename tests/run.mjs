@@ -362,3 +362,30 @@ test("ETF listings: funds of both directories, NYSE Arca included", async () => 
   const other = "ACT Symbol|Security Name|Exchange|CQS Symbol|ETF|Round Lot Size|Test Issue|NASDAQ Symbol\nSPY|SPDR S&P 500 ETF Trust|P|SPY|Y|100|N|SPY\nZZT|Test ETF|P|ZZT|Y|100|Y|ZZT\nKO|Coca-Cola Company (The) Common Stock|N|KO|N|100|N|KO\nFile Creation Time: 1108202600:00|||||||";
   assert.deepEqual(parseEtfs(nasdaq, other).map((e) => `${e.ticker}:${e.exchange}`), ["QQQ:NASDAQ", "SPY:NYSE Arca"]);
 });
+
+test("Search pages: title and description per company, sitemap and robots.txt", async () => {
+  const { buildSeo, companyMeta, tickerPath } = await import("../scripts/seo.mjs");
+  const { mkdtempSync, readFileSync: rf, writeFileSync: wf, existsSync } = await import("node:fs");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const root = mkdtempSync(join(tmpdir(), "tsx-seo-"));
+  wf(join(root, "index.html"), '<!doctype html><html><head>\n  <meta charset="utf-8">\n  <title>TeraStockX</title>\n  <meta name="description" content="x">\n</head><body><main id="app" class="wrap"></main></body></html>');
+  const index = { generated: "2026-11-09T07:00:00Z", scoreKeys: ["overall", "risk"], companies: [
+    { t: "AAPL", n: "Apple Inc.", s: "technology", sc: [75, 18], pe: 37.9, dy: 0.003, mc: 5.02e12 },
+    { t: "NEWCO", n: "New Co", s: "technology" },
+    { t: "BRK.B", n: "Berkshire <Hathaway>", s: "financials", sc: [70, 20] },
+  ] };
+  const r = buildSeo({ root, siteUrl: "https://terastockx.github.io", index });
+  assert.equal(r.pages, 2, "only analysed companies get a page");
+  const html = rf(join(root, "c", "AAPL", "index.html"), "utf8");
+  assert.match(html, /<title>Apple Inc\. \(AAPL\) TeraScore 75\/100/);
+  assert.match(html, /<link rel="canonical" href="https:\/\/terastockx\.github\.io\/c\/AAPL\/">/);
+  assert.match(html, /<base href="\.\.\/\.\.\/">/);
+  assert.equal((html.match(/<title>/g) || []).length, 1);
+  assert.ok(rf(join(root, "c", "BRK.B", "index.html"), "utf8").includes("Berkshire &lt;Hathaway&gt;"), "names are escaped");
+  assert.ok(!existsSync(join(root, "c", "NEWCO")));
+  assert.match(rf(join(root, "sitemap.xml"), "utf8"), /<loc>https:\/\/terastockx\.github\.io\/c\/BRK\.B\/<\/loc>/);
+  assert.match(rf(join(root, "robots.txt"), "utf8"), /Sitemap: https:\/\/terastockx\.github\.io\/sitemap\.xml/);
+  assert.equal(tickerPath("../X"), null);
+  assert.match(companyMeta(index.companies[0], index.scoreKeys, "2026-11-09").description, /TeraScore 75\/100 \(Strong\), risk 18\/100, P\/E 37\.9/);
+});

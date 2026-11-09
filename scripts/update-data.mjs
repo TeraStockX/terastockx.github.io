@@ -24,6 +24,7 @@ import { sectorFromSic, sectorFromNasdaq, profileFor } from "./sectors.mjs";
 import { nasdaqScreener, nasdaqEtfScreener, etfSummary, priceHistory, priceBudgetLeft, fxToUsd } from "./market.mjs";
 import { majorEvents } from "./events.mjs";
 import { fillMissingFilings } from "./xbrl-instance.mjs";
+import { buildSeo } from "./seo.mjs";
 import { parseNasdaqListed, parseOtherListed, parseEtfs } from "./listings.mjs";
 import { insiderActivity } from "./insider.mjs";
 import { analyze, computeBenchmarks, scoreHistory, ENGINE_VERSION, DIMENSIONS, dividendProfile } from "../assets/js/scoring.js";
@@ -337,6 +338,9 @@ function buildIndex({ snapshot = false } = {}) {
   const kept = news.filter((e) => top(e) || rest.includes(e));
   writeFileSync(join(DATA, "news.json"), JSON.stringify({ generated: index.generated, events: kept }) + "\n");
   console.log(`data/index.json: ${companies.length} companies; data/news.json: ${kept.length} events; data/benchmarks.json: ${Object.keys(benchmarks).length} sectors.`);
+  // Pages for search engines (the workflow passes the site's address as SITE_URL).
+  const seo = buildSeo({ root: ROOT, siteUrl: process.env.SITE_URL || "", index });
+  console.log(`search pages: ${seo.pages} company pages, sitemap with ${seo.sitemap} URLs${process.env.SITE_URL ? "" : " (no SITE_URL: sitemap skipped)"}.`);
 }
 
 if (!indexOnly) await updateCompanies();
