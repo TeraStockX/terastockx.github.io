@@ -1,0 +1,17 @@
+name: diag
+on:
+  push:
+    branches: [diag]
+jobs:
+  d:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          sleep 90
+          for u in "" "c/AAPL/" "sitemap.xml" "robots.txt" "data/index.json" "data/etfs.json" "manifest.webmanifest" "sw.js"; do
+            code=$(curl -s -o /tmp/p -w "%{http_code}" "https://terastockx.github.io/$u"); echo "== /$u -> $code ($(wc -c < /tmp/p) bytes)"
+          done
+          curl -s https://terastockx.github.io/robots.txt
+          curl -s https://terastockx.github.io/sitemap.xml | head -4
+          curl -s https://terastockx.github.io/c/AAPL/ | grep -o '<title>[^<]*</title>\|<link rel="canonical"[^>]*>'
+          echo "old address:"; curl -s -o /dev/null -w "%{http_code}\n" https://m1ksaaa.github.io/Banana/
