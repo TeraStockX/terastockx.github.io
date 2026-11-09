@@ -18,6 +18,11 @@ export const SCREENS = [
   { id: "lowRisk", filter: (r) => below(r, "risk", 20) && noCritical(r), rank: (r) => -s(r, "risk"), col: "risk" },
   { id: "improvers", filter: (r) => sizeable(r) && isNum(r.ch) && r.ch >= 10 && isNum(s(r, "overall")), rank: (r) => r.ch, col: "ch" },
   { id: "growth", filter: (r) => sizeable(r) && at(r, "growth1y", 75) && at(r, "growthLong", 70) && at(r, "overall", 55), rank: (r) => s(r, "growth1y") + s(r, "growthLong") + s(r, "overall") / 100, col: "growthLong" },
+  // Quality companies whose share price is at least 20% below its 12-month high.
+  // A fall of more than 50% is more often a sign of trouble than a discount, so it is left out.
+  { id: "dip", filter: (r) => sizeable(r) && isNum(r.dd) && r.dd <= -0.2 && r.dd >= -0.5 && at(r, "overall", 65) && below(r, "risk", 40) && noCritical(r), rank: (r) => s(r, "overall") - r.dd * 10, col: "dd" },
+  // P/E below 3 almost always comes from a one-off gain; the valuation score (EV/EBIT, cash-flow yield) must agree.
+  { id: "lowPe", filter: (r) => sizeable(r) && isNum(r.pe) && r.pe >= 3 && r.pe <= 12 && at(r, "valuation", 60) && at(r, "overall", 60) && at(r, "consistency", 50) && noCritical(r), rank: (r) => s(r, "overall") + s(r, "valuation") - r.pe, col: "pe" },
   { id: "value", filter: (r) => sizeable(r) && at(r, "valuation", 70) && at(r, "overall", 65) && at(r, "profitability", 60) && noCritical(r), rank: (r) => s(r, "valuation") + s(r, "overall") },
   { id: "dividend", filter: (r) => sizeable(r) && isNum(r.ds) && r.ds >= 75 && isNum(r.dy) && r.dy >= 0.025, rank: (r) => r.dy, col: "ds" },
   { id: "largeQuality", filter: (r) => (r.mc ?? 0) >= 5e10 && at(r, "overall", 70), rank: (r) => s(r, "overall") },

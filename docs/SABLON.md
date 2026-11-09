@@ -403,6 +403,8 @@ Mezők: `scoreHistory.weekly` a vállalat adatfájljában (`{ date, overall }`, 
 | Nagy, minőségi cégek | Legalább 50 milliárd dolláros piaci érték és legalább 70-es TeraScore. |
 | Magas kockázat | Legalább 70-es kockázat, vagy magas csődkockázat legalább 55-ös kockázattal, 300 millió dollár feletti piaci érték; a legkockázatosabbal kezdve. Spekulatív részvények, óvatosan kezelendők. |
 | Legnagyobb romlás az elmúlt évben | Legalább 10 ponttal csökkent TeraScore az előző üzleti évhez képest, 300 millió dollár feletti piaci érték; a legnagyobb romlással kezdve. |
+| Esés után, olcsóbban | Jó minőségű cégek (TeraScore ≥ 65, kockázat ≤ 40, nincs kritikus figyelmeztetés, 300 millió dollár feletti piaci érték), amelyek árfolyama 20–50%-kal az elmúlt 12 hónap csúcsa alatt van (havi záróárak alapján); a legjobb TeraScore-ral kezdve. Az ennél nagyobb esés kimarad: az inkább baj jele, mint lehetőség. |
+| Alacsony P/E | Nyereséges cégek 3 és 12 közötti P/E-vel, amelyek értékeltségi pontszáma is legalább 60 (az EV/EBIT és a cash flow-hozam is megerősíti, hogy olcsók), TeraScore ≥ 60, kiszámíthatóság ≥ 50, nincs kritikus figyelmeztetés, 300 millió dollár feletti piaci érték. A 3 alatti P/E többnyire egyszeri nyereségből adódik, ezért kimarad. |
 
 ## 9. Hasonló vállalatok
 

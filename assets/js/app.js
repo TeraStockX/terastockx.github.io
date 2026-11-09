@@ -193,7 +193,7 @@ function markNav() {
 
 // ---------- Router ----------
 
-const listState = { q: "", sector: "", filter: "analyzed", sort: "overall", dir: -1, page: 0, ex: "", minScore: 0, maxRisk: 100, minCap: 0, minDy: 0, minDs: 0, styles: [], noCrit: false, preset: "" };
+const listState = { q: "", sector: "", filter: "analyzed", sort: "overall", dir: -1, page: 0, ex: "", minScore: 0, maxRisk: 100, minCap: 0, minDy: 0, minDs: 0, maxPe: 0, minDrop: 0, styles: [], noCrit: false, preset: "", filtersOpen: null };
 const LOWER_FIRST = new Set(["t", "risk", "pe"]);
 
 async function route(scroll = true) {
@@ -234,6 +234,8 @@ const RISK_STEPS = [100, 50, 35, 20];
 const CAP_STEPS = [0, 3e8, 2e9, 1e10, 2e11];
 const DY_STEPS = [0, 0.01, 0.02, 0.04];
 const DS_STEPS = [0, 55, 75];
+const PE_STEPS = [0, 10, 15, 20, 30];
+const DROP_STEPS = [0, 0.1, 0.2, 0.3];
 const STYLE_KEYS = ["quality", "growth", "value", "income"];
 
 async function renderList() {
@@ -259,11 +261,6 @@ async function renderList() {
     </section>
     <div id="alerts"></div>
     ${installBanner()}
-    <div class="screens" role="group" aria-labelledby="screens-label">
-      <span class="screens-label" id="screens-label">${esc(t("ui.screensTitle"))}</span>
-      ${SCREENS.map((sc) => `<button type="button" class="chip-toggle screen-chip ${["highRisk", "decliners"].includes(sc.id) ? "warn" : ""} ${listState.preset === sc.id ? "on" : ""}" data-screen="${sc.id}" aria-pressed="${listState.preset === sc.id}">${esc(t(`screens.${sc.id}.name`))}</button>`).join("")}
-    </div>
-    <p class="screen-desc small muted" id="screen-desc" ${listState.preset ? "" : "hidden"}></p>
     <div class="controls">
       <label class="search">
         <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20 20l-4-4"/></svg>
@@ -277,8 +274,14 @@ async function renderList() {
         ${["analyzed", "all", "watch"].map((f) => `<option value="${f}" ${listState.filter === f ? "selected" : ""}>${esc(t({ analyzed: "ui.onlyAnalyzed", all: "ui.allCompanies", watch: "ui.watchlist" }[f]))}</option>`).join("")}
       </select>
     </div>
-    <details class="glass filters" id="filters" ${filtersActive() ? "open" : ""}>
-      <summary><span>${esc(t("ui.filters"))}</span> <span class="small muted" id="filters-count"></span></summary>
+    <details class="glass filters" id="filters" ${(listState.filtersOpen ?? (filtersActive() > 0 || !!listState.preset || matchMedia("(min-width: 900px)").matches)) ? "open" : ""}>
+      <summary><span>${esc(t("ui.filtersAndScreens"))}</span> <span class="small muted" id="filters-count"></span></summary>
+      <div class="filter-section" id="screens-label">${esc(t("ui.screensTitle"))}</div>
+      <div class="screens" role="group" aria-labelledby="screens-label">
+        ${SCREENS.map((sc) => `<button type="button" class="chip-toggle screen-chip ${["highRisk", "decliners"].includes(sc.id) ? "warn" : ""} ${listState.preset === sc.id ? "on" : ""}" data-screen="${sc.id}" aria-pressed="${listState.preset === sc.id}">${esc(t(`screens.${sc.id}.name`))}</button>`).join("")}
+      </div>
+      <p class="screen-desc small muted" id="screen-desc" ${listState.preset ? "" : "hidden"}></p>
+      <div class="filter-section">${esc(t("ui.filters"))}</div>
       <div class="filter-grid">
         <label>${esc(t("ui.exchange"))}<select class="select" data-f="ex"><option value="">${esc(t("ui.allExchanges"))}</option>${exchanges.map((x) => `<option ${listState.ex === x ? "selected" : ""}>${esc(x)}</option>`).join("")}</select></label>
         <label>${esc(t("ui.minScore"))}<select class="select" data-f="minScore">${SCORE_STEPS.map((v) => `<option value="${v}" ${listState.minScore === v ? "selected" : ""}>${v ? `≥ ${v}` : esc(t("ui.anyValue"))}</option>`).join("")}</select></label>
@@ -286,6 +289,8 @@ async function renderList() {
         <label>${esc(t("ui.minCap"))}<select class="select" data-f="minCap">${CAP_STEPS.map((v) => `<option value="${v}" ${listState.minCap === v ? "selected" : ""}>${v ? `≥ ${money(v)}` : esc(t("ui.anyValue"))}</option>`).join("")}</select></label>
         <label>${esc(t("ui.minDividend"))}<select class="select" data-f="minDy">${DY_STEPS.map((v) => `<option value="${v}" ${listState.minDy === v ? "selected" : ""}>${v ? `≥ ${fmt(v, "pct0")}` : esc(t("ui.anyValue"))}</option>`).join("")}</select></label>
         <label>${esc(t("ui.minDivSafety"))}<select class="select" data-f="minDs">${DS_STEPS.map((v) => `<option value="${v}" ${listState.minDs === v ? "selected" : ""}>${v ? `≥ ${v} · ${esc(t(`dividend.${v >= 75 ? "safe" : "moderate"}`))}` : esc(t("ui.anyValue"))}</option>`).join("")}</select></label>
+        <label>${esc(t("ui.maxPe"))}<select class="select" data-f="maxPe">${PE_STEPS.map((v) => `<option value="${v}" ${listState.maxPe === v ? "selected" : ""}>${v ? `≤ ${v}×` : esc(t("ui.anyValue"))}</option>`).join("")}</select></label>
+        <label>${esc(t("ui.minDrop"))}<select class="select" data-f="minDrop">${DROP_STEPS.map((v) => `<option value="${v}" ${listState.minDrop === v ? "selected" : ""}>${v ? esc(t("ui.dropAtLeast", { p: fmt(v, "pct0") })) : esc(t("ui.anyValue"))}</option>`).join("")}</select></label>
       </div>
       <div class="filter-row">
         <span class="small muted">${esc(t("ui.styleFilter"))}</span>
@@ -317,10 +322,10 @@ async function renderList() {
     const watch = new Set(getWatch());
     const screen = screenById(listState.preset);
     // Extra column for screens ranked by a figure that is not already a column.
-    const xcol = screen && (screen.col === "ch" || screen.col === "ds") ? screen.col : null;
+    const xcol = screen && ["ch", "ds", "dd", "pe"].includes(screen.col) ? screen.col : null;
     const xh = document.getElementById("xcol-h");
     xh.hidden = !xcol;
-    xh.textContent = xcol === "ch" ? t("ui.colChangeFy") : xcol === "ds" ? t("ui.dividendSafety") : "";
+    xh.textContent = { ch: t("ui.colChangeFy"), ds: t("ui.dividendSafety"), dd: t("ui.colFromHigh"), pe: t("ui.pe") }[xcol] || "";
     const desc = document.getElementById("screen-desc");
     desc.hidden = !screen;
     desc.textContent = screen ? t(`screens.${screen.id}.desc`) : "";
@@ -334,11 +339,13 @@ async function renderList() {
       (!L.minCap || (c.mc ?? 0) >= L.minCap) &&
       (!L.minDy || (c.dy ?? 0) >= L.minDy) &&
       (!L.minDs || (c.ds ?? -1) >= L.minDs) &&
+      (!L.maxPe || (isNum(c.pe) && c.pe > 0 && c.pe <= L.maxPe)) &&
+      (!L.minDrop || (isNum(c.dd) && c.dd <= -L.minDrop)) &&
       (!L.styles.length || L.styles.every((st) => (c.st || []).includes(st))) &&
       (!L.noCrit || !(c.cf || []).length) &&
       (!q || c.t.toLowerCase().startsWith(q) || c.n.toLowerCase().includes(q)) &&
       (!screen || screen.filter(c)));
-    document.getElementById("filters-count").textContent = filtersActive() ? t("ui.filtersActive", { n: filtersActive() }) : "";
+    document.getElementById("filters-count").textContent = [screen ? t(`screens.${screen.id}.name`) : "", filtersActive() ? t("ui.filtersActive", { n: filtersActive() }) : ""].filter(Boolean).join(" · ");
     const k = listState.sort;
     const val = (c) => (k === "preset" ? (screen ? screen.rank(c) : c.sc?.overall) : k === "mc" ? c.mc : k === "pe" ? c.pe : k === "dy" ? c.dy : c.sc?.[k]);
     rows.sort((a, b) => {
@@ -359,7 +366,7 @@ async function renderList() {
     document.getElementById("rows").innerHTML = slice.length ? slice.map((c) => `
       <tr data-t="${esc(c.t)}" tabindex="0">
         <td><span class="tick">${esc(c.t)}</span>${c.demo ? `<span class="badge">${esc(t("ui.demoBadge"))}</span>` : ""}${c.ex && c.ex !== "NASDAQ" ? `<span class="badge ex">${esc(c.ex)}</span>` : ""}<br><span class="cname small">${esc(c.n)}</span></td>
-        ${xcol === "ch" ? `<td class="num">${changePill(c.ch)}</td>` : xcol === "ds" ? `<td class="num">${scorePill(c.ds)}</td>` : ""}
+        ${xcol === "ch" ? `<td class="num">${changePill(c.ch)}</td>` : xcol === "ds" ? `<td class="num">${scorePill(c.ds)}</td>` : xcol === "dd" ? `<td class="num">${isNum(c.dd) ? `<span class="pill tone-serious"><span class="dot"></span>${fmt(c.dd, "pct0")}</span>` : "–"}</td>` : xcol === "pe" ? `<td class="num">${isNum(c.pe) ? fmt(c.pe, "mult") : "–"}</td>` : ""}
         <td class="num col-md small">${isNum(c.mc) ? money(c.mc) : "–"}</td>
         ${LIST_COLS.map((col) => `<td class="num ${col.cls || ""}">${c.sc ? scorePill(c.sc[col.key], col.inverse) : `<span class="small muted">${esc(t("ui.noData"))}</span>`}</td>`).join("")}
         <td class="num col-lg small">${isNum(c.pe) ? fmt(c.pe, "mult") : "–"}</td>
@@ -411,6 +418,7 @@ async function renderList() {
     listState.page += Number(b.dataset.p); draw(); window.scrollTo({ top: 0, behavior: "smooth" });
   });
   const filters = document.getElementById("filters");
+  filters.addEventListener("toggle", () => { listState.filtersOpen = filters.open; });
   filters.addEventListener("change", (e) => {
     const f = e.target.dataset.f;
     if (f) listState[f] = f === "ex" ? e.target.value : Number(e.target.value);
@@ -426,7 +434,7 @@ async function renderList() {
       listState.page = 0; draw();
     }
     if (e.target.closest("#reset-filters")) {
-      Object.assign(listState, { ex: "", minScore: 0, maxRisk: 100, minCap: 0, minDy: 0, minDs: 0, styles: [], noCrit: false, page: 0, preset: "", sort: listState.sort === "preset" ? "overall" : listState.sort });
+      Object.assign(listState, { ex: "", minScore: 0, maxRisk: 100, minCap: 0, minDy: 0, minDs: 0, maxPe: 0, minDrop: 0, styles: [], noCrit: false, page: 0, preset: "", sort: listState.sort === "preset" ? "overall" : listState.sort });
       history.replaceState(null, "", "#/");
       renderList();
     }
@@ -459,7 +467,7 @@ async function renderList() {
 
 function filtersActive() {
   const L = listState;
-  return [L.ex, L.minScore, L.maxRisk < 100, L.minCap, L.minDy, L.minDs, L.styles.length, L.noCrit].filter(Boolean).length;
+  return [L.ex, L.minScore, L.maxRisk < 100, L.minCap, L.minDy, L.minDs, L.maxPe, L.minDrop, L.styles.length, L.noCrit].filter(Boolean).length;
 }
 
 // ---------- TeraScore Changes ----------

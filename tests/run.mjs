@@ -409,5 +409,9 @@ test("Quick searches: every screen filters and ranks as described", async () => 
   assert.deepEqual(ids("improvers"), ["UP"]);
   assert.deepEqual(ids("dividend"), ["DIV"]);
   assert.deepEqual(ids("highRisk"), ["RISKY"]);
+  const dipRows = [r("DIP", { overall: 80, risk: 20 }, { dd: -0.3 }), r("CRASH", { overall: 80, risk: 20 }, { dd: -0.7 }), r("FLAT", { overall: 80, risk: 20 }, { dd: -0.05 })];
+  assert.deepEqual(runScreen(dipRows, "dip").map((x) => x.t), ["DIP"], "20–50% below the high only");
+  const peRows = [r("CHEAP", { overall: 75, valuation: 80 }, { pe: 8 }), r("ONEOFF", { overall: 75, valuation: 80 }, { pe: 1.5 }), r("DEAR", { overall: 75, valuation: 30 }, { pe: 10 })];
+  assert.deepEqual(runScreen(peRows, "lowPe").map((x) => x.t), ["CHEAP"]);
   assert.equal(new Set(SCREENS.map((s) => s.id)).size, SCREENS.length);
 });

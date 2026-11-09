@@ -488,14 +488,12 @@ table.cmp thead th .small { display: block; white-space: normal; max-width: 150p
 }
 h1, h2, h3 { overflow-wrap: break-word; hyphens: auto; }
 
-/* ---------- Quick searches (ready-made screens) ---------- */
-.screens { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px; }
-.screens-label { font-size: 12px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: .06em; margin-right: 4px; }
+/* ---------- Quick searches (ready-made screens), inside the filter panel ---------- */
+.filter-section { font-size: 12px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: .06em; margin: 16px 0 8px; }
+.screens { display: flex; flex-wrap: wrap; gap: 8px; }
 .screen-chip.warn { border-color: rgba(236,131,90,.35); }
 .screen-chip.warn.on { background: rgba(236,131,90,.16); border-color: rgba(236,131,90,.6); color: var(--serious-ink); }
-.screen-desc { margin: 0 0 14px; max-width: 900px; }
-@media (max-width: 640px) {
-  .screens { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 6px; margin-inline: -4px; padding-inline: 4px; scrollbar-width: thin; }
-  .screens .chip-toggle { flex: none; }
-  .screens-label { flex: none; }
-}
+.screen-desc { margin: 10px 0 0; max-width: 900px; }
+.filters .filter-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 0; }
+@media (max-width: 900px) { .filters .filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.filters .filter-grid { align-items: end; }

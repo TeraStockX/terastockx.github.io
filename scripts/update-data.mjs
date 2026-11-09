@@ -305,6 +305,14 @@ function buildIndex({ snapshot = false } = {}) {
       if (dv.payer && Number.isFinite(dv.score)) row.ds = dv.score;
     }
     if (Number.isFinite(c.market?.price)) row.px = c.market.price;
+    // Price against its 12-month high (monthly closes and the latest price) and the one-year change.
+    const closes = (c.prices?.data || []).slice(-12).map((x) => x[1]).filter(Number.isFinite);
+    const lastPrice = Number.isFinite(c.market?.price) ? c.market.price : closes.at(-1);
+    if (closes.length >= 6 && Number.isFinite(lastPrice)) {
+      const high = Math.max(...closes, lastPrice);
+      if (high > 0) row.dd = +(lastPrice / high - 1).toFixed(4);
+    }
+    if (a.ok && Number.isFinite(a.metrics.priceReturn1y)) row.r1y = +a.metrics.priceReturn1y.toFixed(4);
     // TeraScore Changes: change against the previous fiscal year (point-in-time) and against weekly snapshots.
     const hist = a.ok ? scoreHistory(c, { benchmarks }) : [];
     if (hist.length >= 2) {
