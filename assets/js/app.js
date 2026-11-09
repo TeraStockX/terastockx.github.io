@@ -274,7 +274,7 @@ async function renderList() {
         ${["analyzed", "all", "watch"].map((f) => `<option value="${f}" ${listState.filter === f ? "selected" : ""}>${esc(t({ analyzed: "ui.onlyAnalyzed", all: "ui.allCompanies", watch: "ui.watchlist" }[f]))}</option>`).join("")}
       </select>
     </div>
-    <details class="glass filters" id="filters" ${(listState.filtersOpen ?? (filtersActive() > 0 || !!listState.preset || matchMedia("(min-width: 900px)").matches)) ? "open" : ""}>
+    <details class="glass filters" id="filters" ${listState.filtersOpen ? "open" : ""}>
       <summary><span>${esc(t("ui.filtersAndScreens"))}</span> <span class="small muted" id="filters-count"></span></summary>
       <div class="filter-section" id="screens-label">${esc(t("ui.screensTitle"))}</div>
       <div class="screens" role="group" aria-labelledby="screens-label">
