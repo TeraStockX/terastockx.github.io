@@ -173,6 +173,12 @@ ${hu.method.historyText}
 
 Mezők: \`scoreHistory.weekly\` a vállalat adatfájljában (\`{ date, overall }\`, legfeljebb 110 hét); az indexben \`ch\` / \`chy\` (változás az előző üzleti évhez képest és annak éve), \`c4\` / \`c13\` (4 és 13 hetes változás).
 
+## Gyors keresések
+
+| Keresés | Feltétel és rendezés |
+|---|---|
+${Object.values(hu.screens).map((x) => `| ${x.name} | ${x.desc} |`).join("\n")}
+
 ## 9. Hasonló vállalatok
 
 ${hu.method.peersText}

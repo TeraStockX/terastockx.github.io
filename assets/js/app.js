@@ -1,5 +1,6 @@
 import { analyze, scoreHistory, gradeKey, GRADE_TONE, DIMENSIONS, METRIC_FORMAT, ENGINE_VERSION, PROFILES, OVERALL_WEIGHTS, FLAG_PENALTY, dividendProfile, DIVIDEND_TONE, DIVIDEND_WEIGHTS, findPeers } from "./scoring.js";
 import { portfolioSummary, PORTFOLIO_LIMITS } from "./portfolio.js";
+import { SCREENS, screenById } from "./screens.js";
 import { LANGS, lang, setLang, t, fill, fmt, money, date, num, dict } from "./i18n/index.js";
 import { barChart, lineChart, wireCharts } from "./charts.js";
 
@@ -187,12 +188,12 @@ const links = (short) => `
 function markNav() {
   const page = location.hash.replace(/^#\/?/, "").split("/")[0];
   document.querySelectorAll("[data-nav]").forEach((a) => a.classList.toggle("active",
-    (a.dataset.nav === "list" && (page === "" || page === "c")) || (a.dataset.nav === "compare" && page === "compare") || (a.dataset.nav === "news" && page === "news") || (a.dataset.nav === "trend" && page === "trend") || (a.dataset.nav === "data" && page === "data") || (a.dataset.nav === "portfolio" && page === "portfolio") || (a.dataset.nav === "method" && page === "methodology")));
+    (a.dataset.nav === "list" && (page === "" || page === "c" || page === "screen")) || (a.dataset.nav === "compare" && page === "compare") || (a.dataset.nav === "news" && page === "news") || (a.dataset.nav === "trend" && page === "trend") || (a.dataset.nav === "data" && page === "data") || (a.dataset.nav === "portfolio" && page === "portfolio") || (a.dataset.nav === "method" && page === "methodology")));
 }
 
 // ---------- Router ----------
 
-const listState = { q: "", sector: "", filter: "analyzed", sort: "overall", dir: -1, page: 0, ex: "", minScore: 0, maxRisk: 100, minCap: 0, minDy: 0, minDs: 0, styles: [], noCrit: false };
+const listState = { q: "", sector: "", filter: "analyzed", sort: "overall", dir: -1, page: 0, ex: "", minScore: 0, maxRisk: 100, minCap: 0, minDy: 0, minDs: 0, styles: [], noCrit: false, preset: "" };
 const LOWER_FIRST = new Set(["t", "risk", "pe"]);
 
 async function route(scroll = true) {
@@ -204,6 +205,7 @@ async function route(scroll = true) {
     if (page === "c" && arg) await renderCompany(decodeURIComponent(arg).toUpperCase());
     else if (page === "compare") await renderCompare(arg ? decodeURIComponent(arg).toUpperCase().split(",").filter(Boolean).slice(0, MAX_COMPARE) : []);
     else if (page === "install") renderInstall();
+    else if (page === "screen") { const sc = screenById(arg); Object.assign(listState, { preset: sc ? sc.id : "", sort: sc ? "preset" : "overall", dir: -1, page: 0 }); await renderList(); }
     else if (page === "portfolio") await renderPortfolio(arg ? decodeURIComponent(arg).toUpperCase() : "");
     else if (page === "report" && arg) await renderReport(decodeURIComponent(arg).toUpperCase());
     else if (page === "methodology") renderMethod();
@@ -257,6 +259,11 @@ async function renderList() {
     </section>
     <div id="alerts"></div>
     ${installBanner()}
+    <div class="screens" role="group" aria-labelledby="screens-label">
+      <span class="screens-label" id="screens-label">${esc(t("ui.screensTitle"))}</span>
+      ${SCREENS.map((sc) => `<button type="button" class="chip-toggle screen-chip ${["highRisk", "decliners"].includes(sc.id) ? "warn" : ""} ${listState.preset === sc.id ? "on" : ""}" data-screen="${sc.id}" aria-pressed="${listState.preset === sc.id}">${esc(t(`screens.${sc.id}.name`))}</button>`).join("")}
+    </div>
+    <p class="screen-desc small muted" id="screen-desc" ${listState.preset ? "" : "hidden"}></p>
     <div class="controls">
       <label class="search">
         <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20 20l-4-4"/></svg>
@@ -291,6 +298,7 @@ async function renderList() {
     <div class="glass table-wrap"><table class="list">
       <thead><tr>
         <th data-sort="t">${esc(t("ui.company"))}</th>
+        <th class="num" id="xcol-h" hidden></th>
         <th class="num col-md" data-sort="mc">${esc(t("ui.marketCap"))}</th>
         ${LIST_COLS.map((c) => `<th class="num ${c.cls || ""}" data-sort="${c.key}">${esc(c.label ? c.label() : t(`dims.${c.key}.name`))}</th>`).join("")}
         <th class="num col-lg" data-sort="pe">${esc(t("ui.pe"))}</th>
@@ -307,6 +315,16 @@ async function renderList() {
   const draw = () => {
     const q = listState.q.trim().toLowerCase();
     const watch = new Set(getWatch());
+    const screen = screenById(listState.preset);
+    // Extra column for screens ranked by a figure that is not already a column.
+    const xcol = screen && (screen.col === "ch" || screen.col === "ds") ? screen.col : null;
+    const xh = document.getElementById("xcol-h");
+    xh.hidden = !xcol;
+    xh.textContent = xcol === "ch" ? t("ui.colChangeFy") : xcol === "ds" ? t("ui.dividendSafety") : "";
+    const desc = document.getElementById("screen-desc");
+    desc.hidden = !screen;
+    desc.textContent = screen ? t(`screens.${screen.id}.desc`) : "";
+    document.querySelectorAll("[data-screen]").forEach((b) => { const on = b.dataset.screen === listState.preset; b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on)); });
     const L = listState;
     let rows = idx.companies.filter((c) =>
       (L.filter !== "analyzed" || c.sc) && (L.filter !== "watch" || watch.has(c.t)) &&
@@ -318,10 +336,11 @@ async function renderList() {
       (!L.minDs || (c.ds ?? -1) >= L.minDs) &&
       (!L.styles.length || L.styles.every((st) => (c.st || []).includes(st))) &&
       (!L.noCrit || !(c.cf || []).length) &&
-      (!q || c.t.toLowerCase().startsWith(q) || c.n.toLowerCase().includes(q)));
+      (!q || c.t.toLowerCase().startsWith(q) || c.n.toLowerCase().includes(q)) &&
+      (!screen || screen.filter(c)));
     document.getElementById("filters-count").textContent = filtersActive() ? t("ui.filtersActive", { n: filtersActive() }) : "";
     const k = listState.sort;
-    const val = (c) => (k === "mc" ? c.mc : k === "pe" ? c.pe : k === "dy" ? c.dy : c.sc?.[k]);
+    const val = (c) => (k === "preset" ? (screen ? screen.rank(c) : c.sc?.overall) : k === "mc" ? c.mc : k === "pe" ? c.pe : k === "dy" ? c.dy : c.sc?.[k]);
     rows.sort((a, b) => {
       if (k === "t") return listState.dir * a.t.localeCompare(b.t);
       const va = val(a), vb = val(b);
@@ -340,12 +359,13 @@ async function renderList() {
     document.getElementById("rows").innerHTML = slice.length ? slice.map((c) => `
       <tr data-t="${esc(c.t)}" tabindex="0">
         <td><span class="tick">${esc(c.t)}</span>${c.demo ? `<span class="badge">${esc(t("ui.demoBadge"))}</span>` : ""}${c.ex && c.ex !== "NASDAQ" ? `<span class="badge ex">${esc(c.ex)}</span>` : ""}<br><span class="cname small">${esc(c.n)}</span></td>
+        ${xcol === "ch" ? `<td class="num">${changePill(c.ch)}</td>` : xcol === "ds" ? `<td class="num">${scorePill(c.ds)}</td>` : ""}
         <td class="num col-md small">${isNum(c.mc) ? money(c.mc) : "–"}</td>
         ${LIST_COLS.map((col) => `<td class="num ${col.cls || ""}">${c.sc ? scorePill(c.sc[col.key], col.inverse) : `<span class="small muted">${esc(t("ui.noData"))}</span>`}</td>`).join("")}
         <td class="num col-lg small">${isNum(c.pe) ? fmt(c.pe, "mult") : "–"}</td>
         <td class="num col-lg small">${isNum(c.dy) && c.dy > 0 ? fmt(c.dy, "pct") : "–"}</td>
         <td><button class="star ${watch.has(c.t) ? "on" : ""}" data-star="${esc(c.t)}" aria-label="${esc(t(watch.has(c.t) ? "ui.removeWatch" : "ui.addWatch"))}">${starSvg(watch.has(c.t))}</button></td>
-      </tr>`).join("") : `<tr><td colspan="${LIST_COLS.length + 5}" class="empty">${esc(t("ui.noResults"))}</td></tr>`;
+      </tr>`).join("") : `<tr><td colspan="${LIST_COLS.length + 5 + (xcol ? 1 : 0)}" class="empty">${esc(t("ui.noResults"))}</td></tr>`;
 
     document.querySelectorAll("th[data-sort]").forEach((th) => {
       const on = th.dataset.sort === k;
@@ -363,6 +383,15 @@ async function renderList() {
   q.addEventListener("input", () => { listState.q = q.value; listState.page = 0; draw(); });
   q.addEventListener("keydown", (e) => { if (e.key === "Enter") { const first = document.querySelector("#rows tr[data-t]"); if (first) location.hash = `#/c/${first.dataset.t}`; } });
   document.getElementById("sector").addEventListener("change", (e) => { listState.sector = e.target.value; listState.page = 0; draw(); });
+  app.querySelector(".screens").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-screen]"); if (!b) return;
+    const id = listState.preset === b.dataset.screen ? "" : b.dataset.screen;
+    Object.assign(listState, { preset: id, sort: id ? "preset" : "overall", dir: -1, page: 0, filter: "analyzed" });
+    document.getElementById("filter").value = "analyzed";
+    // A shareable address for the chosen screen, without re-rendering the page.
+    history.replaceState(null, "", id ? `#/screen/${id}` : "#/");
+    draw();
+  });
   document.getElementById("filter").addEventListener("change", (e) => { listState.filter = e.target.value; listState.page = 0; draw(); });
   document.querySelector("thead").addEventListener("click", (e) => {
     const th = e.target.closest("th[data-sort]"); if (!th) return;
@@ -397,7 +426,8 @@ async function renderList() {
       listState.page = 0; draw();
     }
     if (e.target.closest("#reset-filters")) {
-      Object.assign(listState, { ex: "", minScore: 0, maxRisk: 100, minCap: 0, minDy: 0, minDs: 0, styles: [], noCrit: false, page: 0 });
+      Object.assign(listState, { ex: "", minScore: 0, maxRisk: 100, minCap: 0, minDy: 0, minDs: 0, styles: [], noCrit: false, page: 0, preset: "", sort: listState.sort === "preset" ? "overall" : listState.sort });
+      history.replaceState(null, "", "#/");
       renderList();
     }
   });
@@ -1298,6 +1328,8 @@ function renderMethod() {
     <h2>${esc(t("method.relativeTitle"))}</h2><p>${esc(t("method.relativeText"))}</p>
     <h2>${esc(t("method.eventsTitle"))}</h2><p>${esc(t("method.eventsText"))}</p>
     <h2>${esc(t("ui.insiderTitle"))}</h2><p>${esc(t("method.insiderText"))}</p>
+    <h2>${esc(t("ui.screensTitle"))}</h2>
+    <div class="glass method-card"><table class="method-table"><tbody>${SCREENS.map((sc) => `<tr><td><b>${esc(t(`screens.${sc.id}.name`))}</b><br><span class="small">${esc(t(`screens.${sc.id}.desc`))}</span></td></tr>`).join("")}</tbody></table></div>
     <h2>${esc(t("ui.peersTitle"))}</h2><p>${esc(t("method.peersText"))}</p>
     <h2>${esc(t("ui.dividendSafety"))}</h2><p>${esc(t("method.dividendText"))}</p>
     <div class="glass method-card"><table class="method-table"><tbody>${Object.entries(DIVIDEND_WEIGHTS).map(([k, w]) => `<tr><td><b>${esc(t(`dividend.parts.${k}`))}</b><br><span class="small">${esc(t(`dividend.partsText.${k}`))}</span></td><td class="n">${Math.round(w * 100)}%</td></tr>`).join("")}</tbody></table></div>

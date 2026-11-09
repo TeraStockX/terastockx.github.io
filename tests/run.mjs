@@ -389,3 +389,25 @@ test("Search pages: title and description per company, sitemap and robots.txt", 
   assert.equal(tickerPath("../X"), null);
   assert.match(companyMeta(index.companies[0], index.scoreKeys, "2026-11-09").description, /TeraScore 75\/100 \(Strong\), risk 18\/100, P\/E 37\.9/);
 });
+
+test("Quick searches: every screen filters and ranks as described", async () => {
+  const { SCREENS, runScreen } = await import("../assets/js/screens.js");
+  const r = (t, sc, extra = {}) => ({ t, n: t, mc: 1e10, d: "low", sc: { overall: 60, risk: 40, consistency: 60, balanceSheet: 60, growth1y: 50, growthLong: 50, valuation: 50, profitability: 60, ...sc }, ...extra });
+  const rows = [
+    r("SAFE", { overall: 80, risk: 12, consistency: 85, balanceSheet: 80 }),
+    r("RISKY", { overall: 30, risk: 85 }, { d: "high" }),
+    r("TINY", { overall: 90, risk: 10 }, { mc: 1e8, ch: 30 }),
+    r("UP", { overall: 70, risk: 30 }, { ch: 15 }),
+    r("DIV", {}, { ds: 82, dy: 0.04 }),
+    r("CRIT", { overall: 85, risk: 15 }, { cf: ["goingConcern"] }),
+  ];
+  const ids = (id) => runScreen(rows, id).map((x) => x.t);
+  assert.deepEqual(ids("top").slice(0, 3), ["TINY", "CRIT", "SAFE"]);
+  assert.deepEqual(ids("safeLongTerm"), ["SAFE"]);
+  assert.deepEqual(ids("lowRisk"), ["TINY", "SAFE"], "critical warnings are excluded");
+  assert.deepEqual(ids("bestRiskReward"), ["SAFE", "UP"], "small caps are excluded");
+  assert.deepEqual(ids("improvers"), ["UP"]);
+  assert.deepEqual(ids("dividend"), ["DIV"]);
+  assert.deepEqual(ids("highRisk"), ["RISKY"]);
+  assert.equal(new Set(SCREENS.map((s) => s.id)).size, SCREENS.length);
+});

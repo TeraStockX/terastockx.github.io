@@ -388,6 +388,22 @@ A TeraScore-változások oldal minden vállalatot minden üzleti év végére po
 
 Mezők: `scoreHistory.weekly` a vállalat adatfájljában (`{ date, overall }`, legfeljebb 110 hét); az indexben `ch` / `chy` (változás az előző üzleti évhez képest és annak éve), `c4` / `c13` (4 és 13 hetes változás).
 
+## Gyors keresések
+
+| Keresés | Feltétel és rendezés |
+|---|---|
+| Legmagasabb TeraScore | Minden értékelt vállalat, a legmagasabb TeraScore-ral kezdve. |
+| Legjobb pontszám, legkisebb kockázat | Legalább 70-es TeraScore és legfeljebb 30-as kockázat, kritikus figyelmeztetés nélkül, 300 millió dollár feletti piaci érték; a TeraScore és a kockázat különbsége szerint rendezve. |
+| Hosszú távon legbiztonságosabb | TeraScore ≥ 65, kockázat ≤ 25, kiszámíthatóság ≥ 70, mérlegerő ≥ 60, alacsony csődkockázat, nincs kritikus figyelmeztetés, 2 milliárd dollár feletti piaci érték; az alacsony kockázat, a kiszámíthatóság és a mérlegerő szerint rendezve. |
+| Legkisebb kockázat | Legfeljebb 20-as kockázat, kritikus figyelmeztetés nélkül; a legkisebb kockázattal kezdve. |
+| Legnagyobb javulás az elmúlt évben | Legalább 10 ponttal nőtt TeraScore az előző üzleti évhez képest, 300 millió dollár feletti piaci érték; a legnagyobb javulással kezdve. |
+| Gyors növekedés | Növekedés az utolsó üzleti évben ≥ 75 és hosszú távú növekedés ≥ 70, legalább 55-ös TeraScore-ral, 300 millió dollár feletti piaci érték. |
+| Alulértékelt minőség | Értékeltségi pontszám ≥ 70 (az eredményhez és a cash flow-hoz képest olcsó), TeraScore ≥ 65, jövedelmezőség ≥ 60, nincs kritikus figyelmeztetés, 300 millió dollár feletti piaci érték. |
+| Biztonságos osztalék | Osztalékbiztonság ≥ 75 és legalább 2,5%-os osztalékhozam, 300 millió dollár feletti piaci érték; a legmagasabb hozammal kezdve. |
+| Nagy, minőségi cégek | Legalább 50 milliárd dolláros piaci érték és legalább 70-es TeraScore. |
+| Magas kockázat | Legalább 70-es kockázat, vagy magas csődkockázat legalább 55-ös kockázattal, 300 millió dollár feletti piaci érték; a legkockázatosabbal kezdve. Spekulatív részvények, óvatosan kezelendők. |
+| Legnagyobb romlás az elmúlt évben | Legalább 10 ponttal csökkent TeraScore az előző üzleti évhez képest, 300 millió dollár feletti piaci érték; a legnagyobb romlással kezdve. |
+
 ## 9. Hasonló vállalatok
 
 A hasonló vállalatok ugyanabból a szektorból kerülnek ki. Egy jelölt távolsága a piaci kapitalizáció logaritmusának különbsége, plusz egy 4,5-szeres méretkülönbségnek megfelelő büntetés, ha más iparágba tartozik. Így előbb az azonos iparágú, hasonló méretű vállalatok jönnek, a legnagyobbak pedig a szektoruk legnagyobbjaival kerülnek össze. Csak értékelt vállalatok szerepelnek, vállalatonként egy részvényosztállyal.
