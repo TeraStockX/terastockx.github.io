@@ -365,7 +365,7 @@ async function renderList() {
     document.getElementById("count").textContent = t("ui.results", { n: num(rows.length, 0) });
     document.getElementById("rows").innerHTML = slice.length ? slice.map((c) => `
       <tr data-t="${esc(c.t)}" tabindex="0">
-        <td><span class="tick">${esc(c.t)}</span>${c.demo ? `<span class="badge">${esc(t("ui.demoBadge"))}</span>` : ""}${c.ex && c.ex !== "NASDAQ" ? `<span class="badge ex">${esc(c.ex)}</span>` : ""}<br><span class="cname small">${esc(c.n)}</span></td>
+        <td>${companyLink(c, `<span class="tick">${esc(c.t)}</span>`)}${c.demo ? `<span class="badge">${esc(t("ui.demoBadge"))}</span>` : ""}${c.ex && c.ex !== "NASDAQ" ? `<span class="badge ex">${esc(c.ex)}</span>` : ""}<br><span class="cname small">${esc(c.n)}</span></td>
         ${xcol === "ch" ? `<td class="num">${changePill(c.ch)}</td>` : xcol === "ds" ? `<td class="num">${scorePill(c.ds)}</td>` : xcol === "dd" ? `<td class="num">${isNum(c.dd) ? `<span class="pill tone-serious"><span class="dot"></span>${fmt(c.dd, "pct0")}</span>` : "–"}</td>` : xcol === "pe" ? `<td class="num">${isNum(c.pe) ? fmt(c.pe, "mult") : "–"}</td>` : ""}
         <td class="num col-md small">${isNum(c.mc) ? money(c.mc) : "–"}</td>
         ${LIST_COLS.map((col) => `<td class="num ${col.cls || ""}">${c.sc ? scorePill(c.sc[col.key], col.inverse) : `<span class="small muted">${esc(t("ui.noData"))}</span>`}</td>`).join("")}
@@ -495,7 +495,7 @@ async function renderTrend() {
     const body = document.getElementById("tr-body");
     if (!rows.length) { body.innerHTML = `<div class="glass empty">${esc(t(k === "ch" ? "ui.noResults" : "ui.trendWeeklyEmpty"))}</div>`; return; }
     const list = (items) => `<div class="glass table-wrap"><table class="list"><thead><tr><th>${esc(t("ui.company"))}</th><th class="num">${esc(t("ui.overallScore"))}</th><th class="num">${esc(t("ui.trendChange"))}</th></tr></thead><tbody>
-      ${items.map((c) => `<tr data-t="${esc(c.t)}" tabindex="0"><td><span class="tick">${esc(c.t)}</span><br><span class="cname small">${esc(c.n)}</span></td>
+      ${items.map((c) => `<tr data-t="${esc(c.t)}" tabindex="0"><td>${companyLink(c, `<span class="tick">${esc(c.t)}</span>`)}<br><span class="cname small">${esc(c.n)}</span></td>
         <td class="num">${scorePill(c.sc.overall)}<br><span class="small muted">${esc(t("ui.trendFrom", { v: c.sc.overall - c[k] }))}</span></td><td class="num">${changePill(c[k])}</td></tr>`).join("")}</tbody></table></div>`;
     const up = [...rows].sort((a, b) => b[k] - a[k]).filter((c) => c[k] > 0).slice(0, 25);
     const down = [...rows].sort((a, b) => a[k] - b[k]).filter((c) => c[k] < 0).slice(0, 25);
@@ -771,6 +771,19 @@ function analysisView(c, a, idx, history = []) {
     <p class="small muted" style="margin-top:22px">${esc(t("ui.engine", { v: ENGINE_VERSION }))}</p>`;
 }
 
+// ---------- Links to company pages ----------
+
+// Analysed companies have a real page (c/<TICKER>/, see scripts/seo.mjs) that search engines can follow;
+// a click stays inside the app and opens the analysis without a page load.
+const linkable = (row) => !!row?.sc && /^[A-Z0-9.\-]+$/.test(row.t);
+const companyLink = (row, inner) => (linkable(row) ? `<a class="clink" href="c/${encodeURIComponent(row.t)}/" data-c="${esc(row.t)}">${inner}</a>` : inner);
+document.addEventListener("click", (e) => {
+  const a = e.target.closest("a[data-c]");
+  if (!a || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+  e.preventDefault();
+  location.hash = `#/c/${a.dataset.c}`;
+});
+
 // ---------- Similar companies ----------
 
 const PEER_COLS = [["overall", ""], ["profitability", "col-lg"], ["balanceSheet", "col-xl"], ["growthLong", "col-xl"], ["valuation", "col-md"], ["risk", ""]];
@@ -784,7 +797,7 @@ function peersView(c, idx) {
   const rank = 1 + peers.filter((p) => p.sc.overall > self.sc.overall).length;
   const pe = (v) => (isNum(v) ? `${num(v, 1)}×` : "–");
   const row = (r, cls) => `<tr class="${cls}" ${r === self ? "" : `data-t="${esc(r.t)}"`}>
-    <td><div class="tick">${esc(r.t)}</div><div class="cname">${esc(r.n)}</div></td>
+    <td>${companyLink(r, `<div class="tick">${esc(r.t)}</div>`)}<div class="cname">${esc(r.n)}</div></td>
     <td class="num col-md">${isNum(r.mc) ? money(r.mc) : "–"}</td>
     ${PEER_COLS.map(([k, cl]) => `<td class="num ${cl}">${scorePill(r.sc?.[k], k === "risk")}</td>`).join("")}
     <td class="num col-lg">${pe(r.pe)}</td><td class="num col-lg">${isNum(r.dy) ? fmt(r.dy, "pct") : "–"}</td></tr>`;

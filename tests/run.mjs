@@ -386,6 +386,7 @@ test("Search pages: title and description per company, sitemap and robots.txt", 
   assert.ok(!existsSync(join(root, "c", "NEWCO")));
   assert.match(rf(join(root, "sitemap.xml"), "utf8"), /<loc>https:\/\/terastockx\.github\.io\/c\/BRK\.B\/<\/loc>/);
   assert.match(rf(join(root, "robots.txt"), "utf8"), /Sitemap: https:\/\/terastockx\.github\.io\/sitemap\.xml/);
+  assert.equal(rf(join(root, "sitemap.txt"), "utf8").trim().split("\n").length, 3, "home page and two company pages");
   assert.equal(tickerPath("../X"), null);
   assert.match(companyMeta(index.companies[0], index.scoreKeys, "2026-11-09").description, /TeraScore 75\/100 \(Strong\), risk 18\/100, P\/E 37\.9/);
 });

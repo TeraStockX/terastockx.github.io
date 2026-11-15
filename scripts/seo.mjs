@@ -78,7 +78,9 @@ export function buildSeo({ root, siteUrl, index }) {
   if (base) {
     const all = [base, ...urls];
     writeFileSync(join(root, "sitemap.xml"), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${all.map((u) => `  <url><loc>${esc(u)}</loc><lastmod>${date}</lastmod></url>`).join("\n")}\n</urlset>\n`);
-    writeFileSync(join(root, "robots.txt"), `User-agent: *\nAllow: /\nSitemap: ${base}sitemap.xml\n`);
+    // The same list as plain text (one URL per line), which search engines also accept.
+    writeFileSync(join(root, "sitemap.txt"), all.join("\n") + "\n");
+    writeFileSync(join(root, "robots.txt"), `User-agent: *\nAllow: /\nSitemap: ${base}sitemap.xml\nSitemap: ${base}sitemap.txt\n`);
   }
   return { pages, sitemap: base ? urls.length + 1 : 0 };
 }

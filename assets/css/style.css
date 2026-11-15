@@ -497,3 +497,4 @@ h1, h2, h3 { overflow-wrap: break-word; hyphens: auto; }
 .filters .filter-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 0; }
 @media (max-width: 900px) { .filters .filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .filters .filter-grid { align-items: end; }
+.clink { color: inherit; text-decoration: none; } .clink:hover .tick { text-decoration: underline; }
