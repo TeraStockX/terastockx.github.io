@@ -1,0 +1,5 @@
+  new filings: 623 in the SEC feed, 0 companies to refresh (0 kept from earlier runs today)
+  quotes updated: 5860 companies, 5521 ETFs
+data/index.json: 5879 companies; data/news.json: 311 events; data/benchmarks.json: 11 sectors.
+search pages: 5124 company pages, sitemap with 0 URLs (no SITE_URL: sitemap skipped).
+0

@@ -1,0 +1,12 @@
+ADP: FY2026 capex=∅ debt=4965100000 lb.debt=4980100000 | overall=71 completeness=78 missing=cashFlow est=operatingIncome | retrieved=2026-11-22T05:14:24.643Z lastReport=undefined logo=false
+LLY: FY2025 capex=∅ debt=42503000000 lb.debt=49503000000 | overall=72 completeness=78 missing=cashFlow est=operatingIncome | retrieved=2026-11-22T05:56:24.161Z lastReport=undefined logo=false
+ARM: FY2026 capex=545000000 debt=∅ lb.debt=∅ | overall=71 completeness=95 missing=- est=totalDebt | retrieved=2026-11-22T05:16:02.431Z lastReport=undefined logo=false
+PANW: FY2026 capex=440000000 debt=∅ lb.debt=∅ | overall=54 completeness=85 missing=- est=- | retrieved=2026-11-22T05:33:23.049Z lastReport=undefined logo=false
+VZ: FY2025 capex=∅ debt=158591000000 lb.debt=166233000000 | overall=55 completeness=76 missing=cashFlow est=- | retrieved=2026-11-22T06:06:03.355Z lastReport=undefined logo=false
+ABNB: FY2025 capex=∅ debt=1999000000 lb.debt=2371000000 | overall=63 completeness=69 missing=cashFlow est=- | retrieved=2026-11-22T05:14:03.868Z lastReport=undefined logo=false
+NEE: FY2025 capex=∅ debt=95011000000 lb.debt=109674000000 | overall=54 completeness=74 missing=cashFlow est=- | retrieved=2026-11-22T05:58:58.261Z lastReport=undefined logo=false
+DLR: FY2025 capex=∅ debt=∅ lb.debt=∅ | overall=55 completeness=59 missing=cashFlow,balanceSheet est=- | retrieved=2026-11-22T05:49:53.952Z lastReport=undefined logo=false
+COP: FY2025 capex=∅ debt=23444000000 lb.debt=23262000000 | overall=71 completeness=75 missing=cashFlow est=operatingIncome | retrieved=2026-11-22T05:48:44.120Z lastReport=undefined logo=false
+SHOP: FY2025 capex=26000000 debt=∅ lb.debt=∅ | overall=67 completeness=84 missing=balanceSheet est=- | retrieved=2026-11-22T05:37:28.744Z lastReport=undefined logo=false
+DDOG: FY2025 capex=49578000 debt=∅ lb.debt=∅ | overall=55 completeness=85 missing=- est=- | retrieved=2026-11-22T05:21:25.732Z lastReport=undefined logo=false
+TOL: FY2025 capex=86195000 debt=∅ lb.debt=∅ | overall=74 completeness=82 missing=balanceSheet,liquidity est=- | retrieved=2026-11-22T06:04:41.033Z lastReport=undefined logo=false
