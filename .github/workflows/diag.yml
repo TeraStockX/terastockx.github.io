@@ -6,17 +6,11 @@ jobs:
   d:
     runs-on: ubuntu-latest
     steps:
-      - name: DNS and HTTP check
+      - name: Site check on the custom domain
         run: |
-          for srv in 1.1.1.1 8.8.8.8; do
-            echo "== resolver $srv"
-            echo "A:     $(dig +short A terastockx.com @$srv | tr '\n' ' ')"
-            echo "AAAA:  $(dig +short AAAA terastockx.com @$srv | tr '\n' ' ')"
-            echo "www:   $(dig +short CNAME www.terastockx.com @$srv | tr '\n' ' ') / $(dig +short A www.terastockx.com @$srv | tr '\n' ' ')"
-            echo "MX:    $(dig +short MX terastockx.com @$srv | tr '\n' ' ')"
+          for u in https://terastockx.com/ https://www.terastockx.com/ http://terastockx.com/ https://terastockx.github.io/ https://terastockx.com/c/AAPL/ https://terastockx.com/sitemap.xml https://terastockx.com/data/index.json; do
+            echo "$u -> $(curl -s -o /dev/null -m 20 -w '%{http_code} %{redirect_url} ssl_verify=%{ssl_verify_result}' "$u" 2>&1)"
           done
-          echo "NS:    $(dig +short NS terastockx.com | tr '\n' ' ')"
-          echo "authoritative A: $(dig +short A terastockx.com @$(dig +short NS terastockx.com | head -1) | tr '\n' ' ')"
-          echo "== http://terastockx.com"
-          curl -s -o /dev/null -m 15 -w "%{http_code} %{redirect_url}\n" http://terastockx.com/ || true
-          curl -s -m 15 -I http://terastockx.com/ | grep -iE "^server|^location" || true
+          echo "cert: $(echo | openssl s_client -connect terastockx.com:443 -servername terastockx.com 2>/dev/null | openssl x509 -noout -subject -issuer -enddate 2>/dev/null | tr '\n' ' ')"
+          echo "title: $(curl -sL https://terastockx.com/ | grep -o '<title>[^<]*</title>')"
+          echo "sitemap first: $(curl -sL https://terastockx.com/sitemap.xml | grep -o '<loc>[^<]*</loc>' | head -2 | tr '\n' ' ')"
