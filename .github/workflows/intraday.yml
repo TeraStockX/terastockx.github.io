@@ -65,7 +65,15 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deployment.outputs.page_url || steps.retry.outputs.page_url }}
     steps:
       - id: deployment
+        continue-on-error: true
+        uses: actions/deploy-pages@v4
+      # GitHub may still be finishing the previous deployment for a short while: wait, then try once more.
+      - name: Várakozás az előző közzététel befejezésére
+        if: steps.deployment.outcome == 'failure'
+        run: sleep 90
+      - id: retry
+        if: steps.deployment.outcome == 'failure'
         uses: actions/deploy-pages@v4
