@@ -77,6 +77,6 @@ A `.github/workflows/deploy.yml` minden `main`-re pusholáskor közzéteszi az o
 2. **Settings → Secrets and variables → Actions → New repository secret:** `SEC_USER_AGENT` = `Név email@cim.hu`
 3. **Actions → „Adatfrissítés és közzététel” → Run workflow**
 
-Az oldal címe: `https://terastockx.github.io/`
+Az oldal címe: `https://terastockx.com/` (GitHub Pages, saját domain; a régi `terastockx.github.io` cím átirányít)
 
 > Az értékelések múltbeli, nyilvános pénzügyi adatokon alapulnak, és nem minősülnek befektetési tanácsnak.
