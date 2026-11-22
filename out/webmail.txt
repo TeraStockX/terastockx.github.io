@@ -1,0 +1,6 @@
+https://webmail.s23.wpx.net/ -> 200  title: <title>WPX Webmail :: Welcome to WPX Webmail</title>
+https://s23.wpx.net/ -> 200  title: <title>No Index</title>
+https://webmail.terastockx.com/ -> 000  title: <title>No Index</title>
+MX: 10 mail.terastockx.com. 
+mail A: 198.60.193.23 
+s23 A: 198.60.193.23  webmail.s23 A: 194.1.147.100 194.1.147.83 
