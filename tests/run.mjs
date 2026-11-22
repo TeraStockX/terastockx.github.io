@@ -441,3 +441,47 @@ test("Market today: baskets, movers, reports, score changes, new listings and he
   const types = p.headlines.map((h) => h.type);
   for (const ty of ["index", "theme", "move", "report", "score", "listing"]) assert.ok(types.includes(ty), ty);
 });
+
+test("SEC parser: less common capex tags and convertible-only debt are read", () => {
+  const fy = (val, end, extra = {}) => ({ val, end, start: `${Number(end.slice(0, 4)) - 1}-${end.slice(5)}`.replace(/-(\d\d)-(\d\d)$/, (m, mo, d) => `-${mo}-${String(Number(d) + 1).padStart(2, "0")}`), form: "10-K", fy: Number(end.slice(0, 4)), fp: "FY", filed: `${end.slice(0, 4)}-02-15`, ...extra });
+  const inst = (val, end) => ({ val, end, form: "10-K", fy: Number(end.slice(0, 4)), fp: "FY", filed: `${end.slice(0, 4)}-02-15` });
+  const usd = (arr) => ({ units: { USD: arr } });
+  const cf = { facts: { "us-gaap": {
+    Revenues: usd([fy(1000, "2023-12-30"), fy(1200, "2024-12-30")]),
+    NetIncomeLoss: usd([fy(100, "2023-12-30"), fy(150, "2024-12-30")]),
+    NetCashProvidedByUsedInOperatingActivities: usd([fy(200, "2023-12-30"), fy(260, "2024-12-30")]),
+    PaymentsToAcquireOtherPropertyPlantAndEquipment: usd([fy(40, "2023-12-30"), fy(55, "2024-12-30")]),
+    Assets: usd([inst(3000, "2023-12-30"), inst(3400, "2024-12-30")]),
+    ConvertibleDebtNoncurrent: usd([inst(500, "2023-12-30"), inst(450, "2024-12-30")]),
+    ConvertibleDebtCurrent: usd([inst(50, "2024-12-30")]),
+  } } };
+  const { annual } = parseCompanyFacts(cf);
+  const y24 = annual.find((y) => y.year === 2024);
+  assert.equal(y24.capex, 55);
+  assert.equal(y24.freeCashFlow, 205);
+  assert.equal(y24.totalDebt, 500);
+  assert.equal(annual.find((y) => y.year === 2023).totalDebt, 500);
+});
+
+test("Gaps filled from other lines: EBIT estimate, debt-free companies, completeness", async () => {
+  const { fillGaps } = await import("../assets/js/scoring.js");
+  const y = (year, extra = {}) => ({ year, periodEnd: `${year}-12-31`, revenue: 1000, pretaxIncome: 180, interestExpense: 20, netIncome: 140, depreciationAndAmortization: 50,
+    operatingCashFlow: 210, capex: 40, totalAssets: 2000, totalLiabilities: 300, currentLiabilities: 250, currentAssets: 900, cash: 400, equity: 1700,
+    retainedEarnings: 800, sharesDiluted: 100, epsDiluted: 1.4, ...extra });
+  const c = { sector: "technology", annual: [2020, 2021, 2022, 2023, 2024].map((yr) => y(yr)) };
+  const f = fillGaps(c, "general");
+  assert.equal(f.company.annual[4].operatingIncome, 200, "pretax income + interest expense");
+  assert.equal(f.company.annual[4].totalDebt, undefined, "interest expense means borrowing: no debt-free assumption");
+  assert.deepEqual(f.estimated, ["operatingIncome"]);
+  assert.equal(c.annual[4].operatingIncome, undefined, "the reported data is not changed");
+  const free = { ...c, annual: c.annual.map((x) => ({ ...x, interestExpense: null })) };
+  assert.deepEqual(fillGaps(free, "general").estimated.sort(), ["operatingIncome", "totalDebt"]);
+  assert.equal(fillGaps(free, "general").company.annual[4].totalDebt, 0);
+  const leases = { ...free, annual: free.annual.map((x) => ({ ...x, totalLiabilities: 900 })) };
+  assert.ok(!fillGaps(leases, "general").estimated.includes("totalDebt"), "large non-current liabilities: debt unknown");
+  assert.deepEqual(fillGaps(c, "financial").estimated, [], "no EBIT estimate for banks and insurers");
+  const a = analyze(free);
+  assert.ok(a.ok && Number.isFinite(a.scores.balanceSheet));
+  assert.ok(a.completeness > 0 && a.completeness <= 100);
+  assert.ok(Array.isArray(a.missing) && a.estimated.includes("totalDebt"));
+});

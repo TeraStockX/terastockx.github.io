@@ -20,6 +20,7 @@ async function loadIndex() {
     const idx = await r.json();
     const keys = idx.scoreKeys || ["overall", ...DIMENSIONS];
     for (const c of idx.companies) if (Array.isArray(c.sc)) c.sc = Object.fromEntries(keys.map((k, i) => [k, c.sc[i]]));
+    idx.byT = new Map(idx.companies.map((c) => [c.t, c]));
     indexCache = idx;
   }
   return indexCache;
@@ -102,6 +103,96 @@ function watchAlerts(idx) {
   return out;
 }
 const starSvg = (on) => `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="${on ? "currentColor" : "none"}" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></svg>`;
+const starBtn = (tk, on) => `<button type="button" class="star ${on ? "on" : ""}" data-star="${esc(tk)}" aria-pressed="${on}" aria-label="${esc(t(on ? "ui.removeWatch" : "ui.addWatch"))}">${starSvg(on)}</button>`;
+
+// Stars in every company row: one handler for all of them (runs before the row's own click handler).
+// The page that is showing can react to the change (e.g. the watchlist removes the row).
+let onWatchChange = null;
+document.addEventListener("click", (e) => {
+  const b = e.target.closest?.("[data-star]");
+  if (!b) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const tk = b.dataset.star;
+  const on = toggleWatch(tk, indexCache?.byT?.get(tk));
+  document.querySelectorAll("[data-star]").forEach((x) => {
+    if (x.dataset.star !== tk) return;
+    x.classList.toggle("on", on);
+    x.setAttribute("aria-pressed", String(on));
+    x.setAttribute("aria-label", t(on ? "ui.removeWatch" : "ui.addWatch"));
+    x.innerHTML = starSvg(on);
+  });
+  onWatchChange?.(tk, on);
+}, true);
+
+// ---------- Company identity: logo, exchange, data quality ----------
+
+// Logos are small copies kept with the data (data/logos/<TICKER>.webp; row.lg = 1 when there is one).
+// Without one, or if it fails to load, a coloured tile with the first letter of the name is shown.
+const logoHue = (s) => { let h = 7; for (const ch of String(s)) h = (h * 31 + ch.charCodeAt(0)) % 360; return h; };
+const letterOf = (row) => (String(row?.n || row?.t || "?").replace(/^the\s+/i, "").match(/[A-Za-z0-9]/)?.[0] || "?").toUpperCase();
+const letterLogo = (row, cls = "") => `<span class="logo letter ${cls}" style="--lh:${logoHue(row?.t || "")}" aria-hidden="true">${esc(letterOf(row))}</span>`;
+function logo(row, cls = "") {
+  if (!row?.lg) return letterLogo(row, cls);
+  return `<img class="logo ${cls}" src="data/logos/${encodeURIComponent(row.t)}.webp" alt="" loading="lazy" decoding="async" data-l="${esc(letterOf(row))}" data-h="${logoHue(row.t)}">`;
+}
+document.addEventListener("error", (e) => {
+  const img = e.target;
+  if (!(img instanceof HTMLImageElement) || !img.classList.contains("logo")) return;
+  const span = document.createElement("span");
+  span.className = `${img.className} letter`;
+  span.style.setProperty("--lh", img.dataset.h || "210");
+  span.setAttribute("aria-hidden", "true");
+  span.textContent = img.dataset.l || "?";
+  img.replaceWith(span);
+}, true);
+
+// Data quality. A dimension that applies to the company but could not be scored for lack of data is
+// "missing"; row.cm is the share of the TeraScore backed by data (see completeness in scoring.js).
+const PF = { f: "financial", r: "realEstate" };
+// Half-filled circle: partial analysis; quarter-filled: little data.
+const DQ_HALF = `<svg class="dq-icon" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><circle cx="8" cy="8" r="6.3" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M8 1.7a6.3 6.3 0 0 1 0 12.6z" fill="currentColor"/></svg>`;
+const DQ_QUARTER = `<svg class="dq-icon" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><circle cx="8" cy="8" r="6.3" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M8 1.7a6.3 6.3 0 0 1 6.3 6.3H8z" fill="currentColor"/></svg>`;
+const PARTIAL_BELOW = 80;
+function missingDims(row) {
+  if (!isNum(row?.sc?.overall)) return [];
+  const defs = PROFILES[PF[row.pf] || "general"];
+  return Object.keys(OVERALL_WEIGHTS).filter((k) => (defs[k] || []).length && !isNum(row.sc[k]));
+}
+const isPartial = (row) => isNum(row?.sc?.overall) && (missingDims(row).length > 0 || (isNum(row.cm) && row.cm < PARTIAL_BELOW));
+function isNewListing(row) {
+  const ref = indexCache?.generated ? new Date(indexCache.generated) : new Date();
+  return (!!row?.fs && ref - new Date(row.fs) <= 365 * 86400000) || (isNum(row?.ipo) && row.ipo >= ref.getUTCFullYear() - 1);
+}
+function partialTitle(row) {
+  const dims = missingDims(row).map((k) => t(`dims.${k}.name`)).join(", ");
+  const p = isNum(row.cm) ? row.cm : "–";
+  return dims ? t("dq.partialTitle", { p, d: dims }) : t("dq.partialTitleParts", { p });
+}
+const partialMark = (row) => (isPartial(row)
+  ? `<span class="dq dq-partial" title="${esc(partialTitle(row))}">${DQ_HALF} ${isNum(row.cm) ? `${row.cm}%` : esc(t("dq.partial"))}</span>` : "");
+// The TeraScore cell of a list: the score with the partial mark, or why there is no score.
+function overallCell(row) {
+  if (isNum(row?.sc?.overall)) return `${scorePill(row.sc.overall)}${partialMark(row)}`;
+  if (row?.sc) return `<span class="dq dq-little" title="${esc(t("dq.littleTitle"))}">${esc(t("dq.little"))}</span>`;
+  const isNew = isNewListing(row);
+  return `<span class="dq ${isNew ? "dq-new" : "dq-none"}" title="${esc(t(isNew ? "dq.newTitle" : "dq.noneTitle"))}">${esc(t(isNew ? "dq.newListing" : "dq.none"))}</span>`;
+}
+const dqLegend = (rows) => (rows.some(isPartial) ? `<p class="small muted dq-legend"><span class="dq-partial-inline">${DQ_HALF} %</span> = ${esc(t("dq.legend"))}</p>` : "");
+
+// The company cell of every list: star, logo, ticker (link), exchange and badges, name.
+function companyCell(row, { star = true, watch = null } = {}) {
+  const on = (watch || new Set(getWatch())).has(row.t);
+  return `<div class="co">
+      ${star ? starBtn(row.t, on) : ""}${logo(row)}
+      <div class="co-txt">
+        <div class="co-top">${companyLink(row, `<span class="tick">${esc(row.t)}</span>`)}${row.demo ? `<span class="badge">${esc(t("ui.demoBadge"))}</span>` : ""}${row.ex ? `<span class="badge ex">${esc(row.ex)}</span>` : ""}${isNewListing(row) ? `<span class="badge new">${esc(t("dq.newBadge"))}</span>` : ""}</div>
+        <div class="cname small">${esc(row.n || "")}</div>
+      </div>
+    </div>`;
+}
+// Full index row for a ticker (lists built from other data, e.g. the market summary, carry fewer fields).
+const fullRow = (r) => indexCache?.byT?.get(r.t) || r;
 
 // ---------- Portfolio (per browser) ----------
 
@@ -197,7 +288,7 @@ const links = (short) => `
 function markNav() {
   const page = location.hash.replace(/^#\/?/, "").split("/")[0];
   document.querySelectorAll("[data-nav]").forEach((a) => a.classList.toggle("active",
-    (a.dataset.nav === "list" && (page === "" || page === "c" || page === "screen")) || (a.dataset.nav === "compare" && page === "compare") || (a.dataset.nav === "news" && page === "news") || (a.dataset.nav === "trend" && page === "trend") || (a.dataset.nav === "data" && page === "data") || (a.dataset.nav === "portfolio" && page === "portfolio") || (a.dataset.nav === "method" && page === "methodology")));
+    (a.dataset.nav === "list" && (page === "" || page === "c" || page === "screen" || page === "watchlist")) || (a.dataset.nav === "compare" && page === "compare") || (a.dataset.nav === "news" && page === "news") || (a.dataset.nav === "trend" && page === "trend") || (a.dataset.nav === "data" && page === "data") || (a.dataset.nav === "portfolio" && page === "portfolio") || (a.dataset.nav === "method" && page === "methodology")));
 }
 
 // ---------- Router ----------
@@ -210,6 +301,8 @@ async function route(scroll = true) {
   markNav();
   if (scroll) window.scrollTo(0, 0);
   document.title = "TeraStockX";
+  onWatchChange = null;
+  if (page !== "watchlist" && listState.filter === "watch") listState.filter = "analyzed";
   try {
     if (page === "c" && arg) await renderCompany(decodeURIComponent(arg).toUpperCase());
     else if (page === "compare") await renderCompare(arg ? decodeURIComponent(arg).toUpperCase().split(",").filter(Boolean).slice(0, MAX_COMPARE) : []);
@@ -221,6 +314,7 @@ async function route(scroll = true) {
     else if (page === "news") await renderNews();
     else if (page === "trend") await renderTrend();
     else if (page === "data") await renderData(arg ? decodeURIComponent(arg).toUpperCase() : null);
+    else if (page === "watchlist") { Object.assign(listState, { filter: "watch", page: 0 }); await renderList(); }
     else await renderList();
   } catch (e) {
     app.innerHTML = `<div class="glass empty">${esc(t("ui.errorLoad", { e: e.message }))}<br><span class="small">${esc(t("ui.serveHint"))}</span></div>`;
@@ -252,6 +346,7 @@ async function renderList() {
   const idx = await loadIndex();
   const sectors = [...new Set(idx.companies.map((c) => c.s).filter(Boolean))].sort((a, b) => sectorName(a).localeCompare(sectorName(b), lang()));
   const analyzed = idx.companies.filter((c) => c.sc).length;
+  const watchMode = listState.filter === "watch";
   const exchanges = [...new Set(idx.companies.map((c) => c.ex).filter(Boolean))].sort();
 
   app.innerHTML = `
@@ -280,10 +375,12 @@ async function renderList() {
         <option value="">${esc(t("ui.allSectors"))}</option>
         ${sectors.map((s) => `<option value="${esc(s)}" ${s === listState.sector ? "selected" : ""}>${esc(sectorName(s))}</option>`).join("")}
       </select>
-      <select class="select" id="filter" aria-label="Filter">
-        ${["analyzed", "all", "watch"].map((f) => `<option value="${f}" ${listState.filter === f ? "selected" : ""}>${esc(t({ analyzed: "ui.onlyAnalyzed", all: "ui.allCompanies", watch: "ui.watchlist" }[f]))}</option>`).join("")}
+      <select class="select" id="filter" aria-label="Filter" ${watchMode ? "hidden" : ""}>
+        ${["analyzed", "all"].map((f) => `<option value="${f}" ${listState.filter === f ? "selected" : ""}>${esc(t({ analyzed: "ui.onlyAnalyzed", all: "ui.allCompanies" }[f]))}</option>`).join("")}
       </select>
+      <a class="btn watch-btn ${watchMode ? "on" : ""}" id="watch-btn" href="${watchMode ? "#/" : "#/watchlist"}" aria-pressed="${watchMode}">${starSvg(true)}<span>${esc(t("ui.watchlist"))}</span><span class="count" id="watch-count">${getWatch().length}</span></a>
     </div>
+    ${watchMode ? `<div class="watch-head"><h2 class="section-title" style="margin:0">★ ${esc(t("ui.watchlist"))}</h2><a class="small" href="#/">‹ ${esc(t("ui.allCompanies"))}</a></div>` : ""}
     <details class="glass filters" id="filters" ${listState.filtersOpen ? "open" : ""}>
       <summary><span>${esc(t("ui.filtersAndScreens"))}</span> <span class="small muted" id="filters-count"></span></summary>
       <div class="filter-section" id="screens-label">${esc(t("ui.screensTitle"))}</div>
@@ -318,10 +415,10 @@ async function renderList() {
         ${LIST_COLS.map((c) => `<th class="num ${c.cls || ""}" data-sort="${c.key}">${esc(c.label ? c.label() : t(`dims.${c.key}.name`))}</th>`).join("")}
         <th class="num col-lg" data-sort="pe">${esc(t("ui.pe"))}</th>
         <th class="num col-lg" data-sort="dy">${esc(t("ui.dividendYieldShort"))}</th>
-        <th aria-label="${esc(t("ui.watchlist"))}"></th>
       </tr></thead>
       <tbody id="rows"></tbody>
     </table></div>
+    <div id="dq-legend"></div>
     <div class="pager" id="pager"></div>
     <div id="home-news"></div>
     ${idx.companies.some((c) => c.demo) ? `<p class="small muted" style="margin-top:16px">${esc(t("ui.demoNote"))}</p>` : ""}
@@ -342,7 +439,7 @@ async function renderList() {
     document.querySelectorAll("[data-screen]").forEach((b) => { const on = b.dataset.screen === listState.preset; b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on)); });
     const L = listState;
     let rows = idx.companies.filter((c) =>
-      (L.filter !== "analyzed" || c.sc) && (L.filter !== "watch" || watch.has(c.t)) &&
+      (L.filter !== "analyzed" || c.sc || q) && (L.filter !== "watch" || watch.has(c.t)) &&
       (!L.sector || c.s === L.sector) && (!L.ex || c.ex === L.ex) &&
       (!L.minScore || (c.sc?.overall ?? -1) >= L.minScore) &&
       (L.maxRisk >= 100 || (isNum(c.sc?.risk) && c.sc.risk <= L.maxRisk)) &&
@@ -375,14 +472,14 @@ async function renderList() {
     document.getElementById("count").textContent = t("ui.results", { n: num(rows.length, 0) });
     document.getElementById("rows").innerHTML = slice.length ? slice.map((c) => `
       <tr data-t="${esc(c.t)}" tabindex="0">
-        <td>${companyLink(c, `<span class="tick">${esc(c.t)}</span>`)}${c.demo ? `<span class="badge">${esc(t("ui.demoBadge"))}</span>` : ""}${c.ex && c.ex !== "NASDAQ" ? `<span class="badge ex">${esc(c.ex)}</span>` : ""}<br><span class="cname small">${esc(c.n)}</span></td>
+        <td>${companyCell(c, { watch })}</td>
         ${xcol === "ch" ? `<td class="num">${changePill(c.ch)}</td>` : xcol === "ds" ? `<td class="num">${scorePill(c.ds)}</td>` : xcol === "dd" ? `<td class="num">${isNum(c.dd) ? `<span class="pill tone-serious"><span class="dot"></span>${fmt(c.dd, "pct0")}</span>` : "–"}</td>` : xcol === "pe" ? `<td class="num">${isNum(c.pe) ? fmt(c.pe, "mult") : "–"}</td>` : ""}
         <td class="num col-md small">${isNum(c.mc) ? money(c.mc) : "–"}</td>
-        ${LIST_COLS.map((col) => `<td class="num ${col.cls || ""}">${c.sc ? scorePill(c.sc[col.key], col.inverse) : `<span class="small muted">${esc(t("ui.noData"))}</span>`}</td>`).join("")}
+        ${LIST_COLS.map((col) => `<td class="num ${col.cls || ""}">${col.key === "overall" ? overallCell(c) : c.sc ? scorePill(c.sc[col.key], col.inverse) : "–"}</td>`).join("")}
         <td class="num col-lg small">${isNum(c.pe) ? fmt(c.pe, "mult") : "–"}</td>
         <td class="num col-lg small">${isNum(c.dy) && c.dy > 0 ? fmt(c.dy, "pct") : "–"}</td>
-        <td><button class="star ${watch.has(c.t) ? "on" : ""}" data-star="${esc(c.t)}" aria-label="${esc(t(watch.has(c.t) ? "ui.removeWatch" : "ui.addWatch"))}">${starSvg(watch.has(c.t))}</button></td>
-      </tr>`).join("") : `<tr><td colspan="${LIST_COLS.length + 5 + (xcol ? 1 : 0)}" class="empty">${esc(t("ui.noResults"))}</td></tr>`;
+      </tr>`).join("") : `<tr><td colspan="${LIST_COLS.length + 4 + (xcol ? 1 : 0)}" class="empty">${esc(t(watchMode && !watch.size ? "ui.watchEmpty" : "ui.noResults"))}</td></tr>`;
+    document.getElementById("dq-legend").innerHTML = dqLegend(slice);
 
     document.querySelectorAll("th[data-sort]").forEach((th) => {
       const on = th.dataset.sort === k;
@@ -403,6 +500,7 @@ async function renderList() {
   app.querySelector(".screens").addEventListener("click", (e) => {
     const b = e.target.closest("[data-screen]"); if (!b) return;
     const id = listState.preset === b.dataset.screen ? "" : b.dataset.screen;
+    if (watchMode) { location.hash = id ? `#/screen/${id}` : "#/"; return; }
     Object.assign(listState, { preset: id, sort: id ? "preset" : "overall", dir: -1, page: 0, filter: "analyzed" });
     document.getElementById("filter").value = "analyzed";
     // A shareable address for the chosen screen, without re-rendering the page.
@@ -418,10 +516,15 @@ async function renderList() {
   });
   const rowsEl = document.getElementById("rows");
   rowsEl.addEventListener("click", (e) => {
-    const star = e.target.closest("[data-star]");
-    if (star) { e.stopPropagation(); toggleWatch(star.dataset.star, idx.companies.find((c) => c.t === star.dataset.star)); draw(); drawAlerts(); return; }
+    if (e.target.closest("a")) return;
     const tr = e.target.closest("tr[data-t]"); if (tr) location.hash = `#/c/${tr.dataset.t}`;
   });
+  onWatchChange = () => {
+    const n = document.getElementById("watch-count");
+    if (n) n.textContent = getWatch().length;
+    if (listState.filter === "watch") draw();
+    drawAlerts();
+  };
   rowsEl.addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target.matches("tr[data-t]")) location.hash = `#/c/${e.target.dataset.t}`; });
   document.getElementById("pager").addEventListener("click", (e) => {
     const b = e.target.closest("button[data-p]"); if (!b) return;
@@ -445,7 +548,7 @@ async function renderList() {
     }
     if (e.target.closest("#reset-filters")) {
       Object.assign(listState, { ex: "", minScore: 0, maxRisk: 100, minCap: 0, minDy: 0, minDs: 0, maxPe: 0, minDrop: 0, styles: [], noCrit: false, page: 0, preset: "", sort: listState.sort === "preset" ? "overall" : listState.sort });
-      history.replaceState(null, "", "#/");
+      history.replaceState(null, "", watchMode ? "#/watchlist" : "#/");
       renderList();
     }
   });
@@ -505,9 +608,10 @@ async function renderTrend() {
     const rows = idx.companies.filter((c) => isNum(c[k]) && isNum(c.sc?.overall) && (!trendState.sector || c.s === trendState.sector) && (c.mc ?? 0) >= trendState.minCap);
     const body = document.getElementById("tr-body");
     if (!rows.length) { body.innerHTML = `<div class="glass empty">${esc(t(k === "ch" ? "ui.noResults" : "ui.trendWeeklyEmpty"))}</div>`; return; }
+    const watch = new Set(getWatch());
     const list = (items) => `<div class="glass table-wrap"><table class="list"><thead><tr><th>${esc(t("ui.company"))}</th><th class="num">${esc(t("ui.overallScore"))}</th><th class="num">${esc(t("ui.trendChange"))}</th></tr></thead><tbody>
-      ${items.map((c) => `<tr data-t="${esc(c.t)}" tabindex="0"><td>${companyLink(c, `<span class="tick">${esc(c.t)}</span>`)}<br><span class="cname small">${esc(c.n)}</span></td>
-        <td class="num">${scorePill(c.sc.overall)}<br><span class="small muted">${esc(t("ui.trendFrom", { v: c.sc.overall - c[k] }))}</span></td><td class="num">${changePill(c[k])}</td></tr>`).join("")}</tbody></table></div>`;
+      ${items.map((c) => `<tr data-t="${esc(c.t)}" tabindex="0"><td>${companyCell(c, { watch })}</td>
+        <td class="num">${scorePill(c.sc.overall)}<br><span class="small muted">${esc(t("ui.trendFrom", { v: c.sc.overall - c[k] }))}</span>${partialMark(c)}</td><td class="num">${changePill(c[k])}</td></tr>`).join("")}</tbody></table></div>${dqLegend(items)}`;
     const up = [...rows].sort((a, b) => b[k] - a[k]).filter((c) => c[k] > 0).slice(0, 25);
     const down = [...rows].sort((a, b) => a[k] - b[k]).filter((c) => c[k] < 0).slice(0, 25);
     body.innerHTML = `<div class="trend-cols">
@@ -519,7 +623,7 @@ async function renderTrend() {
   document.getElementById("tr-period").addEventListener("change", (e) => { trendState.period = e.target.value; draw(); });
   document.getElementById("tr-sector").addEventListener("change", (e) => { trendState.sector = e.target.value; draw(); });
   document.getElementById("tr-cap").addEventListener("change", (e) => { trendState.minCap = Number(e.target.value); draw(); });
-  document.getElementById("tr-body").addEventListener("click", (e) => { const tr = e.target.closest("tr[data-t]"); if (tr) location.hash = `#/c/${tr.dataset.t}`; });
+  document.getElementById("tr-body").addEventListener("click", (e) => { if (e.target.closest("a")) return; const tr = e.target.closest("tr[data-t]"); if (tr) location.hash = `#/c/${tr.dataset.t}`; });
   draw();
 }
 
@@ -550,7 +654,7 @@ function eventCard(e, withCompany = true) {
       <span class="pill tone-${SEV_TONE[sev]}"><span class="dot"></span>${esc(t(`ui.sev${sev}`))}</span>
       <span class="small muted">${esc(date(e.date))}</span>
     </div>
-    ${withCompany ? `<a class="event-co" href="#/c/${encodeURIComponent(e.t)}"><span class="tick">${esc(e.t)}</span> <span class="muted">${esc(e.n)}</span></a>` : ""}
+    ${withCompany ? (() => { const row = fullRow(e); return `<div class="event-co-row">${starBtn(e.t, getWatch().includes(e.t))}<a class="event-co" href="#/c/${encodeURIComponent(e.t)}">${logo(row)}<span><span class="tick">${esc(e.t)}</span>${row.ex ? `<span class="badge ex">${esc(row.ex)}</span>` : ""} <span class="muted">${esc(e.n)}</span></span></a></div>`; })() : ""}
     <div class="event-items">${e.items.map((i) => `<span>${esc(eventName(i))} <span class="small muted">(8-K ${esc(i)})</span></span>`).join("")}</div>
     <a class="small" href="${esc(e.url)}" target="_blank" rel="noopener">${esc(t("ui.viewFiling"))} ↗</a>
   </div>`;
@@ -559,7 +663,7 @@ function eventCard(e, withCompany = true) {
 async function renderNews() {
   document.title = `${t("ui.newsTitle")} | TeraStockX`;
   app.innerHTML = `<div class="skeleton"></div>`;
-  const [n, pulse] = await Promise.all([loadNews(), loadPulse()]);
+  const [n, pulse] = await Promise.all([loadNews(), loadPulse(), loadIndex().catch(() => null)]);
   const state = { filter: "top" };
   app.innerHTML = `
     <div class="prose" style="max-width:none;margin-top:8px"><h1>${esc(t("ui.newsTitle"))}</h1></div>
@@ -575,7 +679,7 @@ async function renderNews() {
     document.getElementById("news-list").innerHTML = list.length ? list.map((e) => eventCard(e)).join("") : `<div class="glass empty">${esc(t("ui.newsEmpty"))}</div>`;
   };
   document.getElementById("sev").addEventListener("change", (e) => { state.filter = e.target.value; draw(); });
-  app.querySelectorAll("table.pulse").forEach((tb) => tb.addEventListener("click", (e) => { const tr = e.target.closest("tr[data-t]"); if (tr) location.hash = `#/c/${tr.dataset.t}`; }));
+  app.querySelectorAll("table.pulse").forEach((tb) => tb.addEventListener("click", (e) => { if (e.target.closest("a")) return; const tr = e.target.closest("tr[data-t]"); if (tr) location.hash = `#/c/${tr.dataset.t}`; }));
   draw();
 }
 
@@ -610,7 +714,8 @@ const HL_TONE = { index: "none", theme: "none", move: "none", report: "good", sc
 const HL_ICON = { index: "📈", theme: "🧭", move: "⚡", report: "📄", score: "🎯", listing: "🆕" };
 
 function pulseRows(list, extra) {
-  return list.map((r) => `<tr data-t="${esc(r.t)}" tabindex="0"><td>${companyLink({ t: r.t, sc: true }, `<span class="tick">${esc(r.t)}</span>`)}<br><span class="cname small">${esc(r.n)}</span></td>
+  const watch = new Set(getWatch());
+  return list.map((r) => `<tr data-t="${esc(r.t)}" tabindex="0"><td>${companyCell({ ...r, ...fullRow(r) }, { watch })}</td>
     <td class="num col-md small">${isNum(r.mc) ? money(r.mc) : "–"}</td><td class="num">${extra(r)}</td></tr>`).join("");
 }
 function pulseTable(title, list, head, extra) {
@@ -702,18 +807,22 @@ async function renderCompany(ticker) {
   document.title = `${c.ticker} · ${c.name} | TeraStockX`;
   const watched = getWatch().includes(c.ticker);
   const mk = c.market || {};
+  const row = idx?.byT?.get(c.ticker) || null;
 
   app.innerHTML = `
     <a class="back" href="#/">‹ ${esc(t("ui.back"))}</a>
     <div class="company-head">
-      <div>
+      <div class="head-id">
+        ${logo(row || { t: c.ticker, n: c.name }, "lg")}
+        <div>
         <h1>${esc(c.name)}</h1>
         <div class="sub">
-          <span class="ticker-chip">${esc(c.ticker)}</span><span>${esc(c.exchange || "NASDAQ")}</span>
+          <span class="ticker-chip">${esc(c.ticker)}</span><span class="badge ex">${esc(c.exchange || "NASDAQ")}</span>${row && isNewListing(row) ? `<span class="badge new">${esc(t("dq.newBadge"))}</span>` : ""}
           ${c.country ? `<span>· ${esc(c.country)}</span>` : ""}
           ${c.sector ? `<span>· ${esc(sectorName(c.sector))}</span>` : ""}
           ${c.industry ? `<span>· ${esc(c.industry)}</span>` : ""}
           ${a.ok ? `<span>· ${esc(t("ui.lastFy", { y: a.latestYear }))}</span>` : ""}
+        </div>
         </div>
       </div>
       <div class="head-actions">
@@ -745,6 +854,21 @@ async function renderCompany(ticker) {
   wireCharts(app);
   wirePeers(app);
   wireRaw(app, c);
+}
+
+// Why a TeraScore is partial or missing, and which figures were estimated.
+const isPartialAnalysis = (a) => isNum(a.scores.overall) && (a.missing.length > 0 || a.completeness < PARTIAL_BELOW);
+function dataQualityNotice(a) {
+  const out = [];
+  const dims = a.missing.map((k) => t(`dims.${k}.name`)).join(", ");
+  if (!isNum(a.scores.overall)) {
+    const scored = Object.keys(OVERALL_WEIGHTS).filter((k) => isNum(a.scores[k])).length;
+    out.push(`<div class="notice dq-notice"><span>${DQ_QUARTER}</span><span><b>${esc(t("dq.little"))}:</b> ${esc(t("dq.noticeLittle", { n: scored }))}</span></div>`);
+  } else if (isPartialAnalysis(a)) {
+    out.push(`<div class="notice dq-notice"><span>${DQ_HALF}</span><span><b>${esc(t("dq.noticePartialTitle", { p: a.completeness }))}</b> ${esc(dims ? t("dq.noticePartial", { d: dims }) : t("dq.noticePartialParts"))}</span></div>`);
+  }
+  if (a.estimated?.length) out.push(`<div class="notice"><span aria-hidden="true">≈</span><span>${esc(t("dq.estimated", { list: a.estimated.map((k) => t(`dq.est.${k}`)).join("; ") }))}</span></div>`);
+  return out.length ? `<div style="margin-top:14px">${out.join("")}</div>` : "";
 }
 
 function ring(score) {
@@ -782,12 +906,13 @@ function analysisView(c, a, idx, history = []) {
           <div class="fact"><div class="k">${esc(t("ui.risk"))}</div><div class="v"><span class="pill tone-${riskG.tone}"><span class="dot"></span>${a.scores.risk ?? "–"}</span>${esc(riskG.label)}</div></div>
           <div class="fact"><div class="k">${esc(t("ui.distress"))}</div><div class="v"><span class="pill tone-${DISTRESS_TONE[a.distress.level]}"><span class="dot"></span>${esc(t(`distress.${a.distress.level}`))}</span></div></div>
           <div class="fact"><div class="k">${esc(t("ui.trend"))}</div><div class="v"><span class="pill tone-${OUTLOOK_TONE[a.outlook.level]}">${OUTLOOK_ICON[a.outlook.level]} ${esc(t(`outlook.${a.outlook.level}`))}</span></div></div>
-          <div class="fact"><div class="k">${esc(t("ui.coverage"))}</div><div class="v">${a.coverage}% <span class="small muted">(${esc(t("ui.years", { n: a.metrics.yearsOfData }))})</span></div></div>
+          <div class="fact"><div class="k">${esc(t("ui.coverage"))}</div><div class="v">${isPartialAnalysis(a) || !isNum(a.scores.overall) ? `<span class="dq-partial-inline">${DQ_HALF} ${a.completeness}%</span>` : `${a.completeness}%`} <span class="small muted">(${esc(t("ui.years", { n: a.metrics.yearsOfData }))})</span></div></div>
         </div>
         <p class="small muted" style="margin:12px 0 0">${esc(t(`distress.${a.distress.level}Text`))} ${esc(t(`outlook.${a.outlook.level}Text`))}
           ${isNum(rankOverall) ? `<br>${esc(t("ui.sectorRank", { p: rankOverall, s: sectorName(c.sector) }))}` : ""}</p>
       </div>
     </div>
+    ${dataQualityNotice(a)}
     ${profileNote ? `<div class="notice" style="margin-top:14px"><span>ℹ️</span><span>${esc(profileNote)}</span></div>` : ""}`;
 
   const cards = DIMENSIONS.map((d) => {
@@ -892,10 +1017,11 @@ function peersView(c, idx) {
   if (!peers.length) return `<div class="glass empty small">${esc(t("ui.peersNone"))}</div>`;
   const rank = 1 + peers.filter((p) => p.sc.overall > self.sc.overall).length;
   const pe = (v) => (isNum(v) ? `${num(v, 1)}×` : "–");
+  const watch = new Set(getWatch());
   const row = (r, cls) => `<tr class="${cls}" ${r === self ? "" : `data-t="${esc(r.t)}"`}>
-    <td>${companyLink(r, `<div class="tick">${esc(r.t)}</div>`)}<div class="cname">${esc(r.n)}</div></td>
+    <td>${companyCell(r, { watch })}</td>
     <td class="num col-md">${isNum(r.mc) ? money(r.mc) : "–"}</td>
-    ${PEER_COLS.map(([k, cl]) => `<td class="num ${cl}">${scorePill(r.sc?.[k], k === "risk")}</td>`).join("")}
+    ${PEER_COLS.map(([k, cl]) => `<td class="num ${cl}">${k === "overall" ? overallCell(r) : scorePill(r.sc?.[k], k === "risk")}</td>`).join("")}
     <td class="num col-lg">${pe(r.pe)}</td><td class="num col-lg">${isNum(r.dy) ? fmt(r.dy, "pct") : "–"}</td></tr>`;
   const med = (get) => median(peers.map(get));
   const mRow = `<tr class="peer-median"><td>${esc(t("ui.peerMedian"))}</td>
@@ -914,7 +1040,7 @@ function peersView(c, idx) {
 }
 
 function wirePeers(root) {
-  root.querySelector("table.peers")?.addEventListener("click", (e) => { const tr = e.target.closest("tr[data-t]"); if (tr) location.hash = `#/c/${tr.dataset.t}`; });
+  root.querySelector("table.peers")?.addEventListener("click", (e) => { if (e.target.closest("a")) return; const tr = e.target.closest("tr[data-t]"); if (tr) location.hash = `#/c/${tr.dataset.t}`; });
 }
 
 // ---------- Dividend safety ----------
@@ -1110,7 +1236,7 @@ async function renderCompare(tickers) {
 
   let table = "";
   if (comps.length) {
-    const head = `<tr><th></th>${comps.map((c) => `<th><a href="#/c/${encodeURIComponent(c.ticker)}">${esc(c.ticker)}</a><br><span class="small muted">${esc(c.name)}</span></th>`).join("")}</tr>`;
+    const head = `<tr><th></th>${comps.map((c) => { const row = indexCache?.byT?.get(c.ticker) || { t: c.ticker, n: c.name }; return `<th><a class="cmp-co" href="#/c/${encodeURIComponent(c.ticker)}">${logo(row)}<span>${esc(c.ticker)}</span></a><span class="small muted">${esc(c.name)}</span>${isPartial(row) ? partialMark(row) : ""}</th>`; }).join("")}</tr>`;
     const dimRows = ["overall", ...DIMENSIONS].map((d) => {
       const vals = as.map((a) => (a.ok ? a.scores[d] : null));
       return row(esc(d === "overall" ? t("ui.overallScore") : t(`dims.${d}.name`)), vals, vals.map((v) => scorePill(v, d === "risk")), d === "risk");
@@ -1203,13 +1329,13 @@ async function renderPortfolio(prefill = "") {
         <th class="num">${esc(t("ui.dividendYieldShort"))}</th><th class="num col-xl">${esc(t("ui.dividendSafety"))}</th><th></th></tr></thead>
       <tbody>${p.positions.map((h) => `<tr>
         <td>${h.row?.etf
-          ? `<div class="tick">${esc(h.t)} <span class="badge">ETF</span></div><div class="cname">${esc(h.row.n)}</div>${isNum(h.row.er) ? `<div class="small muted">${esc(t("ui.etfExpense", { v: `${num(h.row.er * 100, 2)}%` }))}</div>` : ""}`
-          : `<a href="#/c/${encodeURIComponent(h.t)}"><div class="tick">${esc(h.t)}</div><div class="cname">${esc(h.row?.n || t("ui.notFound", { t: h.t }))}</div></a>`}</td>
+          ? `<div class="co">${letterLogo({ t: h.t, n: h.row.n })}<div class="co-txt"><div class="tick">${esc(h.t)} <span class="badge">ETF</span></div><div class="cname">${esc(h.row.n)}</div>${isNum(h.row.er) ? `<div class="small muted">${esc(t("ui.etfExpense", { v: `${num(h.row.er * 100, 2)}%` }))}</div>` : ""}</div></div>`
+          : `<a class="co" href="#/c/${encodeURIComponent(h.t)}">${logo(h.row || { t: h.t })}<div class="co-txt"><div class="tick">${esc(h.t)}</div><div class="cname">${esc(h.row?.n || t("ui.notFound", { t: h.t }))}</div></div></a>`}</td>
         <td class="num"><input class="pf-shares" type="number" min="0" step="any" inputmode="decimal" value="${esc(h.shares)}" data-t="${esc(h.t)}" aria-label="${esc(t("ui.pfShares"))} ${esc(h.t)}"></td>
         <td class="num col-md">${isNum(h.price) ? fmt(h.price, "usd") : "–"}</td>
         <td class="num">${isNum(h.value) ? money(h.value) : "–"}</td>
         <td class="num col-md">${isNum(h.weight) ? fmt(h.weight, "pct") : "–"}</td>
-        <td class="num">${h.row?.etf ? `<span class="small muted" title="${esc(t("ui.etfNoScore"))}">–</span>` : scorePill(h.row?.sc?.overall)}</td>
+        <td class="num">${h.row?.etf ? `<span class="small muted" title="${esc(t("ui.etfNoScore"))}">–</span>` : h.row ? overallCell(h.row) : "–"}</td>
         <td class="num col-lg">${h.row?.etf ? "–" : scorePill(h.row?.sc?.risk, true)}</td>
         <td class="num">${h.row?.etf
           ? `<input class="pf-shares pf-dy" type="number" min="0" max="100" step="any" inputmode="decimal" data-t="${esc(h.t)}" value="${isNum(h.dy) ? +(h.dy * 100).toFixed(4) : ""}" placeholder="${isNum(h.row.dy) ? num(h.row.dy * 100, 2) : "%"}" aria-label="${esc(t("ui.etfYieldInput"))} ${esc(h.t)}">`
@@ -1432,6 +1558,8 @@ function renderMethod() {
     <h1>${esc(t("method.title"))}</h1>
     <p>${esc(t("method.intro"))}</p>
     <p>${esc(t("method.scaling"))}</p>
+    <p>${esc(t("method.partial")).replace("◐", DQ_HALF)}</p>
+    <p>${esc(t("method.estimates"))}</p>
     <p>${esc(t("method.bands"))} ${bands} <span class="small">(80–100 · 65–79 · 45–64 · 25–44 · 0–24)</span></p>
     <p>${esc(t("method.profiles"))}</p>
     <h2>${esc(t("method.overall"))}</h2><p>${esc(t("method.overallText"))}</p>
@@ -1454,7 +1582,7 @@ function renderMethod() {
     <h2>${esc(t("ui.periodQuarterly"))}</h2><p>${esc(t("method.quarterlyText"))}</p>
     <h2>${esc(t("method.currencyTitle"))}</h2><p>${esc(t("method.currencyText"))}</p>
     <h2>${esc(t("method.sectorTitle"))}</h2><p>${esc(t("method.sectorText"))}</p>
-    <h2>${esc(t("method.limitsTitle"))}</h2><p>${esc(t("method.limitsText"))}</p>
+    <h2>${esc(t("method.limitsTitle"))}</h2><p>${esc(t("method.limitsText"))}</p><p class="small muted">${esc(t("method.logosText"))}</p>
   </div>`;
 }
 

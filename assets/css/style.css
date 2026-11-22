@@ -529,3 +529,73 @@ table.pulse td { white-space: normal; }
   .index-chip { padding: 8px 10px; }
   .index-val { font-size: 15px; }
 }
+
+/* Company identity in lists: star, logo, ticker, exchange, name */
+.co { display: flex; align-items: center; gap: 8px; min-width: 0; color: inherit; text-decoration: none; }
+a.co:hover { text-decoration: none; } a.co:hover .tick { text-decoration: underline; }
+.co .star { margin-left: -4px; flex: none; }
+.co-txt { min-width: 0; }
+.co-top { display: flex; align-items: center; white-space: nowrap; }
+.co-txt .cname { display: block; }
+.logo { width: 26px; height: 26px; border-radius: 7px; flex: none; object-fit: cover; background: var(--glass-strong); }
+.logo.letter { display: inline-grid; place-items: center; font-size: 12.5px; font-weight: 800; color: #fff; background: hsl(var(--lh, 210) 48% 40%); box-shadow: inset 0 0 0 1px rgba(255,255,255,.12); }
+.logo.lg { width: 52px; height: 52px; border-radius: 14px; font-size: 24px; }
+.head-id { display: flex; align-items: flex-start; gap: 14px; min-width: 0; }
+.head-id > .logo { margin-top: 4px; }
+.badge.new { background: rgba(34,197,94,.16); color: var(--good-ink); }
+.company-head .sub .badge { margin-left: 0; vertical-align: 0; }
+
+/* Data quality marks */
+.dq { white-space: nowrap; }
+.dq-partial { display: block; margin-top: 4px; font-size: 11px; font-weight: 700; color: var(--warning-ink); cursor: help; }
+.dq-partial-inline { color: var(--warning-ink); font-weight: 700; white-space: nowrap; }
+.dq-little, .dq-none, .dq-new { display: inline-block; font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px; cursor: help; }
+.dq-little { background: rgba(250,178,25,.12); color: var(--warning-ink); }
+.dq-none { background: var(--glass-strong); color: var(--text-3); }
+.dq-new { background: rgba(34,197,94,.14); color: var(--good-ink); }
+.dq-legend { margin: 10px 2px 0; }
+.dq-notice { background: rgba(250,178,25,.08); border-color: rgba(250,178,25,.28); }
+.dq-notice > span:first-child { color: var(--warning-ink); font-weight: 800; }
+
+/* Watchlist button on the home page */
+.watch-btn { height: 48px; border-radius: 14px; padding: 0 16px; color: var(--text-2); flex: 0 0 auto; }
+.watch-btn svg { color: var(--warning); }
+.watch-btn .count { font-size: 12px; font-weight: 800; min-width: 22px; padding: 2px 7px; border-radius: 999px; background: var(--glass-strong); color: var(--text); text-align: center; }
+.watch-btn.on { color: var(--text); background: rgba(250,178,25,.12); border-color: rgba(250,178,25,.45); }
+.watch-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 6px 2px 10px; }
+
+/* Events and compare with logos */
+.event-co-row { display: flex; align-items: center; gap: 4px; margin: 2px 0 4px -4px; }
+.event-co { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.cmp-co { display: inline-flex; align-items: center; gap: 8px; }
+.cmp th .small { display: block; margin-top: 4px; }
+
+@media (max-width: 640px) {
+  .co { gap: 6px; }
+  .logo { width: 22px; height: 22px; border-radius: 6px; font-size: 11px; }
+  .logo.lg { width: 44px; height: 44px; border-radius: 12px; font-size: 20px; }
+  .co .star { padding: 3px; }
+  .co .badge { font-size: 9px; padding: 2px 5px; margin-left: 4px; }
+  .co-txt .cname { max-width: 128px; }
+  .watch-btn { flex: 1 1 auto; justify-content: center; }
+}
+.dq-icon { vertical-align: -1px; flex: none; }
+.dq-notice > span:first-child { padding-top: 2px; }
+@media (max-width: 640px) {
+  table.list th { font-size: 10px; letter-spacing: .03em; padding: 10px 7px; }
+  table.list td { padding: 10px 7px; }
+  table.list .pill { padding: 3px 8px; gap: 5px; font-size: 12.5px; }
+  .co .star svg { width: 16px; height: 16px; }
+  .co-txt .cname { max-width: 104px; }
+}
+@media (max-width: 380px) {
+  .co { gap: 5px; }
+  .logo { width: 20px; height: 20px; border-radius: 5px; font-size: 10.5px; }
+  .co .star { padding: 2px; }
+  .co .star svg { width: 15px; height: 15px; }
+  .co-txt .cname { max-width: 86px; }
+  .co .badge { font-size: 8.5px; padding: 1px 4px; margin-left: 3px; }
+  table.list th { font-size: 9.5px; letter-spacing: .02em; padding: 9px 5px; }
+  table.list td { padding: 9px 5px; }
+  table.list .pill { padding: 2px 7px; gap: 4px; font-size: 12px; }
+}

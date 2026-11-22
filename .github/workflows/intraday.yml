@@ -1,12 +1,16 @@
-# Intraday prices: every 15 minutes during US trading hours (Mon–Fri, 13:00–21:59 UTC covers 9:30–16:00 New
-# York time in summer and winter). Only prices, market caps, the index and the "Market today" summary are
-# rebuilt from the latest daily data; nothing is saved to the data branch (the daily run does the full update).
-# GitHub may start scheduled runs a few minutes late.
-name: Napközbeni árfolyamfrissítés
+# Intraday update: every 10 minutes from 11:00 to 23:59 UTC on weekdays (7:00/6:00 to 19:59/18:59 New York
+# time: pre-market, trading hours and the evening, when most companies publish their results).
+# - prices and market caps (stocks and ETFs; Nasdaq, delayed about 15 minutes)
+# - companies that filed an annual or quarterly report since the daily update are downloaded again from the
+#   SEC (new figures and TeraScore); those that filed a current report (8-K, 6-K) get their events refreshed
+# - the index, the market summary and the search pages are rebuilt and published
+# Nothing is saved to the data branch (the daily run does the full update); companies refreshed during the
+# day are carried from run to run in the Actions cache. GitHub may start scheduled runs a few minutes late.
+name: Napközbeni frissítés
 
 on:
   schedule:
-    - cron: "*/15 13-21 * * 1-5"
+    - cron: "*/10 11-23 * * 1-5"
   workflow_dispatch:
 
 permissions:
@@ -21,7 +25,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -32,12 +36,26 @@ jobs:
           git fetch -q --depth=1 origin data
           rm -rf data
           git archive FETCH_HEAD data | tar -x
+      - name: Napközben már frissített cégek (előző futásokból)
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/overlay
+          key: intraday-${{ github.run_id }}
+          restore-keys: intraday-
       - id: pages
         uses: actions/configure-pages@v5
-      - name: Árfolyamok, index, piaci összefoglaló
+      - name: Új jelentések, árfolyamok, index, piaci összefoglaló
         env:
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
           SITE_URL: ${{ steps.pages.outputs.base_url }}
+          INTRADAY_OVERLAY: ${{ runner.temp }}/overlay
         run: node scripts/update-data.mjs --quotes-only
+      - name: Frissített cégek megőrzése a következő futáshoz
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/overlay
+          key: intraday-${{ github.run_id }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: .

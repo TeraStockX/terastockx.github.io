@@ -61,9 +61,15 @@ jobs:
           SITE_URL: ${{ steps.pages.outputs.base_url }}
         run: node scripts/update-data.mjs --index-only
 
+      # Image processing for the company logos, installed outside the site folder so it is not published.
+      - name: Képfeldolgozó a logókhoz
+        if: github.event_name != 'push'
+        run: npm install --prefix "$RUNNER_TEMP/sharp" --no-audit --no-fund --no-save sharp@0.33.5
+
       - name: Adatok frissítése (SEC EDGAR, Nasdaq, ECB)
         if: github.event_name != 'push'
         env:
+          SHARP_DIR: ${{ runner.temp }}/sharp
           # The SEC asks automated clients to identify themselves (name + e-mail). Set it as a repository secret.
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
           SITE_URL: ${{ steps.pages.outputs.base_url }}
