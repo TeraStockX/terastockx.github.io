@@ -71,7 +71,7 @@ Az árfolyam- és piaci adatok (Nasdaq, Yahoo Finance, Stooq) opcionálisak: ha 
 
 ## Online közzététel (GitHub Pages)
 
-A `.github/workflows/deploy.yml` minden `main`-re pusholáskor közzéteszi az oldalt, minden nap pedig frissíti az adatokat (a bennfentes adatokat hétfőnként); az amerikai kereskedési időben 15 percenként az árfolyamokat és a „Piac ma” összefoglalót is (`.github/workflows/intraday.yml`). Az adatok a `data` ágra kerülnek, amely mindig egyetlen commitot tartalmaz, így a repó nem nő hétről hétre.
+A `.github/workflows/deploy.yml` minden `main`-re pusholáskor közzéteszi az oldalt, minden nap pedig frissíti az adatokat (a bennfentes adatokat hétfőnként); hétköznap 11:00 és 24:00 UTC között 10 percenként az árfolyamokat, az aznap beadott jelentések alapján a cégek adatait és TeraScore-ját, valamint a „Piac ma” összefoglalót is (`.github/workflows/intraday.yml`). A cégek logóit a napi frissítés tölti le és kicsinyíti (`scripts/logos.mjs`). Az adatok a `data` ágra kerülnek, amely mindig egyetlen commitot tartalmaz, így a repó nem nő hétről hétre.
 
 1. **Settings → Pages → Source: GitHub Actions**
 2. **Settings → Secrets and variables → Actions → New repository secret:** `SEC_USER_AGENT` = `Név email@cim.hu`

@@ -364,12 +364,48 @@ export function computeBenchmarks(list) {
 
 // ---------- Main analysis ----------
 
-export function analyze(company, { now = new Date(), benchmarks = null } = {}) {
-  const years = [...(company.annual || [])].filter((y) => isNum(y.year)).sort((a, b) => a.year - b.year);
-  if (!years.length) return { ok: false, reason: "noData" };
+// ---------- Gaps filled from other reported lines ----------
+// Some figures are often not reported as a line of their own, although they follow from other lines.
+// Without them whole parts of the analysis would be skipped, so they are estimated (the raw figures shown
+// to the user stay as reported; the estimates are listed in `estimated`):
+// - operating income (EBIT): many companies (e.g. ADP, Bristol-Myers) report no operating-income line;
+//   pretax income + interest expense is the standard EBIT approximation. Not for banks and insurers.
+// - total debt: a company that has never reported any borrowing or interest expense, and whose
+//   non-current liabilities are small (< 15% of assets), has no financial debt (e.g. Arm, Intuitive Surgical).
+export const DEBT_FREE_MAX_NONCURRENT = 0.15;
+export function fillGaps(company, profile) {
+  const years = (company.annual || []).filter((y) => isNum(y.year));
+  const periods = [...years, company.ttm, company.latestBalance].filter(Boolean);
+  const estimated = new Set();
+  const ebit = profile !== "financial" && periods.some((y) => !isNum(y.operatingIncome) && isNum(y.pretaxIncome));
+  const L = [...years].sort((a, b) => a.year - b.year).at(-1);
+  const debtFree = profile === "general" && L
+    && !periods.some((y) => isNum(y.totalDebt))
+    && !periods.some((y) => isNum(y.interestExpense) && y.interestExpense > 0)
+    && [L.totalAssets, L.totalLiabilities, L.currentLiabilities].every(isNum) && L.totalAssets > 0
+    && (L.totalLiabilities - L.currentLiabilities) / L.totalAssets < DEBT_FREE_MAX_NONCURRENT;
+  if (!ebit && !debtFree) return { company, estimated: [] };
+  const fill = (y) => {
+    if (!y) return y;
+    const o = { ...y };
+    if (ebit && !isNum(o.operatingIncome) && isNum(o.pretaxIncome)) {
+      o.operatingIncome = o.pretaxIncome + (isNum(o.interestExpense) && o.interestExpense > 0 ? o.interestExpense : 0);
+      estimated.add("operatingIncome");
+    }
+    if (debtFree && (isNum(o.totalAssets) || isNum(o.equity))) { o.totalDebt = 0; estimated.add("totalDebt"); }
+    return o;
+  };
+  const out = { ...company, annual: (company.annual || []).map(fill), ttm: fill(company.ttm), latestBalance: fill(company.latestBalance) };
+  return { company: out, estimated: [...estimated] };
+}
 
+export function analyze(company, { now = new Date(), benchmarks = null } = {}) {
+  if (!(company.annual || []).some((y) => isNum(y.year))) return { ok: false, reason: "noData" };
   const profile = PROFILES[company.profile] ? company.profile : "general";
   const defs = PROFILES[profile];
+  const filled = fillGaps(company, profile);
+  company = filled.company;
+  const years = [...(company.annual || [])].filter((y) => isNum(y.year)).sort((a, b) => a.year - b.year);
   const L = years[years.length - 1];
   const P = years.length > 1 ? years[years.length - 2] : null;
   const series = years.map((y, i) => yearMetrics(y, years[i - 1] || null));
@@ -517,8 +553,27 @@ export function analyze(company, { now = new Date(), benchmarks = null } = {}) {
     outlook: outlookLevel(scores, metrics),
     styles: styleTags(scores, metrics, flags),
     coverage,
+    completeness: completenessOf(defs, parts, scores),
+    missing: Object.keys(OVERALL_WEIGHTS).filter((k) => (defs[k] || []).length && !isNum(scores[k])),
+    estimated: filled.estimated,
     series,
   };
+}
+
+// How much of the TeraScore rests on data (0–100). Every dimension that applies to the company counts with
+// its weight in the TeraScore, scaled by the share of its parts (by weight) that have data; a dimension
+// that could not be scored counts as 0. Parts without data are left out of the score, not counted as 0.
+function completenessOf(defs, parts, scores) {
+  let num = 0, den = 0;
+  for (const [k, w] of Object.entries(OVERALL_WEIGHTS)) {
+    if (!(defs[k] || []).length) continue;
+    den += w;
+    if (!isNum(scores[k])) continue;
+    const ps = parts[k] || [];
+    const tot = ps.reduce((s, p) => s + p.weight, 0);
+    num += w * (tot ? ps.reduce((s, p) => s + (isNum(p.score) ? p.weight : 0), 0) / tot : 0);
+  }
+  return den ? Math.round((num / den) * 100) : 0;
 }
 
 // ---------- TeraScore Changes: point-in-time history ----------

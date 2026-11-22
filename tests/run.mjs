@@ -441,3 +441,79 @@ test("Market today: baskets, movers, reports, score changes, new listings and he
   const types = p.headlines.map((h) => h.type);
   for (const ty of ["index", "theme", "move", "report", "score", "listing"]) assert.ok(types.includes(ty), ty);
 });
+
+test("SEC parser: less common capex tags and convertible-only debt are read", () => {
+  const fy = (val, end, extra = {}) => ({ val, end, start: `${Number(end.slice(0, 4)) - 1}-${end.slice(5)}`.replace(/-(\d\d)-(\d\d)$/, (m, mo, d) => `-${mo}-${String(Number(d) + 1).padStart(2, "0")}`), form: "10-K", fy: Number(end.slice(0, 4)), fp: "FY", filed: `${end.slice(0, 4)}-02-15`, ...extra });
+  const inst = (val, end) => ({ val, end, form: "10-K", fy: Number(end.slice(0, 4)), fp: "FY", filed: `${end.slice(0, 4)}-02-15` });
+  const usd = (arr) => ({ units: { USD: arr } });
+  const cf = { facts: { "us-gaap": {
+    Revenues: usd([fy(1000, "2023-12-30"), fy(1200, "2024-12-30")]),
+    NetIncomeLoss: usd([fy(100, "2023-12-30"), fy(150, "2024-12-30")]),
+    NetCashProvidedByUsedInOperatingActivities: usd([fy(200, "2023-12-30"), fy(260, "2024-12-30")]),
+    PaymentsToAcquireOtherPropertyPlantAndEquipment: usd([fy(40, "2023-12-30"), fy(55, "2024-12-30")]),
+    Assets: usd([inst(3000, "2023-12-30"), inst(3400, "2024-12-30")]),
+    ConvertibleDebtNoncurrent: usd([inst(500, "2023-12-30"), inst(450, "2024-12-30")]),
+    ConvertibleDebtCurrent: usd([inst(50, "2024-12-30")]),
+  } } };
+  const { annual } = parseCompanyFacts(cf);
+  const y24 = annual.find((y) => y.year === 2024);
+  assert.equal(y24.capex, 55);
+  assert.equal(y24.freeCashFlow, 205);
+  assert.equal(y24.totalDebt, 500);
+  assert.equal(annual.find((y) => y.year === 2023).totalDebt, 500);
+});
+
+test("Gaps filled from other lines: EBIT estimate, debt-free companies, completeness", async () => {
+  const { fillGaps } = await import("../assets/js/scoring.js");
+  const y = (year, extra = {}) => ({ year, periodEnd: `${year}-12-31`, revenue: 1000, pretaxIncome: 180, interestExpense: 20, netIncome: 140, depreciationAndAmortization: 50,
+    operatingCashFlow: 210, capex: 40, totalAssets: 2000, totalLiabilities: 300, currentLiabilities: 250, currentAssets: 900, cash: 400, equity: 1700,
+    retainedEarnings: 800, sharesDiluted: 100, epsDiluted: 1.4, ...extra });
+  const c = { sector: "technology", annual: [2020, 2021, 2022, 2023, 2024].map((yr) => y(yr)) };
+  const f = fillGaps(c, "general");
+  assert.equal(f.company.annual[4].operatingIncome, 200, "pretax income + interest expense");
+  assert.equal(f.company.annual[4].totalDebt, undefined, "interest expense means borrowing: no debt-free assumption");
+  assert.deepEqual(f.estimated, ["operatingIncome"]);
+  assert.equal(c.annual[4].operatingIncome, undefined, "the reported data is not changed");
+  const free = { ...c, annual: c.annual.map((x) => ({ ...x, interestExpense: null })) };
+  assert.deepEqual(fillGaps(free, "general").estimated.sort(), ["operatingIncome", "totalDebt"]);
+  assert.equal(fillGaps(free, "general").company.annual[4].totalDebt, 0);
+  const leases = { ...free, annual: free.annual.map((x) => ({ ...x, totalLiabilities: 900 })) };
+  assert.ok(!fillGaps(leases, "general").estimated.includes("totalDebt"), "large non-current liabilities: debt unknown");
+  assert.deepEqual(fillGaps(c, "financial").estimated, [], "no EBIT estimate for banks and insurers");
+  const a = analyze(free);
+  assert.ok(a.ok && Number.isFinite(a.scores.balanceSheet));
+  assert.ok(a.completeness > 0 && a.completeness <= 100);
+  assert.ok(Array.isArray(a.missing) && a.estimated.includes("totalDebt"));
+});
+
+test("Screenshot import: tickers, names and share counts from recognised text", async () => {
+  const { buildLookup, parseHoldings, parseNumber, sharesIn, groupRows } = await import("../assets/js/ocr-import.js");
+  const lookup = buildLookup([
+    { t: "AAPL", n: "Apple Inc.", mc: 3e12 }, { t: "NVDA", n: "NVIDIA CORP", mc: 4e12 }, { t: "MSFT", n: "Microsoft Corporation", mc: 3e12 },
+    { t: "KO", n: "Coca-Cola Co", mc: 3e11 }, { t: "ALL", n: "Allstate Corp", mc: 5e10 }, { t: "VOO", n: "Vanguard S&P 500 ETF", mc: 0 },
+    { t: "BRK.B", n: "Berkshire Hathaway Inc. Class B", mc: 1e12 }, { t: "T", n: "AT&T Inc.", mc: 2e11 },
+  ]);
+  assert.equal(parseNumber("1,234.5"), 1234.5);
+  assert.equal(parseNumber("1 234,5"), 1234.5);
+  assert.equal(parseNumber("12,5"), 12.5);
+  assert.equal(parseNumber("1.234.567"), 1234567);
+  assert.deepEqual(sharesIn("10 shares $1,895.00"), [10, 2]);
+  assert.deepEqual(sharesIn("Qty: 7"), [7, 2]);
+  assert.deepEqual(sharesIn("100  189.50  18,950.00"), [100, 1]);
+  assert.deepEqual(sharesIn("+2.35% $1,203.11"), [null, 0]);
+  const rows = [
+    "Portfolio ALL TOTAL $25,310.12",
+    "AAPL Apple Inc. 10 shares $1,895.00",
+    "NVIDIA",
+    "3.5 shares · $701.23 +2.1%",
+    "Microsoft Corporation 15 db 1 234 567 Ft",
+    "KO  100  62.10  6,210.00",
+    "VOO Vanguard S&P 500 ETF Qty 4",
+    "BRK B  2  478.90",
+  ];
+  const got = parseHoldings(rows, lookup);
+  assert.deepEqual(got.map((h) => [h.t, h.shares]), [["AAPL", 10], ["NVDA", 3.5], ["MSFT", 15], ["KO", 100], ["VOO", 4], ["BRK.B", 2]]);
+  assert.ok(!got.some((h) => h.t === "ALL" || h.t === "T"), "labels such as ALL and single letters are not taken for tickers");
+  const w = (text, x, y) => ({ text, confidence: 90, bbox: { x0: x, y0: y, x1: x + 40, y1: y + 20 } });
+  assert.deepEqual(groupRows([w("10", 300, 102), w("AAPL", 10, 100), w("MSFT", 10, 160), w("shares", 345, 99)]), ["AAPL  10 shares", "MSFT"]);
+});

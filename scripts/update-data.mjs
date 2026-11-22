@@ -28,6 +28,8 @@ import { buildSeo } from "./seo.mjs";
 import { buildPulse } from "./pulse.mjs";
 import { parseNasdaqListed, parseOtherListed, parseEtfs } from "./listings.mjs";
 import { insiderActivity } from "./insider.mjs";
+import { updateLogos, logoSet } from "./logos.mjs";
+import { currentFilings, FINANCIAL_FORMS } from "./current-filings.mjs";
 import { analyze, computeBenchmarks, scoreHistory, ENGINE_VERSION, DIMENSIONS, dividendProfile } from "../assets/js/scoring.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -43,6 +45,12 @@ const quotesOnly = args.includes("--quotes-only");
 const skipPrices = args.includes("--skip-prices");
 const skipInsiders = args.includes("--skip-insiders");
 const skipEtfDetails = args.includes("--skip-etf-details");
+const skipLogos = args.includes("--skip-logos");
+const skipFilings = args.includes("--skip-filings");
+// Intraday runs keep the company files they refreshed in this folder (the workflow carries it from run to
+// run), so a company is downloaded once after a new filing, not again in every run until the next daily update.
+const OVERLAY = process.env.INTRADAY_OVERLAY || null;
+const FILINGS_BUDGET_MS = 8 * 60000;
 const limit = opt("--limit") ? Number(opt("--limit")) : Infinity;
 const onlyTickers = opt("--tickers") ? new Set(opt("--tickers").split(",").map((s) => s.trim().toUpperCase()).filter(Boolean)) : null;
 
@@ -83,8 +91,8 @@ function latestReport(sub) {
 }
 
 // Intraday: current prices only. Market cap moves with the price; everything else stays from the daily run.
-async function updateQuotes() {
-  const screener = await nasdaqScreener();
+async function updateQuotes(screener = null) {
+  screener ||= await nasdaqScreener();
   const etfQuotes = await nasdaqEtfScreener();
   if (!screener.size) { console.warn("  no quotes; nothing updated"); return; }
   let n = 0;
@@ -109,6 +117,83 @@ async function updateQuotes() {
   console.log(`  quotes updated: ${n} companies, ${etfQuotes.size} ETFs`);
 }
 
+// ---------- Intraday: companies with new filings ----------
+
+const retrievedAt = (c) => Math.max(Date.parse(c?.source?.retrieved || "") || 0, Date.parse(c?.eventsRetrieved || "") || 0);
+
+// Company files refreshed by earlier intraday runs replace the daily ones while they are newer.
+function applyOverlay() {
+  const dir = OVERLAY && join(OVERLAY, "companies");
+  if (!dir || !existsSync(dir)) return 0;
+  let n = 0;
+  for (const f of readdirSync(dir)) {
+    const target = join(COMPANIES, f);
+    let o = null;
+    try { o = readJson(join(dir, f)); } catch {}
+    const cur = existsSync(target) ? readJson(target) : null;
+    if (o && cur && retrievedAt(o) >= retrievedAt(cur)) { writeFileSync(target, JSON.stringify(o) + "\n"); n++; }
+    else unlinkSync(join(dir, f)); // the daily data has caught up (or the company is gone)
+  }
+  return n;
+}
+
+// Companies that filed an annual or quarterly report (full download: new figures and TeraScore) or a current
+// report such as an 8-K (filing list only: events) after their data was downloaded.
+async function refreshCurrentFilings(screener) {
+  if (OVERLAY) mkdirSync(join(OVERLAY, "companies"), { recursive: true });
+  const fromOverlay = applyOverlay();
+  const byCik = new Map();
+  for (const f of readdirSync(COMPANIES)) {
+    if (!f.endsWith(".json")) continue;
+    const c = readJson(join(COMPANIES, f));
+    if (c.cik) byCik.set(String(c.cik).padStart(10, "0"), { ticker: c.ticker, name: c.name, exchange: c.exchange, cik: String(c.cik).padStart(10, "0"), at: retrievedAt(c) });
+  }
+  const hours = Number(process.env.FILINGS_SINCE_HOURS) || 26;
+  const feed = await currentFilings({ get: async (url, type) => { const r = await get(url, type); await sleep(150); return r; }, since: new Date(Date.now() - hours * 3600000) });
+  const todo = new Map();
+  for (const e of feed) {
+    const c = byCik.get(e.cik);
+    if (!c || !(Date.parse(e.updated) > c.at)) continue;
+    const t = todo.get(e.cik) || { c, full: false };
+    if (FINANCIAL_FORMS.has(e.form)) t.full = true;
+    todo.set(e.cik, t);
+  }
+  const list = [...todo.values()].sort((a, b) => Number(b.full) - Number(a.full)); // reports first
+  console.log(`  new filings: ${feed.length} in the SEC feed, ${list.length} companies to refresh (${fromOverlay} kept from earlier runs today)`);
+  if (!list.length) return;
+  const fx = list.some((x) => x.full) ? await fxToUsd().catch(() => ({})) : {};
+  const start = Date.now();
+  let reports = 0, current = 0, failed = 0;
+  for (const { c, full } of list) {
+    if (Date.now() - start > FILINGS_BUDGET_MS) break;
+    try {
+      if (full) {
+        await fetchCompany({ ticker: c.ticker, name: c.name, exchange: c.exchange }, { cik: c.cik }, screener.get(c.ticker) || {}, fx);
+        reports++;
+      } else {
+        const sub = await get(`https://data.sec.gov/submissions/CIK${c.cik}.json`);
+        await sleep(110);
+        if (!sub) { failed++; continue; }
+        const cur = readJson(join(COMPANIES, `${c.ticker}.json`));
+        cur.events = majorEvents(sub);
+        cur.lastReport = latestReport(sub) || cur.lastReport || null;
+        cur.eventsRetrieved = new Date().toISOString();
+        writeCompany(cur);
+        current++;
+      }
+      if (OVERLAY) {
+        mkdirSync(join(OVERLAY, "companies"), { recursive: true });
+        writeFileSync(join(OVERLAY, "companies", `${c.ticker}.json`), readFileSync(join(COMPANIES, `${c.ticker}.json`)));
+      }
+    } catch (e) {
+      failed++;
+      console.warn(`  ${c.ticker}: ${e.message}`);
+    }
+  }
+  console.log(`  refreshed: ${reports} with a new report, ${current} with a new current report${failed ? `, ${failed} errors` : ""}; ${list.length - reports - current - failed} left for the next run`);
+  if (OVERLAY) writeFileSync(join(OVERLAY, "state.json"), JSON.stringify({ checked: new Date().toISOString(), reports, current, failed }) + "\n");
+}
+
 async function allListings() {
   const nasdaq = parseNasdaqListed(await get("https://www.nasdaqtrader.com/dynamic/SymDir/nasdaqlisted.txt", "text"));
   const other = parseOtherListed(await get("https://www.nasdaqtrader.com/dynamic/SymDir/otherlisted.txt", "text"));
@@ -124,6 +209,74 @@ async function secTickers() {
     map.set(String(r.ticker).toUpperCase(), { cik: String(r.cik).padStart(10, "0"), name: r.name });
   }
   return map;
+}
+
+// Downloads one company from the SEC (company facts and filing list), parses it and saves its file.
+// item: { ticker, name, exchange }; sec: { cik }; q: its Nasdaq quote (or {}); fx: currency -> USD rates.
+async function fetchCompany(item, sec, q = {}, fx = {}) {
+  const base = { schemaVersion: 3, ticker: item.ticker, name: item.name, exchange: item.exchange, currency: "USD", demo: false };
+  const result = { ok: false, gapFilled: false };
+  const cf = await get(`https://data.sec.gov/api/xbrl/companyfacts/CIK${sec.cik}.json`);
+  await sleep(110); // SEC fair-access limit: max 10 requests / second
+  const sub = await get(`https://data.sec.gov/submissions/CIK${sec.cik}.json`);
+  await sleep(110);
+  if (cf && sub) {
+    const added = await fillMissingFilings(cf, sub, sec.cik, async (url, type) => { const r = await get(url, type); await sleep(110); return r; });
+    if (added.length) { result.gapFilled = true; console.log(`  ${item.ticker}: read from the filing, missing in companyfacts: ${added.join(", ")}`); }
+  }
+  const parsed = cf ? parseCompanyFacts(cf) : { annual: [], currency: "USD" };
+  result.ok = parsed.annual.length > 0;
+
+  const sector = sectorFromSic(sub?.sic) || sectorFromNasdaq(q.sector);
+  // Price history and insider data are added in later phases; until then the previous ones are kept.
+  const file = join(COMPANIES, `${item.ticker}.json`);
+  const old = existsSync(file) ? readJson(file) : null;
+  const hist = old?.prices?.data?.length ? old.prices : null;
+  const currency = parsed.currency || "USD";
+  const price = q.price ?? (hist ? hist.data.at(-1)[1] : null);
+  const shares = parsed.sharesOutstanding ?? null;
+  // Price × shares is only safe for US-dollar filers: ADRs of foreign companies represent a ratio of shares.
+  const marketCap = q.marketCap || (currency === "USD" && price && shares ? price * shares : null);
+
+  writeCompany({
+    ...base,
+    // First day the company appeared in the listings (unknown for companies listed before this was recorded).
+    firstSeen: old ? old.firstSeen : todayIso(),
+    lastReport: latestReport(sub),
+    name: sub?.name || cf?.entityName || item.name,
+    cik: sec.cik,
+    currency,
+    country: q.country || sub?.addresses?.business?.stateOrCountryDescription || null,
+    sicCode: sub?.sic ? Number(sub.sic) : null,
+    sicDescription: sub?.sicDescription || null,
+    sector,
+    industry: q.industry || sub?.sicDescription || null,
+    profile: profileFor(sub?.sic, sector),
+    fiscalYearEndMonth: sub?.fiscalYearEnd ? Number(sub.fiscalYearEnd.slice(0, 2)) : null,
+    source: { name: "SEC EDGAR XBRL company facts (10-K, 10-Q, 20-F, 40-F)", url: `https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=${sec.cik}`, retrieved: new Date().toISOString() },
+    market: {
+      price,
+      priceDate: new Date().toISOString().slice(0, 10),
+      marketCap,
+      sharesOutstanding: shares,
+      sharesOutstandingDate: parsed.sharesOutstandingDate ?? null,
+      fxToUsd: currency === "USD" ? 1 : fx[currency] ?? null,
+      source: q.price ? "Nasdaq" : hist?.source || null,
+      changePct: q.changePct ?? null,
+      ipoYear: q.ipoYear ?? old?.market?.ipoYear ?? null,
+    },
+    foreignPrivateIssuer: (sub?.filings?.recent?.form || []).some((f) => f === "20-F" || f === "40-F"),
+    events: majorEvents(sub),
+    insiders: old?.insiders ?? null,
+    scoreHistory: old?.scoreHistory ?? undefined,
+    prices: hist,
+    splits: parsed.splits?.length ? parsed.splits : undefined,
+    ttm: parsed.ttm,
+    latestBalance: parsed.latestBalance,
+    annual: parsed.annual,
+    quarterly: parsed.quarterly?.length ? parsed.quarterly : undefined,
+  });
+  return result;
 }
 
 async function updateCompanies() {
@@ -153,66 +306,9 @@ async function updateCompanies() {
           firstSeen: prev ? prev.firstSeen : todayIso(), market: quoteMarket(q, prev?.market) });
         continue;
       }
-      const cf = await get(`https://data.sec.gov/api/xbrl/companyfacts/CIK${sec.cik}.json`);
-      await sleep(110); // SEC fair-access limit: max 10 requests / second
-      const sub = await get(`https://data.sec.gov/submissions/CIK${sec.cik}.json`);
-      await sleep(110);
-      if (cf && sub) {
-        const added = await fillMissingFilings(cf, sub, sec.cik, async (url, type) => { const r = await get(url, type); await sleep(110); return r; });
-        if (added.length) { gapFilled++; console.log(`  ${item.ticker}: read from the filing, missing in companyfacts: ${added.join(", ")}`); }
-      }
-      const parsed = cf ? parseCompanyFacts(cf) : { annual: [], currency: "USD" };
-      if (!parsed.annual.length) noData++; else ok++;
-
-      const sector = sectorFromSic(sub?.sic) || sectorFromNasdaq(q.sector);
-      // Price history and insider data are added in later phases; until then the previous ones are kept.
-      const file = join(COMPANIES, `${item.ticker}.json`);
-      const old = existsSync(file) ? readJson(file) : null;
-      const hist = old?.prices?.data?.length ? old.prices : null;
-      const currency = parsed.currency || "USD";
-      const price = q.price ?? (hist ? hist.data.at(-1)[1] : null);
-      const shares = parsed.sharesOutstanding ?? null;
-      // Price × shares is only safe for US-dollar filers: ADRs of foreign companies represent a ratio of shares.
-      const marketCap = q.marketCap || (currency === "USD" && price && shares ? price * shares : null);
-
-      writeCompany({
-        ...base,
-        // First day the company appeared in the listings (unknown for companies listed before this was recorded).
-        firstSeen: old ? old.firstSeen : todayIso(),
-        lastReport: latestReport(sub),
-        name: sub?.name || cf?.entityName || item.name,
-        cik: sec.cik,
-        currency,
-        country: q.country || sub?.addresses?.business?.stateOrCountryDescription || null,
-        sicCode: sub?.sic ? Number(sub.sic) : null,
-        sicDescription: sub?.sicDescription || null,
-        sector,
-        industry: q.industry || sub?.sicDescription || null,
-        profile: profileFor(sub?.sic, sector),
-        fiscalYearEndMonth: sub?.fiscalYearEnd ? Number(sub.fiscalYearEnd.slice(0, 2)) : null,
-        source: { name: "SEC EDGAR XBRL company facts (10-K, 10-Q, 20-F, 40-F)", url: `https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=${sec.cik}`, retrieved: new Date().toISOString() },
-        market: {
-          price,
-          priceDate: new Date().toISOString().slice(0, 10),
-          marketCap,
-          sharesOutstanding: shares,
-          sharesOutstandingDate: parsed.sharesOutstandingDate ?? null,
-          fxToUsd: currency === "USD" ? 1 : fx[currency] ?? null,
-          source: q.price ? "Nasdaq" : hist?.source || null,
-          changePct: q.changePct ?? null,
-          ipoYear: q.ipoYear ?? old?.market?.ipoYear ?? null,
-        },
-        foreignPrivateIssuer: (sub?.filings?.recent?.form || []).some((f) => f === "20-F" || f === "40-F"),
-        events: majorEvents(sub),
-        insiders: old?.insiders ?? null,
-        scoreHistory: old?.scoreHistory ?? undefined,
-        prices: hist,
-        splits: parsed.splits?.length ? parsed.splits : undefined,
-        ttm: parsed.ttm,
-        latestBalance: parsed.latestBalance,
-        annual: parsed.annual,
-        quarterly: parsed.quarterly?.length ? parsed.quarterly : undefined,
-      });
+      const r = await fetchCompany(item, sec, q, fx);
+      if (r.ok) ok++; else noData++;
+      if (r.gapFilled) gapFilled++;
     } catch (e) {
       failed++;
       console.warn(`  ERROR ${item.ticker}: ${e.message}`);
@@ -347,12 +443,14 @@ function buildIndex({ snapshot = false } = {}) {
   writeFileSync(join(DATA, "benchmarks.json"), JSON.stringify({ generated: new Date().toISOString(), engineVersion: ENGINE_VERSION, sectors: benchmarks }) + "\n");
 
   const news = [];
+  const logos = logoSet(DATA);
   const companies = all.map((c) => {
     const a = analyze(c, { benchmarks });
     const row = { t: c.ticker, n: c.name, s: c.sector || null, ex: c.exchange || null };
     if (c.industry) row.i = c.industry;
     if (c.currency && c.currency !== "USD") row.cur = c.currency;
     if (c.demo) row.demo = true;
+    if (logos.has(c.ticker)) row.lg = 1;
     if (a.ok) {
       row.y = a.latestYear;
       row.sc = ["overall", ...DIMENSIONS].map((k) => a.scores[k] ?? null);
@@ -360,6 +458,8 @@ function buildIndex({ snapshot = false } = {}) {
       row.o = a.outlook.level;
       if (a.styles.length) row.st = a.styles;
       row.cov = a.coverage;
+      row.cm = a.completeness;
+      if (a.profile !== "general") row.pf = a.profile === "financial" ? "f" : "r";
       if (a.metrics.marketCap) row.mc = Math.round(a.metrics.marketCap);
       if (Number.isFinite(a.metrics.peRatio)) row.pe = +a.metrics.peRatio.toFixed(1);
       if (Number.isFinite(a.metrics.dividendYield)) row.dy = +a.metrics.dividendYield.toFixed(4);
@@ -429,8 +529,16 @@ function buildIndex({ snapshot = false } = {}) {
   console.log(`search pages: ${seo.pages} company pages, sitemap with ${seo.sitemap} URLs${process.env.SITE_URL ? "" : " (no SITE_URL: sitemap skipped)"}.`);
 }
 
-if (quotesOnly) await updateQuotes();
-else if (!indexOnly) await updateCompanies();
+if (quotesOnly) {
+  const screener = await nasdaqScreener();
+  if (!skipFilings) await refreshCurrentFilings(screener).catch((e) => console.warn(`new filings: ${e.message}`));
+  await updateQuotes(screener);
+} else if (!indexOnly) await updateCompanies();
+// Company logos: new companies get theirs on the next full update (see scripts/logos.mjs).
+if (!indexOnly && !quotesOnly && !skipLogos) {
+  const tickers = readdirSync(COMPANIES).filter((f) => f.endsWith(".json")).map((f) => f.slice(0, -5)).filter((t) => !onlyTickers || onlyTickers.has(t));
+  await updateLogos({ dataDir: DATA, tickers }).catch((e) => console.warn(`logos: ${e.message}`));
+}
 if (!indexOnly && !quotesOnly && !onlyTickers && limit === Infinity) await updateEtfs();
 // Weekly snapshots are recorded only by full data updates, not by index rebuilds.
 buildIndex({ snapshot: !indexOnly && !quotesOnly && !onlyTickers && limit === Infinity });

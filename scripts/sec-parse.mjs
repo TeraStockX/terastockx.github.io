@@ -22,7 +22,12 @@ export const FLOW = {
   depreciationAndAmortization: ["DepreciationDepletionAndAmortization", "DepreciationAmortizationAndAccretionNet", "DepreciationAndAmortization", "Depreciation", "DepreciationAndAmortisationExpense", "AdjustmentsForDepreciationAndAmortisationExpense", "DepreciationAmortisationAndImpairmentLossReversalOfImpairmentLossRecognisedInProfitOrLoss", "AdjustmentsForDepreciationAndAmortisationExpenseAndImpairmentLossReversalOfImpairmentLossRecognisedInProfitOrLoss"],
   shareBasedCompensation: ["ShareBasedCompensation", "AllocatedShareBasedCompensationExpense", "AdjustmentsForSharebasedPayments"],
   operatingCashFlow: ["NetCashProvidedByUsedInOperatingActivities", "NetCashProvidedByUsedInOperatingActivitiesContinuingOperations", "CashFlowsFromUsedInOperatingActivities"],
-  capex: ["PaymentsToAcquirePropertyPlantAndEquipment", "PaymentsToAcquireProductiveAssets", "PaymentsForCapitalImprovements", "PurchaseOfPropertyPlantAndEquipmentClassifiedAsInvestingActivities", "PurchaseOfPropertyPlantAndEquipment", "PurchaseOfPropertyPlantAndEquipmentIntangibleAssetsOtherThanGoodwillInvestmentPropertyAndOtherNoncurrentAssets"],
+  // The later tags are used by companies that report none of the common ones (e.g. Eli Lilly and ADP:
+  // "other" property and equipment; Verizon: other productive assets; oil producers: oil and gas properties;
+  // utilities: construction in process; REITs: development spending).
+  capex: ["PaymentsToAcquirePropertyPlantAndEquipment", "PaymentsToAcquireProductiveAssets", "PaymentsForCapitalImprovements", "PurchaseOfPropertyPlantAndEquipmentClassifiedAsInvestingActivities", "PurchaseOfPropertyPlantAndEquipment", "PurchaseOfPropertyPlantAndEquipmentIntangibleAssetsOtherThanGoodwillInvestmentPropertyAndOtherNoncurrentAssets",
+    "PaymentsToAcquireOtherPropertyPlantAndEquipment", "PaymentsToAcquireOtherProductiveAssets", "PaymentsToAcquireOilAndGasPropertyAndEquipment", "PaymentsToExploreAndDevelopOilAndGasProperties", "PaymentsToAcquireOilAndGasProperty",
+    "PaymentsForConstructionInProcess", "PaymentsToAcquireMachineryAndEquipment", "PaymentsToDevelopRealEstateAssets", "PaymentsToDevelopSoftware", "PaymentsForSoftware"],
   dividendsPaid: ["PaymentsOfDividends", "PaymentsOfDividendsCommonStock", "DividendsPaidClassifiedAsFinancingActivities", "DividendsPaidToEquityHoldersOfParentClassifiedAsFinancingActivities"],
   buybacks: ["PaymentsForRepurchaseOfCommonStock", "PaymentsForRepurchaseOfEquity", "PaymentsToAcquireOrRedeemEntitysShares"],
 };
@@ -52,6 +57,16 @@ const DEBT_PARTS = [
   ["ShortTermBorrowings", "ShorttermBorrowings"],
 ];
 const DEBT_TOTAL = ["LongTermDebt", "DebtInstrumentCarryingAmount", "DebtLongtermAndShorttermCombinedAmount", "Borrowings"];
+// Used only when none of the tags above has a value: companies whose only debt is convertible notes
+// (e.g. Palo Alto Networks, Datadog, Snowflake) and REITs / homebuilders that report notes, secured debt
+// and credit lines separately. Within a group the first tag with a value wins; the groups are added up.
+const DEBT_FALLBACK = [
+  ["ConvertibleDebtNoncurrent", "ConvertibleNotesPayable", "ConvertibleLongTermNotesPayable"],
+  ["ConvertibleDebtCurrent", "ConvertibleNotesPayableCurrent"],
+  ["UnsecuredDebt", "SeniorNotes", "NotesPayable", "NotesAndLoansPayable", "LoansPayable"],
+  ["SecuredDebt"],
+  ["LineOfCredit", "LongTermLineOfCredit"],
+];
 const SHARES_INSTANT = ["CommonStockSharesOutstanding"];
 
 const ANNUAL_FORMS = new Set(["10-K", "10-K/A", "20-F", "20-F/A", "40-F", "40-F/A", "10-KT"]);
@@ -139,14 +154,16 @@ function ttmValue(series, fyEnd, qEnd) {
   return fy + ytd.val - prior.val;
 }
 
-function debtAt(debtParts, debtTotal, end) {
+function debtAt(debtParts, debtTotal, end, debtFallback = []) {
   const parts = debtParts.map((m) => atDate(m, end));
   const total = atDate(debtTotal, end);
   if (parts.some((p) => p !== null)) {
     if (parts[0] === null && total !== null) return total + (parts[2] ?? 0) + (parts[3] ?? 0);
     return parts.reduce((a, b) => a + (b ?? 0), 0);
   }
-  return total;
+  if (total !== null) return total;
+  const extra = debtFallback.map((m) => atDate(m, end));
+  return extra.some((p) => p !== null) ? extra.reduce((a, b) => a + (b ?? 0), 0) : null;
 }
 
 function finishPeriod(y) {
@@ -191,6 +208,7 @@ export function parseCompanyFacts(cf, { maxYears = 10 } = {}) {
   for (const [k, tags] of Object.entries(INSTANT)) inst[k] = instantSeries(facts, tags, currency);
   const debtParts = DEBT_PARTS.map((tags) => instantSeries(facts, tags, currency));
   const debtTotal = instantSeries(facts, DEBT_TOTAL, currency);
+  const debtFallback = DEBT_FALLBACK.map((tags) => instantSeries(facts, tags, currency));
   const sharesInst = instantSeries(facts, SHARES_INSTANT, "shares");
 
   // Fiscal year ends come from the annual revenue (or net income) periods.
@@ -200,7 +218,7 @@ export function parseCompanyFacts(cf, { maxYears = 10 } = {}) {
   const balanceAt = (end) => {
     const b = {};
     for (const k of Object.keys(inst)) b[k] = atDate(inst[k], end);
-    b.totalDebt = debtAt(debtParts, debtTotal, end);
+    b.totalDebt = debtAt(debtParts, debtTotal, end, debtFallback);
     b.sharesOutstanding = atDate(sharesInst, end);
     return b;
   };
