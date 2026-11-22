@@ -7,59 +7,32 @@ permissions:
 jobs:
   d:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with: { ref: diag }
-      - uses: actions/checkout@v4
-        with: { ref: wip, path: site }
+      - name: Live checks
+        run: |
+          mkdir -p out
+          {
+          for u in https://terastockx.com/ http://terastockx.com/ https://www.terastockx.com/ https://terastockx.github.io/ https://terastockx.com/c/ANT/ https://terastockx.com/c/AAPL/ https://terastockx.com/data/pulse.json https://terastockx.com/assets/js/ocr-import.js https://cdn.jsdelivr.net/npm/tesseract.js@6.0.1/dist/tesseract.min.js https://cdn.jsdelivr.net/npm/tesseract.js-core@6.0.0/tesseract-core-simd-lstm.wasm.js https://cdn.jsdelivr.net/npm/@tesseract.js-data/eng@1.0.0/4.0.0_best_int/eng.traineddata.gz; do
+            echo "$u -> $(curl -s -o /dev/null -m 30 -w '%{http_code} %{redirect_url} %{size_download}B' "$u")"
+          done
+          echo "sitemap: $(curl -sL https://terastockx.com/sitemap.xml | grep -o '<loc>[^<]*</loc>' | head -3 | tr '\n' ' ') total=$(curl -sL https://terastockx.com/sitemap.xml | grep -c '<loc>')"
+          echo "robots: $(curl -sL https://terastockx.com/robots.txt | tr '\n' ' ')"
+          curl -sL https://terastockx.com/data/index.json -o idx.json
+          node -e 'const i=require("./idx.json"); const r=i.companies; const g=t=>r.find(x=>x.t===t); console.log("generated",i.generated,"rows",r.length,"cm",r.filter(x=>x.cm!=null).length,"pf",r.filter(x=>x.pf).length,"lg",r.filter(x=>x.lg).length,"dc",r.filter(x=>x.dc!=null).length,"lr",r.filter(x=>x.lr).length,"fs",r.filter(x=>x.fs).length); for (const t of ["ADP","ANT","ARM","AAPL"]) console.log(t, JSON.stringify(g(t)).slice(0,260));'
+          curl -sL https://terastockx.com/data/pulse.json | head -c 400; echo
+          } 2>&1 | tee out/live.txt
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
-      - name: Load data branch
-        working-directory: site
+      - name: Live screenshots
         run: |
-          git fetch -q --depth=1 origin data
-          rm -rf data
-          git archive FETCH_HEAD data | tar -x
-          ls data | head
-      - name: sharp
-        run: npm install --prefix "$RUNNER_TEMP/sharp" --no-audit --no-fund --no-save sharp@0.33.5
-      - name: Before
-        run: node check.mjs ADP LLY ARM PANW VZ ABNB NEE DLR COP SHOP DDOG TOL 2>&1 | tee out/before.txt
-      - name: Intraday dry run (72h window)
-        working-directory: site
-        env:
-          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
-          INTRADAY_OVERLAY: ${{ runner.temp }}/overlay
-          FILINGS_SINCE_HOURS: "72"
-        run: |
-          time node scripts/update-data.mjs --quotes-only 2>&1 | tail -40 | tee ../out/intraday1.txt
-          ls "$RUNNER_TEMP/overlay/companies" | wc -l | tee -a ../out/intraday1.txt
-          cat "$RUNNER_TEMP/overlay/state.json" | tee -a ../out/intraday1.txt
-      - name: Intraday second run (overlay should prevent repeats)
-        working-directory: site
-        env:
-          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
-          INTRADAY_OVERLAY: ${{ runner.temp }}/overlay
-          FILINGS_SINCE_HOURS: "72"
-        run: |
-          git checkout -- . 2>/dev/null || true
-          time node scripts/update-data.mjs --quotes-only 2>&1 | grep -E "new filings|refreshed|quotes updated|index.json|pulse|ERROR|Error" | tee ../out/intraday2.txt
-      - name: Full refresh of test tickers (capex, debt, logos)
-        working-directory: site
-        env:
-          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
-          SHARP_DIR: ${{ runner.temp }}/sharp
-        run: |
-          node scripts/update-data.mjs --tickers ADP,LLY,ARM,PANW,VZ,ABNB,NEE,DLR,COP,SHOP,DDOG,TOL,AAPL,MSFT,NVDA,ANT --skip-insiders --skip-prices --skip-etf-details 2>&1 | tail -15 | tee ../out/tickers.txt
-      - name: After
-        run: |
-          node check.mjs ADP LLY ARM PANW VZ ABNB NEE DLR COP SHOP DDOG TOL ANT 2>&1 | tee out/after.txt
-          mkdir -p out/logos && cp site/data/logos/*.webp out/logos/ 2>/dev/null || true
-          cat site/data/logos/status.json | head -c 600 > out/logos-status.txt || true
-          node -e 'const i=require("./site/data/index.json"); const rows=i.companies; console.log("rows",rows.length,"lg",rows.filter(r=>r.lg).length,"cm",rows.filter(r=>r.cm!=null).length,"partial-ish",rows.filter(r=>r.cm!=null&&r.cm<80).length); const p=require("./site/data/pulse.json"); console.log("pulse reports", (p.reports||[]).length, "headlines", (p.headlines||[]).length);' | tee out/index.txt
+          npm install --no-save --no-audit --no-fund playwright@1.49.1 >/dev/null 2>&1
+          npx playwright install --with-deps chromium >/dev/null 2>&1
+          node live.cjs 2>&1 | tee out/live-shots.txt
       - name: Save results to the diag branch
         if: always()
         run: |
           git config user.name diag; git config user.email diag@users.noreply.github.com
-          git add out && git commit -qm "diag: dry run results" && git push -q origin HEAD:diag
+          git add out && git commit -qm "diag: live check results" && git push -q origin HEAD:diag

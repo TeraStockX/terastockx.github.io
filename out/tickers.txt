@@ -1,9 +1,0 @@
-Downloading listings…
-  5879 common stocks { NASDAQ: 3434, NYSE: 2173, 'NYSE American': 268, 'Cboe BZX': 4 }
-  screener: 7300 quotes; exchange rates: 166
-  DLR: read from the filing, missing in companyfacts: 10-Q 2026-10-30 (326)
-  NEE: read from the filing, missing in companyfacts: 10-Q 2026-10-21 (436)
-Done: 15 with financials, 1 without data, 0 errors, 2 filled from filings missing in companyfacts, 0 price histories updated.
-logos: {"due":16,"checked":16,"saved":16,"missing":0,"remaining":0,"total":16}
-data/index.json: 5879 companies; data/news.json: 311 events; data/benchmarks.json: 11 sectors.
-search pages: 5124 company pages, sitemap with 0 URLs (no SITE_URL: sitemap skipped).
