@@ -1,0 +1,20 @@
+https://terastockx.com/ -> 200  2020B
+http://terastockx.com/ -> 200  2020B
+https://www.terastockx.com/ -> 301 https://terastockx.com/ 162B
+https://terastockx.github.io/ -> 301 http://terastockx.com/ 162B
+https://terastockx.com/c/ANT/ -> 404  9379B
+https://terastockx.com/c/AAPL/ -> 200  3448B
+https://terastockx.com/data/pulse.json -> 200  10081B
+https://terastockx.com/assets/js/ocr-import.js -> 200  11338B
+https://cdn.jsdelivr.net/npm/tesseract.js@6.0.1/dist/tesseract.min.js -> 200  62961B
+https://cdn.jsdelivr.net/npm/tesseract.js-core@6.0.0/tesseract-core-simd-lstm.wasm.js -> 200  3954569B
+https://cdn.jsdelivr.net/npm/@tesseract.js-data/eng@1.0.0/4.0.0_best_int/eng.traineddata.gz -> 200  2952873B
+grep: write error: Broken pipe
+sitemap: <loc>http://terastockx.com/</loc> <loc>http://terastockx.com/c/A/</loc> <loc>http://terastockx.com/c/AA/</loc>  total=5125
+robots: User-agent: * Allow: / Sitemap: http://terastockx.com/sitemap.xml Sitemap: http://terastockx.com/sitemap.txt 
+generated 2026-11-22T17:18:49.195Z rows 5879 cm 5124 pf 973 lg 0 dc 5857 lr 5487 fs 0
+ADP {"t":"ADP","n":"AUTOMATIC DATA PROCESSING INC","s":"technology","ex":"NASDAQ","i":"EDP Services","y":2026,"sc":[69,88,null,59,19,59,69,93,66,63,35],"d":"low","o":"up","cov":86,"cm":78,"mc":118897593324,"pe":26.3,"dy":0.0225,"ds":96,"px":301.19,"dc":-1.43,"lr":
+ANT {"t":"ANT","n":"Anthropic, PBC","s":"technology","ex":"NASDAQ","i":"Computer Software: Prepackaged Software","px":97.17,"mc":1271631975862,"dc":17.07,"ipo":2026}
+ARM {"t":"ARM","n":"ARM HOLDINGS PLC /UK","s":"technology","ex":"NASDAQ","i":"Semiconductors","y":2026,"sc":[71,73,74,99,100,85,90,81,34,5,36],"d":"low","o":"up","st":["quality","growth"],"cov":93,"cm":95,"mc":188518668997,"pe":201.4,"px":177.17,"dc":-3.06,"ipo":2
+AAPL {"t":"AAPL","n":"Apple Inc.","s":"technology","ex":"NASDAQ","i":"Computer Manufacturing","y":2026,"sc":[74,94,92,70,19,86,68,97,85,32,18],"d":"low","o":"up","st":["quality"],"cov":98,"cm":97,"mc":5074783276220,"pe":38.4,"dy":0.0031,"ds":99,"px":349.21,"dc":-0.
+{"generated":"2026-11-22T17:18:47.131Z","quotesAt":null,"indices":[{"t":"SPY","n":"State Street SPDR S&P 500 ETF Trust","px":690.43,"dc":-2.0060348681269558},{"t":"QQQ","n":"Invesco QQQ Trust, Series 1","px":608.45,"dc":-2.2432717350861964},{"t":"DIA","n":"State Street SPDR Dow Jones Industrial Average ETF Trust","px":480.86,"dc":-2.2353085011003344},{"t":"IWM","n":"iShares Russell 2000 Index Fund
