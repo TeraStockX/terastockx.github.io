@@ -996,7 +996,7 @@ function analysisView(c, a, idx, history = []) {
 
 // Analysed companies have a real page (c/<TICKER>/, see scripts/seo.mjs) that search engines can follow;
 // a click stays inside the app and opens the analysis without a page load.
-const linkable = (row) => !!row?.sc && /^[A-Z0-9.\-]+$/.test(row.t);
+const linkable = (row) => /^[A-Z0-9.\-]+$/.test(row?.t || "");
 const companyLink = (row, inner) => (linkable(row) ? `<a class="clink" href="c/${encodeURIComponent(row.t)}/" data-c="${esc(row.t)}">${inner}</a>` : inner);
 document.addEventListener("click", (e) => {
   const a = e.target.closest("a[data-c]");

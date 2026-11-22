@@ -372,21 +372,21 @@ test("Search pages: title and description per company, sitemap and robots.txt", 
   wf(join(root, "index.html"), '<!doctype html><html><head>\n  <meta charset="utf-8">\n  <title>TeraStockX</title>\n  <meta name="description" content="x">\n</head><body><main id="app" class="wrap"></main></body></html>');
   const index = { generated: "2026-11-09T07:00:00Z", scoreKeys: ["overall", "risk"], companies: [
     { t: "AAPL", n: "Apple Inc.", s: "technology", sc: [75, 18], pe: 37.9, dy: 0.003, mc: 5.02e12 },
-    { t: "NEWCO", n: "New Co", s: "technology" },
+    { t: "NEWCO", n: "New Co", s: "technology", mc: 1.27e12 },
     { t: "BRK.B", n: "Berkshire <Hathaway>", s: "financials", sc: [70, 20] },
   ] };
-  const r = buildSeo({ root, siteUrl: "https://terastockx.github.io", index });
-  assert.equal(r.pages, 2, "only analysed companies get a page");
+  const r = buildSeo({ root, siteUrl: "http://terastockx.com", index });
+  assert.equal(r.pages, 3, "every company gets a page, analysed or not");
   const html = rf(join(root, "c", "AAPL", "index.html"), "utf8");
   assert.match(html, /<title>Apple Inc\. \(AAPL\) TeraScore 75\/100/);
-  assert.match(html, /<link rel="canonical" href="https:\/\/terastockx\.github\.io\/c\/AAPL\/">/);
+  assert.match(html, /<link rel="canonical" href="https:\/\/terastockx\.com\/c\/AAPL\/">/, "always https");
   assert.match(html, /<base href="\.\.\/\.\.\/">/);
   assert.equal((html.match(/<title>/g) || []).length, 1);
   assert.ok(rf(join(root, "c", "BRK.B", "index.html"), "utf8").includes("Berkshire &lt;Hathaway&gt;"), "names are escaped");
-  assert.ok(!existsSync(join(root, "c", "NEWCO")));
-  assert.match(rf(join(root, "sitemap.xml"), "utf8"), /<loc>https:\/\/terastockx\.github\.io\/c\/BRK\.B\/<\/loc>/);
-  assert.match(rf(join(root, "robots.txt"), "utf8"), /Sitemap: https:\/\/terastockx\.github\.io\/sitemap\.xml/);
-  assert.equal(rf(join(root, "sitemap.txt"), "utf8").trim().split("\n").length, 3, "home page and two company pages");
+  assert.match(rf(join(root, "c", "NEWCO", "index.html"), "utf8"), /New Co \(NEWCO\) stock: share price, market cap \$1\.27T/, "a company without an analysis gets a market-data description");
+  assert.match(rf(join(root, "sitemap.xml"), "utf8"), /<loc>https:\/\/terastockx\.com\/c\/BRK\.B\/<\/loc>/);
+  assert.match(rf(join(root, "robots.txt"), "utf8"), /Sitemap: https:\/\/terastockx\.com\/sitemap\.xml/);
+  assert.equal(rf(join(root, "sitemap.txt"), "utf8").trim().split("\n").length, 4, "home page and three company pages");
   assert.equal(tickerPath("../X"), null);
   assert.match(companyMeta(index.companies[0], index.scoreKeys, "2026-11-09").description, /TeraScore 75\/100 \(Strong\), risk 18\/100, P\/E 37\.9/);
 });

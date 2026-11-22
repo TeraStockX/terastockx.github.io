@@ -30,12 +30,18 @@ export function companyMeta(row, keys, date) {
   if (isNum(row.dy) && row.dy > 0) facts.push(`dividend yield ${pct(row.dy)}`);
   if (isNum(row.mc)) facts.push(`market cap ${money(row.mc)}`);
   const title = `${row.n} (${row.t}) ${isNum(sc.overall) ? `TeraScore ${sc.overall}/100 – ` : "– "}Stock analysis | TeraStockX`;
-  const description = `${row.n} (${row.t}) fundamental analysis${facts.length ? `: ${facts.join(", ")}` : ""}. Profitability, cash flow, balance sheet, growth, valuation and risk${sector ? ` compared with ${sector} peers` : ""}, from SEC filings. Updated ${date}.`;
+  // Companies without an annual report yet (e.g. recent listings) have no analysis, only market data.
+  const description = row.sc
+    ? `${row.n} (${row.t}) fundamental analysis${facts.length ? `: ${facts.join(", ")}` : ""}. Profitability, cash flow, balance sheet, growth, valuation and risk${sector ? ` compared with ${sector} peers` : ""}, from SEC filings. Updated ${date}.`
+    : `${row.n} (${row.t}) stock: share price${facts.length ? `, ${facts.join(", ")}` : ""}, listing and latest filings. A TeraScore follows the first annual report. Updated ${date}.`;
   return { title, description, sc, sector, facts };
 }
 
 export function buildSeo({ root, siteUrl, index }) {
-  const base = siteUrl ? (siteUrl.endsWith("/") ? siteUrl : `${siteUrl}/`) : null;
+  // The site is served over HTTPS (GitHub Pages with a certificate); the address the Pages settings report
+  // starts with http:// until "Enforce HTTPS" is switched on, so search engines are always given https.
+  const site = siteUrl ? siteUrl.replace(/^http:\/\//, "https://") : "";
+  const base = site ? (site.endsWith("/") ? site : `${site}/`) : null;
   const shell = readFileSync(join(root, "index.html"), "utf8");
   const keys = index.scoreKeys || [];
   const date = String(index.generated || "").slice(0, 10);
@@ -45,7 +51,7 @@ export function buildSeo({ root, siteUrl, index }) {
   let pages = 0;
   for (const row of index.companies) {
     const t = tickerPath(row.t);
-    if (!t || !row.sc) continue; // only analysed companies
+    if (!t) continue;
     const m = companyMeta(row, keys, date);
     const url = base ? `${base}c/${t}/` : null;
     const head = [
@@ -64,7 +70,7 @@ export function buildSeo({ root, siteUrl, index }) {
     // Shown until the app has loaded (and to crawlers that do not run scripts).
     const summary = `<h1>${esc(row.n)} (${esc(row.t)})</h1>
     <p>${esc(m.description)}</p>
-    <p><a href="#/c/${t}">Open the full TeraStockX analysis of ${esc(row.n)}</a></p>`;
+    <p><a href="#/c/${t}">Open ${esc(row.n)} on TeraStockX</a></p>`;
     let html = shell
       .replace(/<title>[^<]*<\/title>/, "")
       .replace(/<meta name="description"[^>]*>/, "")
