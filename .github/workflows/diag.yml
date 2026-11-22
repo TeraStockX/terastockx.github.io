@@ -6,15 +6,17 @@ jobs:
   d:
     runs-on: ubuntu-latest
     steps:
-      - name: Fetch as Googlebot
+      - name: DNS and HTTP check
         run: |
-          UA='Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'
-          for u in "" sitemap.xml robots.txt c/AAPL/; do
-            echo "== /$u"
-            curl -s -A "$UA" -o body.txt -D headers.txt "https://terastockx.github.io/$u"
-            grep -iE '^HTTP|content-type|content-length|last-modified|x-robots' headers.txt
+          for srv in 1.1.1.1 8.8.8.8; do
+            echo "== resolver $srv"
+            echo "A:     $(dig +short A terastockx.com @$srv | tr '\n' ' ')"
+            echo "AAAA:  $(dig +short AAAA terastockx.com @$srv | tr '\n' ' ')"
+            echo "www:   $(dig +short CNAME www.terastockx.com @$srv | tr '\n' ' ') / $(dig +short A www.terastockx.com @$srv | tr '\n' ' ')"
+            echo "MX:    $(dig +short MX terastockx.com @$srv | tr '\n' ' ')"
           done
-          curl -s -A "$UA" -o sm.xml https://terastockx.github.io/sitemap.xml
-          head -c 200 sm.xml; echo
-          python3 -c 'import xml.etree.ElementTree as E; r=E.parse("sm.xml").getroot(); print("parsed OK urls", len(r), "first lastmod", r[0][1].text)'
-          file sm.xml; head -c 3 sm.xml | od -c | head -1
+          echo "NS:    $(dig +short NS terastockx.com | tr '\n' ' ')"
+          echo "authoritative A: $(dig +short A terastockx.com @$(dig +short NS terastockx.com | head -1) | tr '\n' ' ')"
+          echo "== http://terastockx.com"
+          curl -s -o /dev/null -m 15 -w "%{http_code} %{redirect_url}\n" http://terastockx.com/ || true
+          curl -s -m 15 -I http://terastockx.com/ | grep -iE "^server|^location" || true
