@@ -1,5 +1,0 @@
-live-home-phone {"stars":54,"logos":54,"ex":["NYSE","NASDAQ","NASDAQ"],"partial":9,"watchBtn":true} no errors
-live-watch-phone {"stars":8,"logos":8,"ex":["NASDAQ","NASDAQ","NASDAQ"],"partial":1,"watchBtn":true} no errors
-live-adp-desktop {"stars":6,"logos":7,"ex":["NASDAQ","NASDAQ","NYSE"],"partial":2,"watchBtn":false} no errors
-live-ant-phone {"stars":0,"logos":1,"ex":["NASDAQ"],"partial":0,"watchBtn":false} no errors
-live-market-desktop {"stars":135,"logos":135,"ex":["NASDAQ","NASDAQ","NYSE"],"partial":0,"watchBtn":false} no errors

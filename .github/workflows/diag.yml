@@ -15,13 +15,13 @@ jobs:
         run: |
           mkdir -p out
           {
-          for u in https://terastockx.com/ http://terastockx.com/ https://www.terastockx.com/ https://terastockx.github.io/ https://terastockx.com/c/ANT/ https://terastockx.com/c/AAPL/ https://terastockx.com/data/pulse.json https://terastockx.com/assets/js/ocr-import.js https://cdn.jsdelivr.net/npm/tesseract.js@6.0.1/dist/tesseract.min.js https://cdn.jsdelivr.net/npm/tesseract.js-core@6.0.0/tesseract-core-simd-lstm.wasm.js https://cdn.jsdelivr.net/npm/@tesseract.js-data/eng@1.0.0/4.0.0_best_int/eng.traineddata.gz; do
+          for u in https://terastockx.com/ http://terastockx.com/ https://www.terastockx.com/ https://terastockx.github.io/ https://terastockx.com/c/ANT/ https://terastockx.com/c/AAPL/ https://terastockx.com/c/NVDA/ https://terastockx.com/data/logos/NVDA.webp https://terastockx.com/data/logos/ANT.webp https://terastockx.com/sitemap.txt https://terastockx.com/robots.txt; do
             echo "$u -> $(curl -s -o /dev/null -m 30 -w '%{http_code} %{redirect_url} %{size_download}B' "$u")"
           done
           echo "sitemap: $(curl -sL https://terastockx.com/sitemap.xml | grep -o '<loc>[^<]*</loc>' | head -3 | tr '\n' ' ') total=$(curl -sL https://terastockx.com/sitemap.xml | grep -c '<loc>')"
           echo "robots: $(curl -sL https://terastockx.com/robots.txt | tr '\n' ' ')"
           curl -sL https://terastockx.com/data/index.json -o idx.json
-          node -e 'const i=require("./idx.json"); const r=i.companies; const g=t=>r.find(x=>x.t===t); console.log("generated",i.generated,"rows",r.length,"cm",r.filter(x=>x.cm!=null).length,"pf",r.filter(x=>x.pf).length,"lg",r.filter(x=>x.lg).length,"dc",r.filter(x=>x.dc!=null).length,"lr",r.filter(x=>x.lr).length,"fs",r.filter(x=>x.fs).length); for (const t of ["ADP","ANT","ARM","AAPL"]) console.log(t, JSON.stringify(g(t)).slice(0,260));'
+          node -e 'const i=require("./idx.json"); const r=i.companies; const g=t=>r.find(x=>x.t===t); console.log("generated",i.generated,"rows",r.length,"lg",r.filter(x=>x.lg).length,"cm",r.filter(x=>x.cm!=null).length); for (const t of ["ADP","LLY","VZ","DLR","ANT"]) console.log(t, "cm", g(t)?.cm, "lg", g(t)?.lg);'
           curl -sL https://terastockx.com/data/pulse.json | head -c 400; echo
           } 2>&1 | tee out/live.txt
       - uses: actions/setup-node@v4
@@ -35,4 +35,4 @@ jobs:
         if: always()
         run: |
           git config user.name diag; git config user.email diag@users.noreply.github.com
-          git add out && git commit -qm "diag: live check results" && git push -q origin HEAD:diag
+          git add out && git commit -qm "diag: live check results 2" && git push -q origin HEAD:diag
