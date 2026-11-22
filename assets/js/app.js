@@ -324,6 +324,17 @@ addEventListener("hashchange", () => route());
 
 // ---------- List page ----------
 
+// When the data was updated: "Today 17:18", "Yesterday 22:50", or the full date when older than that.
+function updatedWhen(iso) {
+  const d = new Date(iso);
+  if (isNaN(d)) return "–";
+  const dayStart = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const days = Math.round((dayStart(new Date()) - dayStart(d)) / 86400000);
+  if (days > 1) return esc(date(iso));
+  const time = d.toLocaleTimeString(dict().meta.locale, { hour: "2-digit", minute: "2-digit" });
+  return `${esc(t(days === 1 ? "ui.yesterday" : "ui.today"))} <span class="hs-time">${esc(time)}</span>`;
+}
+
 const LIST_COLS = [
   { key: "overall", label: () => t("ui.overallScore") },
   { key: "profitability", cls: "col-xl" },
@@ -357,8 +368,8 @@ async function renderList() {
         <p>${esc(t("ui.heroText"))}</p>
         <div class="hero-stats">
           <div class="hero-stat"><div class="v">${num(idx.companies.filter((c) => isNum(c.sc?.overall)).length, 0)}</div><div class="k">${esc(t("ui.ratedCompanies"))}</div></div>
-          <div class="hero-stat"><div class="v">10</div><div class="k">${esc(t("ui.sectionScores"))}</div></div>
-          <div class="hero-stat"><div class="v">${esc(date(idx.generated))}</div><div class="k">${esc(t("ui.updated", { d: "" }).replace(/[:\s]+$/, ""))}</div></div>
+          <a class="hero-stat hs-watch ${watchMode ? "on" : ""}" id="watch-btn" href="${watchMode ? "#/" : "#/watchlist"}" aria-pressed="${watchMode}"><div class="v">${starSvg(true)}<span id="watch-count">${getWatch().length}</span></div><div class="k">${esc(t("ui.watchlist"))}</div></a>
+          <div class="hero-stat"><div class="v">${updatedWhen(idx.generated)}</div><div class="k">${esc(t("ui.updatedLabel"))}</div></div>
         </div>
       </div>
       <img class="hero-art" src="assets/img/hero.svg" alt="" width="560" height="360">
@@ -378,7 +389,6 @@ async function renderList() {
       <select class="select" id="filter" aria-label="Filter" ${watchMode ? "hidden" : ""}>
         ${["analyzed", "all"].map((f) => `<option value="${f}" ${listState.filter === f ? "selected" : ""}>${esc(t({ analyzed: "ui.onlyAnalyzed", all: "ui.allCompanies" }[f]))}</option>`).join("")}
       </select>
-      <a class="btn watch-btn ${watchMode ? "on" : ""}" id="watch-btn" href="${watchMode ? "#/" : "#/watchlist"}" aria-pressed="${watchMode}">${starSvg(true)}<span>${esc(t("ui.watchlist"))}</span><span class="count" id="watch-count">${getWatch().length}</span></a>
     </div>
     ${watchMode ? `<div class="watch-head"><h2 class="section-title" style="margin:0">★ ${esc(t("ui.watchlist"))}</h2><a class="small" href="#/">‹ ${esc(t("ui.allCompanies"))}</a></div>` : ""}
     <details class="glass filters" id="filters" ${listState.filtersOpen ? "open" : ""}>

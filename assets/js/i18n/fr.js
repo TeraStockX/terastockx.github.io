@@ -14,7 +14,7 @@ export default {
     demoNotice: "Données de démonstration : valeurs approximatives, remplacées par les rapports officiels de la SEC lors de la mise à jour.",
     notFound: "Aucune société trouvée pour le ticker {t}.",
     lastFy: "Dernier exercice : {y}", ttmBasis: "Valorisation sur les douze derniers mois (TTM) au {d}", annualBasis: "Valorisation sur le dernier exercice",
-    overallScore: "TeraScore", risk: "Risque", distress: "Risque de défaillance", trend: "Tendance de long terme", coverage: "Complétude des données", watchEmpty: "Votre liste de suivi est vide. Touchez l'étoile ☆ dans la ligne d'une société pour l'ajouter.", years: "{n} ans",
+    overallScore: "TeraScore", risk: "Risque", distress: "Risque de défaillance", trend: "Tendance de long terme", coverage: "Complétude des données", watchEmpty: "Votre liste de suivi est vide. Touchez l'étoile ☆ dans la ligne d'une société pour l'ajouter.", today: "Aujourd'hui", yesterday: "Hier", updatedLabel: "Mis à jour", years: "{n} ans",
     marketCap: "Capitalisation", price: "Cours", sector: "Secteur", industry: "Industrie",
     sectionScores: "Tableau de notation", sectionFlags: "Signaux d'alerte et points forts", sectionCharts: "Performance historique", sectionKey: "Indicateurs clés",
     howCalculated: "Détail du calcul", weight: "poids", points: "pts", notScored: "n. d.",

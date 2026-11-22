@@ -368,7 +368,7 @@ table.insider td.num, table.insider th:nth-child(n+4) { text-align: right; }
   .hero .tagline { margin-bottom: 12px; }
   .hero-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
   .hero-stat { padding: 10px; min-width: 0; }
-  .hero-stat .v { font-size: 1rem; line-height: 1.25; }
+  .hero-stat .v { font-size: clamp(13px, 3.9vw, 1rem); line-height: 1.25; }
   .hero-stat .k { font-size: .72rem; }
 }
 
@@ -557,11 +557,14 @@ a.co:hover { text-decoration: none; } a.co:hover .tick { text-decoration: underl
 .dq-notice { background: rgba(250,178,25,.08); border-color: rgba(250,178,25,.28); }
 .dq-notice > span:first-child { color: var(--warning-ink); font-weight: 800; }
 
-/* Watchlist button on the home page */
-.watch-btn { height: 48px; border-radius: 14px; padding: 0 16px; color: var(--text-2); flex: 0 0 auto; }
-.watch-btn svg { color: var(--warning); }
-.watch-btn .count { font-size: 12px; font-weight: 800; min-width: 22px; padding: 2px 7px; border-radius: 999px; background: var(--glass-strong); color: var(--text); text-align: center; }
-.watch-btn.on { color: var(--text); background: rgba(250,178,25,.12); border-color: rgba(250,178,25,.45); }
+/* Watchlist in the home page summary (links to the watchlist; highlighted while it is shown) */
+a.hero-stat { color: inherit; text-decoration: none; transition: background .15s, border-color .15s; }
+a.hero-stat:hover { background: var(--glass-hover); border-color: var(--border-strong); text-decoration: none; }
+a.hero-stat:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.hs-watch .v { display: flex; align-items: center; gap: 6px; }
+.hs-watch .v svg { color: var(--warning); flex: none; }
+.hs-watch.on { background: rgba(250,178,25,.12); border-color: rgba(250,178,25,.45); }
+.hs-time { font-size: .8em; font-weight: 600; color: var(--text-2); white-space: nowrap; }
 .watch-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 6px 2px 10px; }
 
 /* Events and compare with logos */
@@ -577,7 +580,6 @@ a.co:hover { text-decoration: none; } a.co:hover .tick { text-decoration: underl
   .co .star { padding: 3px; }
   .co .badge { font-size: 9px; padding: 2px 5px; margin-left: 4px; }
   .co-txt .cname { max-width: 128px; }
-  .watch-btn { flex: 1 1 auto; justify-content: center; }
 }
 .dq-icon { vertical-align: -1px; flex: none; }
 .dq-notice > span:first-child { padding-top: 2px; }

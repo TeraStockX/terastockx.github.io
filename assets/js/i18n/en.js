@@ -14,7 +14,7 @@ export default {
     demoNotice: "Demo data: approximate sample figures. The data updater replaces them with official SEC filings.",
     notFound: "No company found for ticker {t}.",
     lastFy: "Last fiscal year: {y}", ttmBasis: "Valuation on trailing-twelve-month (TTM) figures to {d}", annualBasis: "Valuation on last fiscal-year figures",
-    overallScore: "TeraScore", risk: "Risk", distress: "Distress risk", trend: "Long-term trend", coverage: "Data completeness", watchEmpty: "Your watchlist is empty. Tap the ☆ star in any company's row to add it here.", years: "{n} yrs",
+    overallScore: "TeraScore", risk: "Risk", distress: "Distress risk", trend: "Long-term trend", coverage: "Data completeness", watchEmpty: "Your watchlist is empty. Tap the ☆ star in any company's row to add it here.", today: "Today", yesterday: "Yesterday", updatedLabel: "Updated", years: "{n} yrs",
     marketCap: "Market cap", price: "Price", sector: "Sector", industry: "Industry",
     sectionScores: "Scorecard", sectionFlags: "Red flags & strengths", sectionCharts: "Historical performance", sectionKey: "Key metrics",
     howCalculated: "Calculation details", weight: "weight", points: "pts", notScored: "n/a",

@@ -14,7 +14,7 @@ export default {
     demoNotice: "Demó adat: közelítő mintaszámok. Az adatfrissítő a hivatalos SEC-jelentések adataival írja felül.",
     notFound: "Nincs vállalat a(z) {t} tickerrel.",
     lastFy: "Utolsó lezárt üzleti év: {y}", ttmBasis: "Értékeltség az utolsó 12 hónap (TTM) adatai alapján, {d}-ig", annualBasis: "Értékeltség az utolsó üzleti év adatai alapján",
-    overallScore: "TeraScore", risk: "Kockázat", distress: "Csődkockázat", trend: "Hosszú távú trend", coverage: "Elemzettség", watchEmpty: "A figyelőlistád még üres. Egy cég sorában a ☆ csillagra koppintva adhatod hozzá.", years: "{n} év",
+    overallScore: "TeraScore", risk: "Kockázat", distress: "Csődkockázat", trend: "Hosszú távú trend", coverage: "Elemzettség", watchEmpty: "A figyelőlistád még üres. Egy cég sorában a ☆ csillagra koppintva adhatod hozzá.", today: "Ma", yesterday: "Tegnap", updatedLabel: "Frissítve", years: "{n} év",
     marketCap: "Piaci kapitalizáció", price: "Árfolyam", sector: "Szektor", industry: "Iparág",
     sectionScores: "Értékelés", sectionFlags: "Kockázati jelzések és erősségek", sectionCharts: "Történeti teljesítmény", sectionKey: "Kulcsmutatók",
     howCalculated: "Számítás részletei", weight: "súly", points: "pont", notScored: "n. a.",
