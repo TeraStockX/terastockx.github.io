@@ -1,0 +1,8 @@
+found after try 3 (21:15:13)
+--- tags on https://terastockx.com/
+<meta name="google-site-verification" content="EuGE1ZDX92aqQsSlnA3NPL17MJ9lwHeAidkUWhawreg">
+<meta name="google-site-verification" content="MDZrUFpeJQXSUMlr4h6268PUKnTNOR1d1VHMrgMlnb0">
+--- tags on https://terastockx.com/c/AAPL/
+<meta name="google-site-verification" content="EuGE1ZDX92aqQsSlnA3NPL17MJ9lwHeAidkUWhawreg">
+<meta name="google-site-verification" content="MDZrUFpeJQXSUMlr4h6268PUKnTNOR1d1VHMrgMlnb0">
+--- http -> 301 https://terastockx.com/
