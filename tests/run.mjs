@@ -517,3 +517,41 @@ test("Screenshot import: tickers, names and share counts from recognised text", 
   const w = (text, x, y) => ({ text, confidence: 90, bbox: { x0: x, y0: y, x1: x + 40, y1: y + 20 } });
   assert.deepEqual(groupRows([w("10", 300, 102), w("AAPL", 10, 100), w("MSFT", 10, 160), w("shares", 345, 99)]), ["AAPL  10 shares", "MSFT"]);
 });
+
+test("Screenshot import: forints, Hungarian units, quantity columns, value ÷ price, several screenshots", async () => {
+  const { buildLookup, parseHoldings, mergeHoldings, moneyIn, sharesFromValue, groupRows } = await import("../assets/js/ocr-import.js");
+  const lookup = buildLookup([
+    { t: "AAPL", n: "Apple Inc.", mc: 3e12, px: 200 }, { t: "NVDA", n: "NVIDIA CORP", mc: 4e12, px: 150 },
+    { t: "MSFT", n: "Microsoft Corporation", mc: 3e12, px: 400 }, { t: "FT", n: "Franklin Universal Trust", mc: 2e8, px: 7 },
+    { t: "DB", n: "Deutsche Bank AG", mc: 6e10, px: 30 }, { t: "KO", n: "Coca-Cola Co", mc: 3e11, px: 70 },
+  ], { HUF: 0.0028, EUR: 1.1 });
+  // A Hungarian app: amounts in forints ("Ft", sometimes read as "FT"), counts in "db" or "részvény".
+  const hu = parseHoldings([
+    "Összesen  5 432 100 FT",
+    "Apple Inc.  714 286 Ft",
+    "10 részvény  +2,1%",
+    "NVIDIA  12 db  535 714 FT",
+    "Microsoft  1 428 571 Ft",
+  ], lookup);
+  assert.deepEqual(hu.map((h) => [h.t, h.shares, h.src]), [["AAPL", 10, "count"], ["NVDA", 12, "count"], ["MSFT", 10, "value"]]);
+  assert.ok(hu[2].sure, "1 428 571 Ft × 0.0028 / $400 = 10.0 shares: a whole number, ticked");
+  assert.ok(!hu.some((h) => h.t === "FT" || h.t === "DB"), "the forint sign and 'db' are not companies");
+  assert.deepEqual(moneyIn("+$412.20 (+0.86%)  $2,465.40  52 345 Ft"), [{ v: 2465.4, cur: "USD" }, { v: 52345, cur: "HUF" }]);
+  assert.equal(sharesFromValue(["$2,465.40  +$12.10"], 205.45).shares, 12);
+  assert.deepEqual(sharesFromValue(["$701.23"], 199.5), { shares: 3.5149, whole: false }, "fractional: kept with 4 decimals, not ticked");
+  assert.equal(sharesFromValue(["$205.45"], 205.45), null, "an amount equal to the price is the price");
+  // A table with a quantity column: the count is the number under the "Darab" header.
+  const w = (text, x, y) => ({ text, confidence: 90, bbox: { x0: x, y0: y, x1: x + 12 * text.length, y1: y + 20 } });
+  const table = groupRows([
+    w("Szimbólum", 10, 10), w("Darab", 200, 10), w("Árfolyam", 320, 10), w("Érték", 460, 10),
+    w("AAPL", 10, 50), w("12", 205, 50), w("205", 320, 50), w("2465", 460, 50),
+    w("KO", 10, 90), w("30", 205, 90), w("70", 320, 90), w("2100", 460, 90),
+  ], { detailed: true });
+  assert.deepEqual(parseHoldings(table, lookup).map((h) => [h.t, h.shares]), [["AAPL", 12], ["KO", 30]]);
+  // Two overlapping screenshots: one entry per company, the counted one wins over an estimate.
+  const merged = mergeHoldings([
+    [{ t: "AAPL", shares: 10, src: "count", sure: true }, { t: "MSFT", shares: 9.98, src: "value", sure: false }],
+    [{ t: "MSFT", shares: 10, src: "count", sure: true }, { t: "KO", shares: null, src: null, sure: false }],
+  ]);
+  assert.deepEqual(merged.map((h) => [h.t, h.shares]), [["AAPL", 10], ["MSFT", 10], ["KO", null]]);
+});

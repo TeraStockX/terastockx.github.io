@@ -290,6 +290,8 @@ async function updateCompanies() {
   const screener = await nasdaqScreener();
   const fx = await fxToUsd();
   console.log(`  screener: ${screener.size} quotes; exchange rates: ${Object.keys(fx).length}`);
+  // Exchange rates for the pages too (e.g. a portfolio screenshot that shows values in forints or euros).
+  if (Object.keys(fx).length > 1) writeFileSync(join(DATA, "fx.json"), JSON.stringify({ generated: new Date().toISOString(), usdPer: Object.fromEntries(Object.entries(fx).map(([c, v]) => [c, +v.toPrecision(6)])) }) + "\n");
   if (onlyTickers) list = list.filter((x) => onlyTickers.has(x.ticker));
   list = list.slice(0, limit);
 

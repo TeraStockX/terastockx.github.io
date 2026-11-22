@@ -1365,7 +1365,7 @@ async function renderPortfolio(prefill = "") {
       <button class="btn btn-primary" type="submit">${esc(t("ui.pfAdd"))}</button>
       ${getWatch().length ? `<button class="btn" type="button" id="pf-watch">${esc(t("ui.pfFromWatch"))}</button>` : ""}
       <button class="btn" type="button" id="pf-shot" title="${esc(t("ocr.hint"))}"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span>${esc(t("ocr.button"))}</span></button>
-      <input type="file" id="pf-file" accept="image/*" hidden>
+      <input type="file" id="pf-file" accept="image/*" multiple hidden>
       <span class="small muted" id="pf-msg"></span>
     </form>
     <div id="ocr-panel"></div>
@@ -1402,39 +1402,65 @@ async function renderPortfolio(prefill = "") {
   app.querySelectorAll("[data-rm]").forEach((b) => b.addEventListener("click", () => save(getPortfolio().filter((h) => h.t !== b.dataset.rm))));
 }
 
-// Portfolio from a screenshot: recognition in the browser, then a table to check before adding.
+// Exchange rates (USD per unit of a currency), for screenshots that show values in forints or euros.
+let fxCache = null;
+async function loadFx() {
+  if (!fxCache) {
+    try { const r = await fetch("data/fx.json", { cache: "no-cache" }); fxCache = r.ok ? (await r.json()).usdPer || {} : {}; } catch { fxCache = {}; }
+  }
+  return fxCache;
+}
+
+// Portfolio from screenshots: recognition in the browser (one or more images), then a table to check
+// before adding.
 function wireScreenshotImport(rows, save) {
   const file = document.getElementById("pf-file");
   const panel = document.getElementById("ocr-panel");
   document.getElementById("pf-shot").addEventListener("click", () => file.click());
   const box = (inner) => { panel.innerHTML = `<div class="glass pad ocr-panel">${inner}</div>`; };
   const status = (msg) => box(`<div class="ocr-status"><span class="spinner" aria-hidden="true"></span><span>${esc(msg)}</span></div><p class="small muted" style="margin:8px 0 0">${esc(t("ocr.privacy"))}</p>`);
+  const closeBtn = (label) => {
+    document.getElementById("ocr-cancel")?.addEventListener("click", () => { panel.innerHTML = ""; });
+    return label;
+  };
   file.addEventListener("change", async () => {
-    const img = file.files?.[0];
+    const images = [...(file.files || [])];
     file.value = "";
-    if (!img) return;
+    if (!images.length) return;
     status(t("ocr.loading"));
     panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
     let found;
     try {
-      const ocr = await import("./ocr-import.js");
-      const canvas = await ocr.prepareImage(img);
-      const words = await ocr.recognize(canvas, (p, phase) => status(phase === "read" ? t("ocr.reading", { p: Math.round(p * 100) }) : t("ocr.loading")));
-      const lookup = ocr.buildLookup([...rows.values()].map((r) => ({ t: r.t, n: r.n, mc: r.mc ?? r.aum ?? 0 })));
-      found = ocr.parseHoldings(ocr.groupRows(words), lookup);
+      const [ocr, fx] = await Promise.all([import("./ocr-import.js"), loadFx()]);
+      const lookup = ocr.buildLookup([...rows.values()].map((r) => ({ t: r.t, n: r.n, mc: r.mc ?? r.aum ?? 0, px: r.px })), fx);
+      let current = 0;
+      const progress = (p, phase) => status(phase !== "read" ? t("ocr.loading")
+        : images.length > 1 ? t("ocr.readingN", { i: current + 1, n: images.length, p: Math.round(p * 100) }) : t("ocr.reading", { p: Math.round(p * 100) }));
+      const reader = await ocr.createReader(progress);
+      const lists = [];
+      try {
+        for (current = 0; current < images.length; current++) {
+          const canvas = await ocr.prepareImage(images[current]);
+          lists.push(ocr.parseHoldings(ocr.groupRows(await reader.read(canvas), { detailed: true }), lookup));
+        }
+      } finally {
+        await reader.close();
+      }
+      found = ocr.mergeHoldings(lists);
     } catch (e) {
       box(`<p>${esc(t("ocr.failed", { e: e.message || String(e) }))}</p><button class="btn" type="button" id="ocr-cancel">${esc(t("ocr.close"))}</button>`);
-      document.getElementById("ocr-cancel").addEventListener("click", () => { panel.innerHTML = ""; });
+      closeBtn();
       return;
     }
     if (!found.length) {
       box(`<p style="margin-top:0">${esc(t("ocr.none"))}</p><p class="small muted">${esc(t("ocr.hint"))}</p><button class="btn" type="button" id="ocr-cancel">${esc(t("ocr.close"))}</button>`);
-      document.getElementById("ocr-cancel").addEventListener("click", () => { panel.innerHTML = ""; });
+      closeBtn();
       return;
     }
     const cur = new Map(getPortfolio().map((h) => [h.t, h.shares]));
     const watch = new Set(getWatch());
-    box(`<div class="score-name">${esc(t("ocr.found", { n: found.length }))}</div>
+    const title = images.length > 1 ? t("ocr.foundImages", { n: found.length, k: images.length }) : t("ocr.found", { n: found.length });
+    box(`<div class="score-name">${esc(title)}</div>
       <p class="small muted" style="margin:6px 0 12px">${esc(t("ocr.check"))} ${esc(t("ocr.privacy"))}</p>
       <div class="table-wrap"><table class="list ocr-table"><thead><tr><th aria-label="✓"></th><th>${esc(t("ui.company"))}</th><th class="num">${esc(t("ui.pfShares"))}</th></tr></thead><tbody>
       ${found.map((h, i) => {
@@ -1442,14 +1468,14 @@ function wireScreenshotImport(rows, save) {
         const who = r.etf
           ? `<div class="co">${letterLogo({ t: h.t, n: r.n })}<div class="co-txt"><div class="co-top"><span class="tick">${esc(h.t)}</span><span class="badge">ETF</span></div><div class="cname small">${esc(r.n)}</div></div></div>`
           : companyCell(r, { star: false, watch });
-        return `<tr><td><input type="checkbox" class="ocr-on" data-i="${i}" ${isNum(h.shares) ? "checked" : ""} aria-label="${esc(h.t)}"></td>
+        return `<tr><td><input type="checkbox" class="ocr-on" data-i="${i}" ${h.sure && isNum(h.shares) ? "checked" : ""} aria-label="${esc(h.t)}"></td>
           <td>${who}${cur.has(h.t) ? `<div class="small muted ocr-note">${esc(t("ocr.inPortfolio", { n: num(cur.get(h.t), Number.isInteger(cur.get(h.t)) ? 0 : 2) }))}</div>` : ""}</td>
-          <td class="num"><input class="pf-shares ocr-n" type="number" min="0" step="any" inputmode="decimal" data-i="${i}" value="${isNum(h.shares) ? h.shares : ""}" placeholder="?" aria-label="${esc(t("ui.pfShares"))} ${esc(h.t)}"></td></tr>`;
+          <td class="num"><input class="pf-shares ocr-n" type="number" min="0" step="any" inputmode="decimal" data-i="${i}" value="${isNum(h.shares) ? h.shares : ""}" placeholder="?" aria-label="${esc(t("ui.pfShares"))} ${esc(h.t)}">${h.src === "value" ? `<div class="small muted ocr-note">${esc(t("ocr.estimated"))}</div>` : ""}</td></tr>`;
       }).join("")}
       </tbody></table></div>
       <div class="ocr-actions"><button class="btn btn-primary" type="button" id="ocr-add">${esc(t("ocr.add"))}</button><button class="btn" type="button" id="ocr-cancel">${esc(t("ocr.cancel"))}</button><span class="small muted" id="ocr-msg"></span></div>`);
     panel.querySelectorAll(".ocr-n").forEach((inp) => inp.addEventListener("input", () => { const cb = panel.querySelector(`.ocr-on[data-i="${inp.dataset.i}"]`); if (cb && Number(inp.value) > 0) cb.checked = true; }));
-    document.getElementById("ocr-cancel").addEventListener("click", () => { panel.innerHTML = ""; });
+    closeBtn();
     document.getElementById("ocr-add").addEventListener("click", () => {
       const picked = [...panel.querySelectorAll(".ocr-on")].filter((cb) => cb.checked).map((cb) => ({ t: found[Number(cb.dataset.i)].t, n: Number(panel.querySelector(`.ocr-n[data-i="${cb.dataset.i}"]`).value) }));
       if (!picked.length) { panel.innerHTML = ""; return; }
