@@ -2,15 +2,44 @@ name: diag
 on:
   push:
     branches: [diag]
+permissions:
+  contents: write
 jobs:
   d:
     runs-on: ubuntu-latest
     steps:
-      - name: Site check on the custom domain
+      - uses: actions/checkout@v4
+        with: { ref: diag }
+      - name: Logo provider test
         run: |
-          for u in https://terastockx.com/ https://www.terastockx.com/ http://terastockx.com/ https://terastockx.github.io/ https://terastockx.com/c/AAPL/ https://terastockx.com/sitemap.xml https://terastockx.com/data/index.json; do
-            echo "$u -> $(curl -s -o /dev/null -m 20 -w '%{http_code} %{redirect_url} ssl_verify=%{ssl_verify_result}' "$u" 2>&1)"
+          T="AAPL MSFT NVDA GOOGL GOOG AMZN TSM AVGO META TSLA LLY BRK.B BRK.A WMT SNDK JPM AMD MU V JNJ MA ASML ABBV COST KO CVX PG CSCO PLTR HD BAC ORCL GE MRK PANW INTC UNH PM NVS HSBC BIDU BLDR ARES GEN FLS COR NDAQ LINE TOL ADSK NRG DTM DB CMC TXT SKYD DASH AME GIB YUMC D KHC GRMN FIVE IEX MET GTLB TXRH XYZ IR IRIX WVVI LOCL HOS NYC CNTX TISI HYMC TECX INVA MIND CEVA TTRX ZURA NVCT FLNA IVA MOB TRX IXHL BTTC LUCK BH LPCN ANPA YHGJ UHT MPAA ITRN GRSD TM RY SAP MUFG BABA TD NVO SAN BF.B ANT CRWV NBIS RDDT ARM"
+          mkdir -p out
+          prov() {
+            case "$1" in
+              fmp) echo "https://financialmodelingprep.com/image-stock/$2.png" ;;
+              parqet) echo "https://assets.parqet.com/logos/symbol/$2?format=png&size=64" ;;
+              parqetsvg) echo "https://assets.parqet.com/logos/symbol/$2?format=svg" ;;
+              eodhd) echo "https://eodhd.com/img/logos/US/$2.png" ;;
+              finnhub) echo "https://static2.finnhub.io/file/publicdatany/finnhubimage/stock_logo/$2.svg" ;;
+            esac
+          }
+          for p in fmp parqet parqetsvg eodhd finnhub; do
+            mkdir -p out/$p; : > out/$p.tsv
+            for t in $T; do
+              u=$(prov $p "$t")
+              meta=$(curl -s -L -m 20 -H 'Referer: https://terastockx.com/' -A 'Mozilla/5.0' -o "out/$p/$t.img" -w '%{http_code}\t%{content_type}\t%{size_download}' "$u")
+              h=$( [ -s "out/$p/$t.img" ] && md5sum "out/$p/$t.img" | cut -c1-8 || echo none)
+              f=$( [ -s "out/$p/$t.img" ] && file -b "out/$p/$t.img" | cut -c1-60 || echo none)
+              echo -e "$t\t$meta\t$h\t$f" >> out/$p.tsv
+            done
+            ok=$(awk -F'\t' '$2==200 && $4>200' out/$p.tsv | wc -l)
+            dup=$(awk -F'\t' '$2==200 {print $5}' out/$p.tsv | sort | uniq -c | sort -rn | head -3 | tr '\n' ' ')
+            echo "$p: ok=$ok/114  top hashes: $dup"
           done
-          echo "cert: $(echo | openssl s_client -connect terastockx.com:443 -servername terastockx.com 2>/dev/null | openssl x509 -noout -subject -issuer -enddate 2>/dev/null | tr '\n' ' ')"
-          echo "title: $(curl -sL https://terastockx.com/ | grep -o '<title>[^<]*</title>')"
-          echo "sitemap first: $(curl -sL https://terastockx.com/sitemap.xml | grep -o '<loc>[^<]*</loc>' | head -2 | tr '\n' ' ')"
+          echo "--- response headers (cache, cors) ---"
+          for p in fmp parqet eodhd finnhub; do echo "## $p"; curl -s -I -m 20 -H 'Referer: https://terastockx.com/' "$(prov $p AAPL)" | grep -iE '^(HTTP|content-type|cache-control|access-control|content-length|server|x-)' ; done
+          du -sh out/*/ 
+      - name: Save results to the diag branch
+        run: |
+          git config user.name diag; git config user.email diag@users.noreply.github.com
+          git add out && git commit -qm "diag: logo test results" && git push -q origin HEAD:diag
