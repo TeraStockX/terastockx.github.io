@@ -1,0 +1,181 @@
+
+===== capex: tags present at the latest fiscal year end (companies) =====
+59	PaymentsForProceedsFromOtherInvestingActivities	LLY JPM BAC MS WFC VZ NEE COP
+16	CapitalExpendituresIncurredButNotYetPaid	VZ NEE PDD EOG D FANG WEC DTE
+16	PaymentsToMinorityShareholders	KKR APO FANG ED RPRX WEC IX DTE
+10	PaymentsToAcquireOtherPropertyPlantAndEquipment	LLY ADP BAM EOG VMRK WEC IX VICI
+10	PaymentsToAcquireIntangibleAssets	BABA VZ APP ADP STM SUNB INCY RL
+9	PaymentsForLossesAndLossAdjustmentExpense	CB MET AIG WRB PFG RGA EG RNR
+8	PaymentsForProceedsFromProductiveAssets	MS D IBKR MTB CFG TPG RGA JLL
+8	PaymentsToAcquireOrRedeemEntitysShares	SHEL TTE CM CNQ MFC CVE WDS ASND
+8	PaymentsToAcquireRealEstate	PLD PSA VMRK VICI TPL ESS WPC AHR
+7	PaymentsToAcquireOtherProductiveAssets	VZ HOOD ROP TWLO INCY RF LNT
+6	PaymentsToDevelopRealEstateAssets	PLD DLR PSA VMRK ESS REG
+5	CapitalizedContractCostAmortization	VZ ADP ROP TWLO PFG
+5	CapitalizedContractCostImpairmentLoss	VZ ADP HOOD VEEV PFG
+5	AdditionsToRightofuseAssets	TTE CNQ FER VIK WDS
+5	AdditionsToContractHoldersFunds	CB CI PRU PFG CRBG
+5	CapitalizedComputerSoftwareAmortization1	HOOD TFC DTE CFG EQH
+5	PaymentsForRestructuring	PSA STM WEC TKO SUNB
+5	PaymentsToAcquireFinanceReceivables	RPRX VICI CFG EWBC NLY
+3	PaymentsToAcquireOilAndGasProperty	EOG FANG PR
+3	PaymentsToDevelopSoftware	HOOD ROP TWLO
+3	PaymentsToExploreAndDevelopOilAndGasProperties	FANG PR APA
+3	CapitalizedComputerSoftwareAdditions	ROP COIN TWLO
+2	PaymentsForLegalSettlements	LLY TKO
+2	PurchaseOfFinancialInstrumentsClassifiedAsInvestingActivities	SHEL UBS
+2	PaymentsForProceedsFromHedgeInvestingActivities	BABA AFL
+2	CapitalizedExploratoryWellCostAdditionsPendingDeterminationOfProvedReserves	COP APA
+2	CapitalizedExploratoryWellCostChargedToExpense1	COP APA
+2	PaymentsForReinsurance	ADP CRBG
+2	PaymentsToAcquireOilAndGasPropertyAndEquipment	EOG TRP
+2	PaymentsForConstructionInProcess	TRP ED
+2	PaymentsForProceedsFromHedgeFinancingActivities	TRP VMRK
+2	PaymentsToAcquireReceivables	HOOD CNH
+2	PaymentsToAcquireRealEstateAndRealEstateJointVentures	MET RGA
+2	PaymentsForOtherOperatingActivities	VMRK ROP
+2	PaymentsToAcquireMortgageServicingRightsMSR	RF NLY
+2	PaymentsToAcquireMachineryAndEquipment	RL HTHT
+2	PaymentsForPurchaseOfInvestmentOperatingActivity	TPG ARCC
+1	PaymentsToAcquireInProcessResearchAndDevelopment	LLY
+1	PurchaseOfOtherLongtermAssetsClassifiedAsInvestingActivities	SHEL
+1	PaymentsForHedgeFinancingActivities	BABA
+1	PaymentsForPostemploymentBenefits	VZ
+1	PaymentsForProceedsFromNuclearFuel	NEE
+1	PaymentsToInvestInDecommissioningFund	NEE
+1	AdditionsToNoncurrentAssets	UBS
+1	PaymentsForHedgeInvestingActivities	PLD
+----- capex: focus companies and companies with no hit -----
+LLY: PaymentsForProceedsFromOtherInvestingActivities=-1, PaymentsToAcquireInProcessResearchAndDevelopment=3008, PaymentsToAcquireOtherPropertyPlantAndEquipment=7841, PaymentsForLegalSettlements=0
+TM: (none)
+SHEL: PaymentsToAcquireOrRedeemEntitysShares=13879, PurchaseOfFinancialInstrumentsClassifiedAsInvestingActivities=82, PurchaseOfOtherLongtermAssetsClassifiedAsInvestingActivities=18947
+RY: (none)
+BABA: PaymentsForProceedsFromHedgeInvestingActivities=-229, PaymentsToAcquireIntangibleAssets=874, PaymentsForHedgeFinancingActivities=1309
+VZ: CapitalizedContractCostAmortization=3600, CapitalizedContractCostImpairmentLoss=0, PaymentsForPostemploymentBenefits=906, PaymentsForProceedsFromOtherInvestingActivities=-801, PaymentsToAcquireIntangibleAssets=450, PaymentsToAcquireOtherProductiveAssets=17011, CapitalExpendituresIncurredButNotYetPaid=3800
+TTE: AdditionsToRightofuseAssets=2402, PaymentsToAcquireOrRedeemEntitysShares=7714
+TD: (none)
+NEE: CapitalExpendituresIncurredButNotYetPaid=7645, PaymentsForProceedsFromNuclearFuel=553, PaymentsForProceedsFromOtherInvestingActivities=-118, PaymentsToInvestInDecommissioningFund=5893
+COP: CapitalizedExploratoryWellCostAdditionsPendingDeterminationOfProvedReserves=113, CapitalizedExploratoryWellCostChargedToExpense1=36, PaymentsForProceedsFromOtherInvestingActivities=22
+PDD: CapitalExpendituresIncurredButNotYetPaid=84, PaymentsForProceedsFromOtherInvestingActivities=0
+ADP: CapitalizedContractCostAmortization=1201, PaymentsForProceedsFromOtherInvestingActivities=11, PaymentsForReinsurance=278, PaymentsToAcquireIntangibleAssets=469, PaymentsToAcquireOtherPropertyPlantAndEquipment=197, CapitalizedContractCostImpairmentLoss=0
+PLD: PaymentsForHedgeInvestingActivities=26, PaymentsForLeasingCostsCommissionsAndTenantImprovements=562, PaymentsToAcquireRealEstate=1801, PaymentsToDevelopRealEstateAssets=2781
+BNS: (none)
+ABNB: PaymentsForProceedsFromOtherInvestingActivities=46
+URI: (none)
+NU: (none)
+DEO: (none)
+WPM: (none)
+INFY: (none)
+ARES: (none)
+SYM: (none)
+SBS: (none)
+PAC: (none)
+
+===== debt: tags present at the latest fiscal year end (companies) =====
+7	ConvertibleDebtNoncurrent	PANW NET SNOW OKTA U ALNY TEM
+6	LineOfCredit	DLR EXR TOL LULU TEM CUBE
+5	UnsecuredDebt	DLR EXR ESS MAA DKS
+4	ConvertibleDebtCurrent	SHOP NET OKTA U
+4	SecuredDebt	DLR ESS MAA TOL
+4	ConvertibleNotesPayableCurrent	DDOG DXCM AKAM NVMI
+3	SeniorNotes	DLR EXR TOL
+2	NotesPayable	DHI MAA
+2	LoansAndAdvancesToCustomers	KSPI EMBJ
+2	DebtAndCapitalLeaseObligations	CNH DKS
+1	LiabilitiesOtherThanLongtermDebtNoncurrent	ISRG
+1	OtherNotesPayable	EXR
+1	ParticipatingMortgageLoansParticipationLiabilitiesAmount	NLY
+1	LoansPayable	TOL
+1	MortgageLoansOnRealEstateCommercialAndConsumerNet	TOL
+1	OtherLoansPayable	TOL
+1	WarehouseAgreementBorrowings	TOL
+1	NetDebt	MICC
+1	OtherBorrowings	LULU
+1	NotesAndLoansPayable	CUBE
+1	SeniorNotesCurrent	GMED
+1	CurrentNotesAndDebenturesIssuedAndCurrentPortionOfNoncurrentNotesAndDebenturesIssued	GGB
+1	NoncurrentPortionOfNoncurrentNotesAndDebenturesIssued	GGB
+1	NotesAndDebenturesIssued	GGB
+----- debt: focus companies and companies with no hit -----
+PLTR: (none)
+ANET: (none)
+ARM: (none)
+SHOP: ConvertibleDebtCurrent=0
+PDD: (none)
+MNST: (none)
+GM: (none)
+DASH: (none)
+NTES: (none)
+MPWR: (none)
+PCAR: (none)
+WPM: (none)
+GRMN: (none)
+INFY: (none)
+F: (none)
+FNV: (none)
+VEEV: (none)
+VALE: (none)
+ALAB: (none)
+RVMD: (none)
+ZS: (none)
+CPRT: (none)
+ROIV: (none)
+EME: (none)
+WSM: (none)
+EXPD: (none)
+ZM: (none)
+MDB: (none)
+UTHR: (none)
+RBRK: (none)
+INCY: (none)
+IOT: (none)
+CRDO: (none)
+BNTX: (none)
+SYM: (none)
+ONON: (none)
+TOST: (none)
+FFIV: (none)
+MEDP: (none)
+RDDT: (none)
+EXEL: (none)
+CHKP: (none)
+NBIX: (none)
+NTNX: (none)
+NVR: (none)
+TME: (none)
+MANH: (none)
+LOGI: (none)
+GKOS: (none)
+DOCU: (none)
+TXT: (none)
+CART: (none)
+FROG: (none)
+DT: (none)
+PEN: (none)
+FIVE: (none)
+SITM: (none)
+BEPC: (none)
+NXT: (none)
+ALGN: (none)
+NYT: (none)
+PCOR: (none)
+PAYC: (none)
+AES: (none)
+DECK: (none)
+KYMR: (none)
+NTSK: (none)
+AGNC: (none)
+PINS: (none)
+ONTO: (none)
+YMM: (none)
+HUBS: (none)
+KRYS: (none)
+SYRE: (none)
+PCVX: (none)
+HNGE: (none)
+FIG: (none)
+PRAX: (none)
+S: (none)
+RMBS: (none)
+EDU: (none)
+PTGX: (none)
