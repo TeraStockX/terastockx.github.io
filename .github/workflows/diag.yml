@@ -7,26 +7,23 @@ permissions:
 jobs:
   d:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
         with: { ref: diag }
-      - name: Wait for the new verification tag on the live site
+      - name: Webmail address check
         run: |
           mkdir -p out
           {
-          for i in $(seq 1 40); do
-            if curl -s -m 20 "https://terastockx.com/?v=$i" | grep -q "MDZrUFpeJQXSUMlr4h6268PUKnTNOR1d1VHMrgMlnb0"; then echo "found after try $i ($(date -u +%H:%M:%S))"; break; fi
-            sleep 15
+          for u in https://webmail.s23.wpx.net/ https://s23.wpx.net/ https://webmail.terastockx.com/; do
+            echo "$u -> $(curl -s -o /tmp/p.html -m 20 -w '%{http_code} %{redirect_url}' "$u" 2>&1) title: $(grep -o '<title>[^<]*</title>' /tmp/p.html 2>/dev/null | head -1)"
           done
-          echo "--- tags on https://terastockx.com/"
-          curl -s -m 20 https://terastockx.com/ | grep -o '<meta name="google-site-verification"[^>]*>'
-          echo "--- tags on https://terastockx.com/c/AAPL/"
-          curl -s -m 20 https://terastockx.com/c/AAPL/ | grep -o '<meta name="google-site-verification"[^>]*>'
-          echo "--- http -> $(curl -s -o /dev/null -m 20 -w '%{http_code} %{redirect_url}' http://terastockx.com/)"
-          } 2>&1 | tee out/verify.txt
+          echo "MX: $(dig +short MX terastockx.com | tr '\n' ' ')"
+          echo "mail A: $(dig +short mail.terastockx.com | tr '\n' ' ')"
+          echo "s23 A: $(dig +short s23.wpx.net | tr '\n' ' ') webmail.s23 A: $(dig +short webmail.s23.wpx.net | tr '\n' ' ')"
+          } 2>&1 | tee out/webmail.txt
       - name: Save results to the diag branch
         if: always()
         run: |
           git config user.name diag; git config user.email diag@users.noreply.github.com
-          git add out && git commit -qm "diag: verification tag results" && git push -q origin HEAD:diag
+          git add out && git commit -qm "diag: webmail results" && git push -q origin HEAD:diag
