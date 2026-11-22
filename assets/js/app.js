@@ -5,6 +5,7 @@ import { LANGS, lang, setLang, t, fill, fmt, money, date, num, dict } from "./i1
 import { barChart, lineChart, wireCharts } from "./charts.js";
 
 const app = document.getElementById("app");
+const CONTACT_EMAIL = "info@terastockx.com";
 const PAGE_SIZE = 50;
 const isNum = (x) => typeof x === "number" && Number.isFinite(x);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -181,7 +182,7 @@ const links = (short) => `
       ${Object.entries(LANGS).map(([code, d]) => `<option value="${code}" ${code === lang() ? "selected" : ""}>${d.meta.short}</option>`).join("")}
     </select>`;
   document.getElementById("lang").addEventListener("change", (e) => { setLang(e.target.value); renderChrome(); route(false); });
-  document.getElementById("footer-text").innerHTML = `${esc(t("ui.footer"))} <a href="#/methodology">${esc(t("ui.navMethod"))} ›</a> · <a href="#/install">${esc(t("ui.installFooter"))} ›</a>`;
+  document.getElementById("footer-text").innerHTML = `${esc(t("ui.footer"))} <a href="#/methodology">${esc(t("ui.navMethod"))} ›</a> · <a href="#/install">${esc(t("ui.installFooter"))} ›</a> · ${esc(t("ui.contact"))}: <a href="mailto:${CONTACT_EMAIL}">${CONTACT_EMAIL}</a>`;
   markNav();
 }
 
@@ -1249,7 +1250,7 @@ async function renderReport(ticker) {
         ${flags.length ? `<ul class="report-flags">${flags.map((f) => { const ft = flagText(f, cur); return `<li class="lv-${f.level}"><b>${esc(ft.title)}</b> <span class="small">(${esc(tag[f.level])})</span> – ${esc(ft.text)}</li>`; }).join("")}</ul>` : `<p>${esc(t("ui.noFlags"))}</p>`}
       </section>
 
-      <footer class="report-foot">${esc(t("ui.footer"))}<br>${esc(t("ui.engine", { v: ENGINE_VERSION }))}${c.source?.retrieved ? ` · ${esc(t("ui.retrieved", { d: date(c.source.retrieved) }))}` : ""} · terastockx.github.io</footer>
+      <footer class="report-foot">${esc(t("ui.footer"))}<br>${esc(t("ui.engine", { v: ENGINE_VERSION }))}${c.source?.retrieved ? ` · ${esc(t("ui.retrieved", { d: date(c.source.retrieved) }))}` : ""} · ${esc(location.host)} · ${CONTACT_EMAIL}</footer>
     </article>`;
   document.getElementById("print").addEventListener("click", () => window.print());
 }
