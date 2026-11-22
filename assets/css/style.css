@@ -620,3 +620,6 @@ a.co:hover { text-decoration: none; } a.co:hover .tick { text-decoration: underl
 .ocr-table .co, .ocr-table .co-txt { min-width: 0; }
 .ocr-table .co-txt .cname { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media (max-width: 640px) { .ocr-table th:last-child, .ocr-table td:last-child { width: 86px; } }
+/* A little spare room on phones for wider fallback fonts */
+@media (max-width: 640px) { table.list th { letter-spacing: .02em; } .co-txt .cname { max-width: 98px; } }
+@media (max-width: 380px) { .co-txt .cname { max-width: 82px; } }
