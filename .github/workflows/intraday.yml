@@ -1,16 +1,27 @@
-# Intraday update: every 10 minutes from 11:00 to 23:59 UTC on weekdays (7:00/6:00 to 19:59/18:59 New York
-# time: pre-market, trading hours and the evening, when most companies publish their results).
-# - prices and market caps (stocks and ETFs; Nasdaq, delayed about 15 minutes)
-# - companies that filed an annual or quarterly report since the daily update are downloaded again from the
-#   SEC (new figures and TeraScore); those that filed a current report (8-K, 6-K) get their events refreshed
+# Intraday update on weekdays (times in UTC; GitHub may start scheduled runs a few minutes late):
+# - every 5 minutes from 13:00 to 21:59, which covers the US trading session in summer and winter
+#   (9:30–16:00 New York time = 13:30–20:00 / 14:30–21:00 UTC)
+# - every 10 minutes from 11:00 to 12:59 and from 22:00 to 00:59, before and after the session, when most
+#   companies publish their results and file their reports
+# Minutes start at :02 rather than :00, when GitHub is busiest. Five minutes is the shortest interval GitHub
+# allows for scheduled workflows; the 10-builds-per-hour Pages limit does not apply to workflow deployments.
+# Each run:
+# - prices and market caps (stocks and ETFs; Nasdaq, delayed about 15 minutes), so the price-dependent parts
+#   of every TeraScore (valuation) follow the market
+# - companies that filed an annual or quarterly report since their data was downloaded are downloaded again
+#   from the SEC (new figures and TeraScore); those that filed a current report (8-K, 6-K) get their events
+#   refreshed
 # - the index, the market summary and the search pages are rebuilt and published
 # Nothing is saved to the data branch (the daily run does the full update); companies refreshed during the
-# day are carried from run to run in the Actions cache. GitHub may start scheduled runs a few minutes late.
+# day are carried from run to run in the Actions cache.
 name: Napközbeni frissítés
 
 on:
   schedule:
-    - cron: "*/10 11-23 * * 1-5"
+    - cron: "2-59/5 13-21 * * 1-5"
+    - cron: "2-59/10 11-12 * * 1-5"
+    - cron: "2-59/10 22-23 * * 1-5"
+    - cron: "2-59/10 0 * * 2-6"
   workflow_dispatch:
 
 permissions:
