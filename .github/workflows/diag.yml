@@ -7,32 +7,26 @@ permissions:
 jobs:
   d:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with: { ref: diag }
-      - name: Live checks
+      - name: Wait for the new verification tag on the live site
         run: |
           mkdir -p out
           {
-          for u in https://terastockx.com/ http://terastockx.com/ https://www.terastockx.com/ https://terastockx.github.io/ https://terastockx.com/c/ANT/ https://terastockx.com/c/AAPL/ https://terastockx.com/c/NVDA/ https://terastockx.com/data/logos/NVDA.webp https://terastockx.com/data/logos/ANT.webp https://terastockx.com/sitemap.txt https://terastockx.com/robots.txt; do
-            echo "$u -> $(curl -s -o /dev/null -m 30 -w '%{http_code} %{redirect_url} %{size_download}B' "$u")"
+          for i in $(seq 1 40); do
+            if curl -s -m 20 "https://terastockx.com/?v=$i" | grep -q "MDZrUFpeJQXSUMlr4h6268PUKnTNOR1d1VHMrgMlnb0"; then echo "found after try $i ($(date -u +%H:%M:%S))"; break; fi
+            sleep 15
           done
-          echo "sitemap: $(curl -sL https://terastockx.com/sitemap.xml | grep -o '<loc>[^<]*</loc>' | head -3 | tr '\n' ' ') total=$(curl -sL https://terastockx.com/sitemap.xml | grep -c '<loc>')"
-          echo "robots: $(curl -sL https://terastockx.com/robots.txt | tr '\n' ' ')"
-          curl -sL https://terastockx.com/data/index.json -o idx.json
-          node -e 'const i=require("./idx.json"); const r=i.companies; const g=t=>r.find(x=>x.t===t); console.log("generated",i.generated,"rows",r.length,"lg",r.filter(x=>x.lg).length,"cm",r.filter(x=>x.cm!=null).length); for (const t of ["ADP","LLY","VZ","DLR","ANT"]) console.log(t, "cm", g(t)?.cm, "lg", g(t)?.lg);'
-          curl -sL https://terastockx.com/data/pulse.json | head -c 400; echo
-          } 2>&1 | tee out/live.txt
-      - uses: actions/setup-node@v4
-        with: { node-version: 22 }
-      - name: Live screenshots
-        run: |
-          npm install --no-save --no-audit --no-fund playwright@1.49.1 >/dev/null 2>&1
-          npx playwright install --with-deps chromium >/dev/null 2>&1
-          node live.cjs 2>&1 | tee out/live-shots.txt
+          echo "--- tags on https://terastockx.com/"
+          curl -s -m 20 https://terastockx.com/ | grep -o '<meta name="google-site-verification"[^>]*>'
+          echo "--- tags on https://terastockx.com/c/AAPL/"
+          curl -s -m 20 https://terastockx.com/c/AAPL/ | grep -o '<meta name="google-site-verification"[^>]*>'
+          echo "--- http -> $(curl -s -o /dev/null -m 20 -w '%{http_code} %{redirect_url}' http://terastockx.com/)"
+          } 2>&1 | tee out/verify.txt
       - name: Save results to the diag branch
         if: always()
         run: |
           git config user.name diag; git config user.email diag@users.noreply.github.com
-          git add out && git commit -qm "diag: live check results 2" && git push -q origin HEAD:diag
+          git add out && git commit -qm "diag: verification tag results" && git push -q origin HEAD:diag
