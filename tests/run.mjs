@@ -416,3 +416,28 @@ test("Quick searches: every screen filters and ranks as described", async () => 
   assert.deepEqual(runScreen(peRows, "lowPe").map((x) => x.t), ["CHEAP"]);
   assert.equal(new Set(SCREENS.map((s) => s.id)).size, SCREENS.length);
 });
+
+test("Market today: baskets, movers, reports, score changes, new listings and headlines", async () => {
+  const { buildPulse } = await import("../scripts/pulse.mjs");
+  const now = new Date("2026-11-20T18:00:00Z");
+  const rows = [
+    { t: "NVDA", n: "NVIDIA", s: "technology", mc: 4e12, dc: -5, o: 82 },
+    { t: "MSFT", n: "Microsoft", s: "technology", mc: 4e12, dc: -1, o: 79, lr: "2026-11-19|10-Q" },
+    { t: "ANT", n: "Anthropic", s: "technology", mc: 1.2e12, dc: 12, fs: "2026-11-18" },
+    { t: "KO", n: "Coca-Cola", s: "consumerStaples", mc: 3e11, dc: 0.5, o: 65, d1: 11 },
+    { t: "TINY", n: "Tiny", s: "technology", mc: 1e8, dc: 40 },
+  ];
+  const etfs = [{ t: "SPY", n: "SPDR S&P 500", px: 690, dc: -1.8 }, { t: "QQQ", n: "QQQ", px: 600, dc: -2.4 }];
+  const p = buildPulse({ rows, etfs, now });
+  const ai = p.themes.find((x) => x.id === "ai");
+  assert.equal(ai.n, 3);
+  assert.equal(ai.change, +((-5 * 4e12 - 1 * 4e12 + 12 * 1.2e12) / (9.2e12)).toFixed(2));
+  assert.equal(ai.worst.t, "NVDA");
+  assert.deepEqual(p.gainers.map((r) => r.t), ["ANT", "KO"], "small caps are left out of the movers");
+  assert.deepEqual(p.losers.map((r) => r.t), ["NVDA", "MSFT"]);
+  assert.deepEqual(p.reports.map((r) => r.t), ["MSFT"]);
+  assert.deepEqual(p.scoreMoves.map((r) => r.t), ["KO"]);
+  assert.deepEqual(p.newListings.map((r) => r.t), ["ANT"]);
+  const types = p.headlines.map((h) => h.type);
+  for (const ty of ["index", "theme", "move", "report", "score", "listing"]) assert.ok(types.includes(ty), ty);
+});

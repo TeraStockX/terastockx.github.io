@@ -498,3 +498,34 @@ h1, h2, h3 { overflow-wrap: break-word; hyphens: auto; }
 @media (max-width: 900px) { .filters .filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .filters .filter-grid { align-items: end; }
 .clink { color: inherit; text-decoration: none; } .clink:hover .tick { text-decoration: underline; }
+
+/* ---------- Market today ---------- */
+.daychg { font-size: 12px; padding: 2px 8px; vertical-align: middle; }
+.market-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 10px 14px; margin-bottom: 14px; color: var(--text-2); font-size: 14px; text-decoration: none; }
+.market-strip:hover { text-decoration: none; border-color: var(--border-strong); }
+.market-strip b { color: var(--text); }
+.pulse-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; margin: 8px 0 12px; }
+.index-strip { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); gap: 10px; }
+.index-chip { padding: 10px 14px; }
+.index-val { font-weight: 700; font-size: 18px; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.hl-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.hl { display: flex; gap: 10px; align-items: baseline; padding: 10px 14px; font-size: 14px; }
+.hl a { color: var(--text); }
+.hl-icon { flex: none; }
+.theme-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr)); gap: 10px; }
+.theme-card { padding: 12px 14px; display: grid; gap: 4px; }
+.theme-name { font-weight: 700; }
+.sec-list { display: grid; gap: 6px; }
+.sec-row { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 2fr) auto; gap: 10px; align-items: center; font-size: 14px; }
+.sec-bar { position: relative; height: 8px; background: rgba(255,255,255,.06); border-radius: 4px; }
+.sec-bar span { position: absolute; top: 0; bottom: 0; border-radius: 4px; }
+.sec-bar .up { left: 50%; background: var(--good); }
+.sec-bar .down { right: 50%; background: var(--critical); }
+.pulse-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr)); gap: 14px; margin: 18px 0 10px; }
+.pulse-block { display: grid; gap: 8px; align-content: start; min-width: 0; }
+table.pulse td { white-space: normal; }
+@media (max-width: 640px) {
+  .index-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .index-chip { padding: 8px 10px; }
+  .index-val { font-size: 15px; }
+}

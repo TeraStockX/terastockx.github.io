@@ -1,0 +1,53 @@
+# Intraday prices: every 15 minutes during US trading hours (Mon–Fri, 13:00–21:59 UTC covers 9:30–16:00 New
+# York time in summer and winter). Only prices, market caps, the index and the "Market today" summary are
+# rebuilt from the latest daily data; nothing is saved to the data branch (the daily run does the full update).
+# GitHub may start scheduled runs a few minutes late.
+name: Napközbeni árfolyamfrissítés
+
+on:
+  schedule:
+    - cron: "*/15 13-21 * * 1-5"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Adatok betöltése (data ág)
+        run: |
+          git fetch -q --depth=1 origin data
+          rm -rf data
+          git archive FETCH_HEAD data | tar -x
+      - id: pages
+        uses: actions/configure-pages@v5
+      - name: Árfolyamok, index, piaci összefoglaló
+        env:
+          SITE_URL: ${{ steps.pages.outputs.base_url }}
+        run: node scripts/update-data.mjs --quotes-only
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

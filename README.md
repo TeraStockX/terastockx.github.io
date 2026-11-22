@@ -43,6 +43,7 @@ scripts/market.mjs            árfolyam, piaci kapitalizáció, devizaárfolyamo
 scripts/listings.mjs          tőzsdelisták (Nasdaq, NYSE, NYSE American, Cboe)
 scripts/insider.mjs           bennfentes ügyletek (SEC Form 4 negyedéves adatbázis)
 scripts/events.mjs            jelentős 8-K események
+scripts/pulse.mjs             „Piac ma”: indexek, témák (pl. AI-részvények), legnagyobb mozgások, új jelentések, TeraScore-változások, új tőzsdei cégek
 scripts/xbrl-instance.mjs     a companyfactsből hiányzó jelentések kiolvasása az XBRL-fájlból
 scripts/gen-docs.mjs          docs/SABLON.md generálása
 tests/                        tesztek (npm test)
@@ -70,7 +71,7 @@ Az árfolyam- és piaci adatok (Nasdaq, Yahoo Finance, Stooq) opcionálisak: ha 
 
 ## Online közzététel (GitHub Pages)
 
-A `.github/workflows/deploy.yml` minden `main`-re pusholáskor közzéteszi az oldalt, minden nap pedig frissíti az adatokat (a bennfentes adatokat hétfőnként). Az adatok a `data` ágra kerülnek, amely mindig egyetlen commitot tartalmaz, így a repó nem nő hétről hétre.
+A `.github/workflows/deploy.yml` minden `main`-re pusholáskor közzéteszi az oldalt, minden nap pedig frissíti az adatokat (a bennfentes adatokat hétfőnként); az amerikai kereskedési időben 15 percenként az árfolyamokat és a „Piac ma” összefoglalót is (`.github/workflows/intraday.yml`). Az adatok a `data` ágra kerülnek, amely mindig egyetlen commitot tartalmaz, így a repó nem nő hétről hétre.
 
 1. **Settings → Pages → Source: GitHub Actions**
 2. **Settings → Secrets and variables → Actions → New repository secret:** `SEC_USER_AGENT` = `Név email@cim.hu`

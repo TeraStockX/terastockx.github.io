@@ -25,6 +25,14 @@ async function loadIndex() {
   return indexCache;
 }
 
+let pulseCache = null;
+async function loadPulse() {
+  if (!pulseCache) {
+    try { const r = await fetch("data/pulse.json", { cache: "no-cache" }); pulseCache = r.ok ? await r.json() : null; } catch { pulseCache = null; }
+  }
+  return pulseCache;
+}
+
 let newsCache = null;
 async function loadNews() {
   if (!newsCache) {
@@ -260,6 +268,7 @@ async function renderList() {
       </div>
       <img class="hero-art" src="assets/img/hero.svg" alt="" width="560" height="360">
     </section>
+    <div id="market-strip"></div>
     <div id="alerts"></div>
     ${installBanner()}
     <div class="controls">
@@ -456,6 +465,7 @@ async function renderList() {
   };
   draw();
   drawAlerts();
+  loadPulse().then((p) => { const el = document.getElementById("market-strip"); if (el && p) el.innerHTML = marketStrip(p); }).catch(() => {});
   document.getElementById("install-x")?.addEventListener("click", () => { try { localStorage.setItem("tsx-install-hide", "1"); } catch {} document.getElementById("install-banner")?.remove(); });
   loadNews().then((n) => {
     const top = (n.events || []).filter(isTopEvent).slice(0, 4);
@@ -549,10 +559,13 @@ function eventCard(e, withCompany = true) {
 async function renderNews() {
   document.title = `${t("ui.newsTitle")} | TeraStockX`;
   app.innerHTML = `<div class="skeleton"></div>`;
-  const n = await loadNews();
+  const [n, pulse] = await Promise.all([loadNews(), loadPulse()]);
   const state = { filter: "top" };
   app.innerHTML = `
-    <div class="prose" style="max-width:none;margin-top:8px"><h1>${esc(t("ui.newsTitle"))}</h1><p style="max-width:820px">${esc(t("ui.newsIntro"))}</p></div>
+    <div class="prose" style="max-width:none;margin-top:8px"><h1>${esc(t("ui.newsTitle"))}</h1></div>
+    ${pulseView(pulse)}
+    <h2 class="section-title">${esc(t("ui.eventsTitle"))}</h2>
+    <p class="small muted" style="max-width:820px;margin:-4px 0 12px">${esc(t("ui.newsIntro"))}</p>
     <div class="controls"><select class="select" id="sev">
       <option value="top">${esc(t("ui.newsTop"))}</option><option value="4">${esc(t("ui.onlyCritical"))}</option><option value="3">${esc(t("ui.allSeverities"))}</option>
     </select></div>
@@ -562,7 +575,89 @@ async function renderNews() {
     document.getElementById("news-list").innerHTML = list.length ? list.map((e) => eventCard(e)).join("") : `<div class="glass empty">${esc(t("ui.newsEmpty"))}</div>`;
   };
   document.getElementById("sev").addEventListener("change", (e) => { state.filter = e.target.value; draw(); });
+  app.querySelectorAll("table.pulse").forEach((tb) => tb.addEventListener("click", (e) => { const tr = e.target.closest("tr[data-t]"); if (tr) location.hash = `#/c/${tr.dataset.t}`; }));
   draw();
+}
+
+// ---------- Market today ----------
+
+const dayChange = (v) => (isNum(v) ? `<span class="pill tone-${v > 0 ? "good" : v < 0 ? "critical" : "none"} daychg"><span class="dot"></span>${v > 0 ? "+" : ""}${num(v, 2)}%</span>` : "");
+const INDEX_NAMES = { SPY: "S&P 500", QQQ: "Nasdaq 100", DIA: "Dow Jones", IWM: "Russell 2000" };
+const pulseTime = (p) => { const d = new Date(p.quotesAt || p.generated); return isNaN(d) ? "" : `${date(d.toISOString())} ${d.toLocaleTimeString(dict().meta.locale, { hour: "2-digit", minute: "2-digit" })}`; };
+
+function marketStrip(p) {
+  const ai = (p.themes || []).find((x) => x.id === "ai");
+  const items = (p.indices || []).slice(0, 2).map((e) => `<span>${esc(INDEX_NAMES[e.t] || e.t)} ${dayChange(e.dc)}</span>`);
+  if (ai) items.push(`<span>${esc(t("pulse.themes.ai"))} ${dayChange(ai.change)}</span>`);
+  if (!items.length) return "";
+  return `<a class="glass market-strip" href="#/news"><b>${esc(t("ui.marketToday"))}</b>${items.join("")}<span class="small muted">${esc(t("ui.marketMore"))} ›</span></a>`;
+}
+
+function headlineText(h) {
+  const nm = (x) => `${x.n} (${x.t})`;
+  const pct = (v) => `${v > 0 ? "+" : ""}${num(v, 1)}%`;
+  switch (h.type) {
+    case "index": return t("pulse.hlIndex", { n: INDEX_NAMES[h.t] || h.t, v: pct(h.dc) });
+    case "theme": return t("pulse.hlTheme", { n: t(`pulse.themes.${h.id}`), v: pct(h.dc), b: `${h.best.t} ${pct(h.best.dc)}`, w: `${h.worst.t} ${pct(h.worst.dc)}` });
+    case "move": return t(h.dc > 0 ? "pulse.hlUp" : "pulse.hlDown", { n: nm(h), v: pct(h.dc) });
+    case "report": return t("pulse.hlReport", { n: nm(h), f: t(/K|F/.test(h.form) ? "pulse.annualReport" : "pulse.quarterlyReport"), form: h.form });
+    case "score": return t("pulse.hlScore", { n: nm(h), v: `${h.d1 > 0 ? "+" : ""}${h.d1}`, o: h.o ?? "–" });
+    case "listing": return t("pulse.hlListing", { n: nm(h) });
+    default: return "";
+  }
+}
+const HL_TONE = { index: "none", theme: "none", move: "none", report: "good", score: "none", listing: "good" };
+const HL_ICON = { index: "📈", theme: "🧭", move: "⚡", report: "📄", score: "🎯", listing: "🆕" };
+
+function pulseRows(list, extra) {
+  return list.map((r) => `<tr data-t="${esc(r.t)}" tabindex="0"><td>${companyLink({ t: r.t, sc: true }, `<span class="tick">${esc(r.t)}</span>`)}<br><span class="cname small">${esc(r.n)}</span></td>
+    <td class="num col-md small">${isNum(r.mc) ? money(r.mc) : "–"}</td><td class="num">${extra(r)}</td></tr>`).join("");
+}
+function pulseTable(title, list, head, extra) {
+  return `<div class="pulse-block"><div class="score-name">${esc(title)}</div>${list.length ? `<div class="glass table-wrap"><table class="list pulse"><thead><tr><th>${esc(t("ui.company"))}</th><th class="num col-md">${esc(t("ui.marketCap"))}</th><th class="num">${esc(head)}</th></tr></thead><tbody>${pulseRows(list, extra)}</tbody></table></div>` : `<div class="glass empty small">${esc(t("pulse.none"))}</div>`}</div>`;
+}
+
+function pulseView(p) {
+  if (!p || !(p.indices?.length || p.themes?.length || p.gainers?.length)) return `<div class="glass empty small">${esc(t("pulse.notYet"))}</div>`;
+  const hl = (p.headlines || []).map((h) => `<li class="glass hl"><span class="hl-icon" aria-hidden="true">${HL_ICON[h.type] || "•"}</span><span>${h.t && h.type !== "index" ? `<a href="#/c/${encodeURIComponent(h.t)}">${esc(headlineText(h))}</a>` : esc(headlineText(h))}</span></li>`).join("");
+  const themeCards = (p.themes || []).map((x) => `<div class="glass theme-card"><div class="theme-name">${esc(t(`pulse.themes.${x.id}`))}</div><div class="theme-val">${dayChange(x.change)}</div>
+    <div class="small muted">${esc(t("pulse.bestWorst", { b: `${x.best.t} ${x.best.dc > 0 ? "+" : ""}${num(x.best.dc, 1)}%`, w: `${x.worst.t} ${x.worst.dc > 0 ? "+" : ""}${num(x.worst.dc, 1)}%` }))}</div></div>`).join("");
+  const maxAbs = Math.max(0.5, ...(p.sectors || []).map((x) => Math.abs(x.change)));
+  const sectorBars = (p.sectors || []).map((x) => `<div class="sec-row"><span>${esc(sectorName(x.s))}</span><span class="sec-bar"><span class="${x.change >= 0 ? "up" : "down"}" style="width:${Math.round((Math.abs(x.change) / maxAbs) * 50)}%"></span></span><span class="num">${x.change > 0 ? "+" : ""}${num(x.change, 2)}%</span></div>`).join("");
+  return `
+    <div class="pulse-head">
+      <h2 class="section-title" style="margin:0">${esc(t("ui.marketToday"))}</h2>
+      <span class="small muted">${esc(t("pulse.asOf", { d: pulseTime(p) }))}</span>
+    </div>
+    ${p.indices?.length ? `<div class="index-strip">${p.indices.map((e) => `<div class="glass index-chip"><div class="small muted">${esc(INDEX_NAMES[e.t] || e.t)} <span class="muted">(${esc(e.t)})</span></div><div class="index-val">${fmt(e.px, "usd")} ${dayChange(e.dc)}</div></div>`).join("")}</div>` : ""}
+    ${hl ? `<div class="score-name" style="margin:18px 0 8px">${esc(t("pulse.headlines"))}</div><ul class="hl-list">${hl}</ul>` : ""}
+    ${themeCards ? `<div class="score-name" style="margin:18px 0 8px">${esc(t("pulse.themesTitle"))}</div><div class="theme-grid">${themeCards}</div>` : ""}
+    ${sectorBars ? `<div class="score-name" style="margin:18px 0 8px">${esc(t("pulse.sectorsTitle"))}</div><div class="glass pad sec-list">${sectorBars}</div>` : ""}
+    <div class="pulse-grid">
+      ${pulseTable(t("pulse.gainers"), p.gainers || [], t("pulse.today"), (r) => dayChange(r.dc))}
+      ${pulseTable(t("pulse.losers"), p.losers || [], t("pulse.today"), (r) => dayChange(r.dc))}
+      ${pulseTable(t("pulse.reports"), p.reports || [], t("pulse.filed"), (r) => `<span class="small">${esc(r.form)} · ${esc(date(r.date))}</span>`)}
+      ${pulseTable(t("pulse.scoreMoves"), p.scoreMoves || [], t("ui.colChangeFy"), (r) => `${changePill(r.d1)} <span class="small muted">→ ${r.o ?? "–"}</span>`)}
+      ${pulseTable(t("pulse.newListings"), p.newListings || [], t("pulse.listed"), (r) => `<span class="small">${esc(r.fs ? date(r.fs) : r.ipo ? String(r.ipo) : "–")}</span>`)}
+    </div>
+    <p class="small muted">${esc(t("pulse.note"))}</p>`;
+}
+
+// A listed company without an annual report yet (e.g. a recent IPO): what is known so far.
+function notAnalyzedView(c) {
+  const mk = c.market || {};
+  const fact = (k, v) => `<div class="fact"><div class="k">${esc(t(k))}</div><div class="v">${v}</div></div>`;
+  return `<div class="glass pad">
+      <div class="score-name">${esc(t(c.note === "noSecFiling" ? "pulse.noFilings" : "pulse.notScoredYet"))}</div>
+      <p class="small muted" style="margin:6px 0 14px">${esc(t("pulse.notScoredText"))}</p>
+      <div class="facts">
+        ${fact("ui.pfPrice", isNum(mk.price) ? `${fmt(mk.price, "usd")} ${dayChange(mk.changePct)}` : "–")}
+        ${fact("ui.marketCap", isNum(mk.marketCap) ? money(mk.marketCap) : "–")}
+        ${fact("pulse.listed", c.firstSeen ? esc(date(c.firstSeen)) : mk.ipoYear ? String(mk.ipoYear) : "–")}
+        ${fact("pulse.lastReport", c.lastReport ? `${esc(c.lastReport.form)} · ${esc(date(c.lastReport.date))}` : "–")}
+      </div>
+    </div>
+    ${c.quarterly?.length ? `<h2 class="section-title">${esc(t("ui.periodQuarterly"))}</h2>${quarterTable(c)}` : ""}`;
 }
 
 // ---------- Financial data page ----------
@@ -622,7 +717,7 @@ async function renderCompany(ticker) {
         </div>
       </div>
       <div class="head-actions">
-        ${isNum(mk.price) ? `<div class="quote"><div class="px">${fmt(mk.price, "usd")}</div><div class="mc">${esc(t("ui.marketCap"))}: ${a.ok ? money(a.metrics.marketCap) : "–"}</div></div>` : ""}
+        ${isNum(mk.price) ? `<div class="quote"><div class="px">${fmt(mk.price, "usd")} ${dayChange(mk.changePct)}</div><div class="mc">${esc(t("ui.marketCap"))}: ${a.ok && isNum(a.metrics.marketCap) ? money(a.metrics.marketCap) : isNum(mk.marketCap) ? money(mk.marketCap) : "–"}</div></div>` : ""}
         <button class="btn" id="watch">${starSvg(watched)}<span>${esc(t(watched ? "ui.removeWatch" : "ui.addWatch"))}</span></button>
         <a class="btn" href="#/compare/${encodeURIComponent(c.ticker)}">${esc(t("ui.compareWith"))}</a>
         <a class="btn" href="#/portfolio/${encodeURIComponent(c.ticker)}">${esc(t(getPortfolio().some((h) => h.t === c.ticker) ? "ui.inPortfolio" : "ui.addPortfolio"))}</a>
@@ -634,7 +729,7 @@ async function renderCompany(ticker) {
       <button class="tab" role="tab" aria-selected="false" data-tab="raw">${esc(t("ui.tabRaw"))}</button>
     </div>
     ${c.demo ? `<div class="notice"><span>ℹ️</span><span>${esc(t("ui.demoNotice"))}</span></div>` : ""}
-    <div id="tab-analysis">${a.ok ? analysisView(c, a, idx, history) : `<div class="glass empty">${esc(t("ui.notEnough"))}</div>`}</div>
+    <div id="tab-analysis">${a.ok ? analysisView(c, a, idx, history) : notAnalyzedView(c)}</div>
     <div id="tab-raw" class="hidden">${rawView(c, a)}</div>`;
 
   app.querySelector(".tabs").addEventListener("click", (e) => {

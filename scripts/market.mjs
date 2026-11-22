@@ -26,6 +26,8 @@ export async function nasdaqScreener(exchanges = ["nasdaq", "nyse", "amex"]) {
         // The screener writes class shares as "BRK/B"; listings use "BRK.B".
         map.set(String(row.symbol).trim().toUpperCase().replace("/", "."), {
           price: num(row.lastsale), marketCap: num(row.marketCap), sector: row.sector || null, industry: row.industry || null, country: row.country || null,
+          // Change since the previous close, in percent (e.g. -1.23); the IPO year when Nasdaq knows it.
+          changePct: num(row.pctchange), ipoYear: num(row.ipoyear) || null,
         });
       }
     } catch (e) {
@@ -44,7 +46,7 @@ export async function nasdaqEtfScreener() {
     const j = await r.json();
     for (const row of j?.data?.data?.rows || j?.data?.rows || []) {
       const pct = num(row.oneYearPercentage);
-      map.set(String(row.symbol).trim().toUpperCase().replace("/", "."), { price: num(row.lastSalePrice), return1y: pct === null ? null : pct / 100 });
+      map.set(String(row.symbol).trim().toUpperCase().replace("/", "."), { price: num(row.lastSalePrice), return1y: pct === null ? null : pct / 100, changePct: num(row.percentageChange) });
     }
   } catch (e) {
     console.warn(`  Nasdaq ETF screener unavailable: ${e.message}`);

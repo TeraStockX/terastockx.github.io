@@ -25,6 +25,7 @@ import { nasdaqScreener, nasdaqEtfScreener, etfSummary, priceHistory, priceBudge
 import { majorEvents } from "./events.mjs";
 import { fillMissingFilings } from "./xbrl-instance.mjs";
 import { buildSeo } from "./seo.mjs";
+import { buildPulse } from "./pulse.mjs";
 import { parseNasdaqListed, parseOtherListed, parseEtfs } from "./listings.mjs";
 import { insiderActivity } from "./insider.mjs";
 import { analyze, computeBenchmarks, scoreHistory, ENGINE_VERSION, DIMENSIONS, dividendProfile } from "../assets/js/scoring.js";
@@ -37,6 +38,8 @@ const UA = process.env.SEC_USER_AGENT || "TeraStockX (github.com/TeraStockX/tera
 const args = process.argv.slice(2);
 const opt = (name) => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : null; };
 const indexOnly = args.includes("--index-only");
+// Intraday mode: only current prices (stocks and ETFs), then the index and the market summary are rebuilt.
+const quotesOnly = args.includes("--quotes-only");
 const skipPrices = args.includes("--skip-prices");
 const skipInsiders = args.includes("--skip-insiders");
 const skipEtfDetails = args.includes("--skip-etf-details");
@@ -59,6 +62,51 @@ async function get(url, type = "json", tries = 4) {
     await sleep(1000 * 2 ** i);
   }
   return null;
+}
+
+const todayIso = () => new Date().toISOString().slice(0, 10);
+
+// Market fields of a company without SEC financials (price and market cap from the screener only).
+function quoteMarket(q, old) {
+  return { price: q.price ?? old?.price ?? null, priceDate: todayIso(), marketCap: q.marketCap ?? old?.marketCap ?? null, changePct: q.changePct ?? null, ipoYear: q.ipoYear ?? old?.ipoYear ?? null, source: q.price ? "Nasdaq" : null };
+}
+
+// The latest periodic report (annual or quarterly) in the company's filing list.
+const REPORT_FORMS = new Set(["10-K", "10-Q", "20-F", "40-F", "10-KT"]);
+function latestReport(sub) {
+  const r = sub?.filings?.recent;
+  if (!r?.form) return null;
+  for (let i = 0; i < r.form.length; i++) {
+    if (REPORT_FORMS.has(r.form[i])) return { form: r.form[i], date: r.filingDate[i], period: r.reportDate?.[i] || null };
+  }
+  return null;
+}
+
+// Intraday: current prices only. Market cap moves with the price; everything else stays from the daily run.
+async function updateQuotes() {
+  const screener = await nasdaqScreener();
+  const etfQuotes = await nasdaqEtfScreener();
+  if (!screener.size) { console.warn("  no quotes; nothing updated"); return; }
+  let n = 0;
+  for (const f of readdirSync(COMPANIES)) {
+    const c = readJson(join(COMPANIES, f));
+    const q = screener.get(c.ticker);
+    if (!q || !Number.isFinite(q.price)) continue;
+    const m = c.market || {};
+    const ratio = Number.isFinite(m.price) && m.price > 0 ? q.price / m.price : null;
+    c.market = { ...m, price: q.price, priceDate: todayIso(), changePct: q.changePct ?? null,
+      marketCap: q.marketCap || (Number.isFinite(m.marketCap) && ratio ? m.marketCap * ratio : m.marketCap ?? null), quoteTime: new Date().toISOString() };
+    writeFileSync(join(COMPANIES, f), JSON.stringify(c) + "\n");
+    n++;
+  }
+  const ef = join(DATA, "etfs.json");
+  if (existsSync(ef) && etfQuotes.size) {
+    const e = readJson(ef);
+    for (const r of e.etfs) { const q = etfQuotes.get(r.t); if (q && Number.isFinite(q.price)) { r.px = q.price; if (Number.isFinite(q.changePct)) r.dc = q.changePct; } }
+    e.quotesAt = new Date().toISOString();
+    writeFileSync(ef, JSON.stringify(e) + "\n");
+  }
+  console.log(`  quotes updated: ${n} companies, ${etfQuotes.size} ETFs`);
 }
 
 async function allListings() {
@@ -100,7 +148,9 @@ async function updateCompanies() {
     try {
       if (!sec) {
         noData++;
-        writeCompany({ ...base, cik: null, sector: sectorFromNasdaq(q.sector), industry: q.industry || null, profile: "general", source: null, annual: [], note: "noSecFiling" });
+        const prev = existsSync(join(COMPANIES, `${item.ticker}.json`)) ? readJson(join(COMPANIES, `${item.ticker}.json`)) : null;
+        writeCompany({ ...base, cik: null, sector: sectorFromNasdaq(q.sector), industry: q.industry || null, profile: "general", source: null, annual: [], note: "noSecFiling",
+          firstSeen: prev ? prev.firstSeen : todayIso(), market: quoteMarket(q, prev?.market) });
         continue;
       }
       const cf = await get(`https://data.sec.gov/api/xbrl/companyfacts/CIK${sec.cik}.json`);
@@ -127,6 +177,9 @@ async function updateCompanies() {
 
       writeCompany({
         ...base,
+        // First day the company appeared in the listings (unknown for companies listed before this was recorded).
+        firstSeen: old ? old.firstSeen : todayIso(),
+        lastReport: latestReport(sub),
         name: sub?.name || cf?.entityName || item.name,
         cik: sec.cik,
         currency,
@@ -146,6 +199,8 @@ async function updateCompanies() {
           sharesOutstandingDate: parsed.sharesOutstandingDate ?? null,
           fxToUsd: currency === "USD" ? 1 : fx[currency] ?? null,
           source: q.price ? "Nasdaq" : hist?.source || null,
+          changePct: q.changePct ?? null,
+          ipoYear: q.ipoYear ?? old?.market?.ipoYear ?? null,
         },
         foreignPrivateIssuer: (sub?.filings?.recent?.form || []).some((f) => f === "20-F" || f === "40-F"),
         events: majorEvents(sub),
@@ -186,7 +241,7 @@ async function updateEtfs() {
   const prev = new Map((existsSync(file) ? readJson(file).etfs || [] : []).map((e) => [e.t, e]));
   const rows = list.map((x) => {
     const q = quotes.get(x.ticker) || {}, p = prev.get(x.ticker) || {};
-    return { t: x.ticker, n: x.name, ex: x.exchange, px: q.price ?? p.px ?? null, r1y: q.return1y ?? p.r1y ?? null, er: p.er ?? null, dy: p.dy ?? null, aum: p.aum ?? null };
+    return { t: x.ticker, n: x.name, ex: x.exchange, px: q.price ?? p.px ?? null, dc: q.changePct ?? null, r1y: q.return1y ?? p.r1y ?? null, er: p.er ?? null, dy: p.dy ?? null, aum: p.aum ?? null };
   }).filter((r) => Number.isFinite(r.px));
   if (!skipEtfDetails) {
     const start = Date.now();
@@ -276,6 +331,15 @@ function buildIndex({ snapshot = false } = {}) {
   const files = readdirSync(COMPANIES).filter((f) => f.endsWith(".json"));
   const all = files.map((f) => readJson(join(COMPANIES, f)));
   const now = new Date();
+  // TeraScore change since the previous day. The daily run compares with the index it replaces and stores
+  // that as the day's baseline (p1); intraday and code-change rebuilds keep the baseline of the daily run.
+  const prevIndexFile = join(DATA, "index.json");
+  const prevRows = new Map();
+  if (existsSync(prevIndexFile)) {
+    const pi = readJson(prevIndexFile);
+    for (const r of pi.companies || []) prevRows.set(r.t, { o: Array.isArray(r.sc) ? r.sc[0] : r.sc?.overall, p1: r.p1 });
+  }
+  const keepBaseline = indexOnly || quotesOnly;
   const today = now.toISOString().slice(0, 10);
 
   // Pass 1: absolute metrics -> sector benchmarks (percentiles). Pass 2: scores relative to the sector.
@@ -305,6 +369,15 @@ function buildIndex({ snapshot = false } = {}) {
       if (dv.payer && Number.isFinite(dv.score)) row.ds = dv.score;
     }
     if (Number.isFinite(c.market?.price)) row.px = c.market.price;
+    if (!row.mc && Number.isFinite(c.market?.marketCap) && c.market.marketCap > 0) row.mc = Math.round(c.market.marketCap);
+    if (Number.isFinite(c.market?.changePct)) row.dc = +c.market.changePct.toFixed(2);
+    if (c.firstSeen) row.fs = c.firstSeen;
+    if (c.market?.ipoYear) row.ipo = c.market.ipoYear;
+    if (c.lastReport?.date) row.lr = `${c.lastReport.date}|${c.lastReport.form}`;
+    const prev = prevRows.get(c.ticker);
+    const baseline = keepBaseline ? prev?.p1 : prev?.o;
+    if (Number.isFinite(baseline)) row.p1 = baseline;
+    if (Number.isFinite(baseline) && a.ok && Number.isFinite(a.scores.overall)) row.d1 = a.scores.overall - baseline;
     // Price against its 12-month high (monthly closes and the latest price) and the one-year change.
     const closes = (c.prices?.data || []).slice(-12).map((x) => x[1]).filter(Number.isFinite);
     const lastPrice = Number.isFinite(c.market?.price) ? c.market.price : closes.at(-1);
@@ -338,6 +411,11 @@ function buildIndex({ snapshot = false } = {}) {
   }).sort((a, b) => a.t.localeCompare(b.t));
   const index = { generated: new Date().toISOString(), engineVersion: ENGINE_VERSION, scoreKeys: ["overall", ...DIMENSIONS], count: companies.length, companies };
   writeFileSync(join(DATA, "index.json"), JSON.stringify(index) + "\n");
+  // Market today (big moves, new reports, score changes, new listings).
+  const etfFile = join(DATA, "etfs.json");
+  const etfData = existsSync(etfFile) ? readJson(etfFile) : { etfs: [] };
+  const pulse = buildPulse({ rows: companies.map((r) => ({ ...r, o: Array.isArray(r.sc) ? r.sc[0] : null })), etfs: etfData.etfs || [], now, quotesAt: quotesOnly ? now.toISOString() : etfData.quotesAt || null });
+  writeFileSync(join(DATA, "pulse.json"), JSON.stringify(pulse) + "\n");
   // Major-events feed: newest first. Critical events and major events of companies above $1 billion
   // are kept for the full 12 months; of the rest only the latest 150.
   news.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : b.severity - a.severity));
@@ -351,7 +429,8 @@ function buildIndex({ snapshot = false } = {}) {
   console.log(`search pages: ${seo.pages} company pages, sitemap with ${seo.sitemap} URLs${process.env.SITE_URL ? "" : " (no SITE_URL: sitemap skipped)"}.`);
 }
 
-if (!indexOnly) await updateCompanies();
-if (!indexOnly && !onlyTickers && limit === Infinity) await updateEtfs();
+if (quotesOnly) await updateQuotes();
+else if (!indexOnly) await updateCompanies();
+if (!indexOnly && !quotesOnly && !onlyTickers && limit === Infinity) await updateEtfs();
 // Weekly snapshots are recorded only by full data updates, not by index rebuilds.
-buildIndex({ snapshot: !indexOnly && !onlyTickers && limit === Infinity });
+buildIndex({ snapshot: !indexOnly && !quotesOnly && !onlyTickers && limit === Infinity });
