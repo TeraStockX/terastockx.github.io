@@ -230,7 +230,7 @@ function pfCurrency(fx) {
   let c = null;
   try { c = localStorage.getItem("tsx-pf-cur"); } catch {}
   if (c && (c === "USD" || fx[c])) return c;
-  const byLang = { hu: "HUF", de: "EUR", fr: "EUR", es: "EUR" }[lang()];
+  const byLang = { hu: "HUF", de: "EUR", fr: "EUR", es: "EUR", zh: "CNY" }[lang()];
   return byLang && fx[byLang] ? byLang : "USD";
 }
 // A full amount (not abbreviated) in a currency: "12 345 678 Ft", "$12,345.68".

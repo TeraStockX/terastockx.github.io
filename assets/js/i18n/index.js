@@ -4,8 +4,9 @@ import hu from "./hu.js";
 import de from "./de.js";
 import fr from "./fr.js";
 import es from "./es.js";
+import zh from "./zh.js";
 
-export const LANGS = { en, hu, de, fr, es };
+export const LANGS = { en, hu, de, fr, es, zh };
 const KEY = "tsx-lang";
 
 let current = "en";
