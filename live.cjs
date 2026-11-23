@@ -2,8 +2,9 @@ const { chromium, devices } = require('playwright');
 (async () => {
   const b = await chromium.launch();
   const shots = [
-    ['v4-zh-home-phone', '#/', true, 'zh', '.hero-stats'],
-    ['v4-portfolio-history-phone', '#/portfolio', true, 'hu', '#pf-history'],
+    ['v5-home-phone', '#/', true, 'hu', null],
+    ['v5-home-scrolled-phone', '#/', true, 'hu', '.hero-stats'],
+    ['v5-zh-home-phone', '#/', true, 'zh', '.hero-stats'],
   ];
   for (const [name, hash, phone, lang, scroll] of shots) {
     const ctx = await b.newContext(phone ? { ...devices['iPhone 13'] } : { viewport: { width: 1360, height: 1000 } });
