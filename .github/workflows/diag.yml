@@ -18,7 +18,7 @@ jobs:
           SEC_UA: ${{ secrets.SEC_USER_AGENT }}
         run: |
           mkdir -p out
-          node explore.mjs > /dev/null 2>&1 || echo "explore failed: $?"
+          node explore2.mjs || echo "explore failed: $?"
           ls -la out
       - name: Save results to the diag branch
         if: always()
