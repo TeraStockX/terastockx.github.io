@@ -8,27 +8,40 @@ permissions:
 jobs:
   d:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with: { ref: diag }
-      - name: Run summaries
+      - name: Chained intraday runs and live data
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p out
           {
-          echo "=== daily 45118568408"
-          gh run view 45118568408 --repo TeraStockX/terastockx.github.io --log 2>&1 | grep -E "logos:|Done:|ERROR|insider|price histories|removed|ETF|data/index.json|search pages|fx|error" | grep -v "Node.js 20" | cut -c1-260 | head -30
-          for r in 45169195822 45181891161; do
+          echo "now $(date -u +%FT%TZ)"
+          echo "=== intraday history"
+          gh run list --repo TeraStockX/terastockx.github.io --workflow intraday.yml --limit 20 --json databaseId,createdAt,updatedAt,event,status,conclusion -q '.[] | "\(.databaseId) \(.createdAt) \(.updatedAt) \(.event) \(.status) \(.conclusion)"'
+          echo "=== pages runs (daily workflow)"
+          gh run list --repo TeraStockX/terastockx.github.io --workflow deploy.yml --limit 4 --json createdAt,event,status,conclusion -q '.[] | "\(.createdAt) \(.event) \(.status) \(.conclusion)"'
+          for r in $(gh run list --repo TeraStockX/terastockx.github.io --workflow intraday.yml --limit 8 --json databaseId,status -q '.[] | select(.status == "completed") | .databaseId'); do
             echo "=== intraday $r"
-            gh run view $r --repo TeraStockX/terastockx.github.io --log 2>&1 | grep -E "new filings|refreshed:|quotes updated|Cache restored|Cache saved|cache|ERROR" | grep -v "Node.js 20" | cut -c1-260 | head -12
+            gh run view $r --repo TeraStockX/terastockx.github.io --log 2>&1 | grep -E "new filings|refreshed:|quotes updated|Cache restored from|Waiting [0-9]|Next run|Another run|Outside the intraday|deployment|Error|error:" | grep -v "Node.js 20" | sed -E 's/^([a-z]+)\t[^\t]*\t/\1 /' | cut -c1-230 | head -14
           done
-          echo "=== intraday schedule history"
-          gh run list --repo TeraStockX/terastockx.github.io --workflow intraday.yml --limit 20 --json createdAt,event,status,conclusion -q '.[] | "\(.createdAt) \(.event) \(.status) \(.conclusion)"'
-          } 2>&1 | tee out/runs.txt
+          echo "=== live data"
+          for f in index.json pulse.json; do
+            curl -sL "https://terastockx.com/data/$f?nocache=$(date +%s)" -o "$f"
+          done
+          node -e 'const i=require("./index.json"), p=require("./pulse.json"); console.log("index.generated", i.generated, "quotesAt", i.quotesAt ?? i.pricesAt ?? "-", "rows", i.companies.length); console.log("pulse", JSON.stringify(p).slice(0, 300));'
+          } 2>&1 | tee out/chain.txt
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Live screenshots
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.49.1 >/dev/null 2>&1
+          npx playwright install --with-deps chromium >/dev/null 2>&1
+          node live.cjs 2>&1 | tee out/chain-shots.txt
       - name: Save results to the diag branch
         if: always()
         run: |
           git config user.name diag; git config user.email diag@users.noreply.github.com
-          git add out && git commit -qm "diag: run summaries" && git push -q origin HEAD:diag
+          git add out && git commit -qm "diag: chain results" && git push -q origin HEAD:diag
