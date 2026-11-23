@@ -504,6 +504,7 @@ test("News headlines: press-release titles, the reported item, kinds of news", a
   assert.match(h.itemSentence(fx("lifx-8k.htm"), ["5.02"]), /^Life360, Inc\. and Chris Hulls, co-founder and Executive Chairman .* will retire as Executive Chairman, effective December 31, 2026\.$/);
   assert.match(h.itemSentence(fx("tpg-8k.htm"), ["7.01", "9.01"]), /^TPG Inc\. posted on its website updated supplemental financial information/);
   assert.equal(h.exhibitPath(fx("nvda-reinstated-index.htm")), "/Archives/edgar/data/1045810/000104581026000090/nov23pressrelease.htm");
+  assert.equal(h.tidyTitle("November 23, 2026 KT-621 Phase 2b Atopic Dermatitis Trial Results Exhibit 99.1"), "KT-621 Phase 2b Atopic Dermatitis Trial Results", "date and exhibit label left out");
   assert.equal(h.firstSentence("Harvey C. Jones was named Chair of the Board. He has served since 1993."), "Harvey C. Jones was named Chair of the Board.");
   assert.equal(h.firstSentence("Acme Inc. today reported results for the U.S. market. Revenue rose."), "Acme Inc. today reported results for the U.S. market.");
   assert.equal(h.classifyNews(["5.02", "9.01"], "NVIDIA Board Reinstates Jensen Huang as President, CEO and Board Director"), "leadership");

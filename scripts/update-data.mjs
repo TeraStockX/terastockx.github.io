@@ -23,7 +23,7 @@ import { parseCompanyFacts } from "./sec-parse.mjs";
 import { sectorFromSic, sectorFromNasdaq, profileFor } from "./sectors.mjs";
 import { nasdaqScreener, nasdaqEtfScreener, etfSummary, priceHistory, priceBudgetLeft, fxToUsd, marketSession, extendedQuotes } from "./market.mjs";
 import { majorEvents, recentFilings } from "./events.mjs";
-import { headlineFor, classifyNews } from "./news-headline.mjs";
+import { headlineFor, classifyNews, tidyTitle } from "./news-headline.mjs";
 import { fillMissingFilings } from "./xbrl-instance.mjs";
 import { buildSeo } from "./seo.mjs";
 import { buildPulse, INDEX_ETFS } from "./pulse.mjs";
@@ -110,7 +110,7 @@ async function companyNews(sub, old) {
   const out = [];
   for (const f of recentFilings(sub)) {
     const hit = cached.get(f.url);
-    if (hit) { out.push({ ...f, title: hit.title, lede: hit.lede ?? null, kind: classifyNews(f.items, `${hit.title} ${hit.lede || ""}`) }); continue; }
+    if (hit) { const title = tidyTitle(hit.title); out.push({ ...f, title, lede: hit.lede ?? null, kind: classifyNews(f.items, `${title} ${hit.lede || ""}`) }); continue; }
     const h = await headlineFor(f, async (url, type) => { const r = await get(url, type); await sleep(110); return r; });
     out.push({ ...f, ...h });
   }

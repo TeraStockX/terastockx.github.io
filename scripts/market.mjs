@@ -93,21 +93,27 @@ export async function marketSession() {
 }
 
 // Latest trades of up to 20 symbols per request (pre-market and after-hours included), with the change
-// against the previous close as Nasdaq reports it. symbols: [{ t, etf }].
-export async function extendedQuotes(symbols) {
+// against the previous close as Nasdaq reports it. symbols: [{ t, etf }]. A few requests run at a time.
+export async function extendedQuotes(symbols, { parallel = 4 } = {}) {
   const out = new Map();
-  for (let i = 0; i < symbols.length; i += 20) {
-    const batch = symbols.slice(i, i + 20);
-    const q = batch.map((x) => `symbol=${encodeURIComponent(x.t.toLowerCase())}%7c${x.etf ? "etf" : "stocks"}`).join("&");
-    try {
-      const r = await fetch(`https://api.nasdaq.com/api/quote/watchlist?${q}`, { headers: BROWSER_HEADERS, signal: AbortSignal.timeout(20000) });
-      for (const x of (await r.json())?.data || []) {
-        const price = num(x.lastSalePrice), changePct = num(x.percentageChange), change = num(x.netChange);
-        if (x.symbol && Number.isFinite(price) && price > 0) out.set(String(x.symbol).toUpperCase(), { price, changePct, change, status: x.marketStatus || null, at: x.lastTradeTimestampDateTime || null });
-      }
-    } catch {}
-    await new Promise((res) => setTimeout(res, 150));
-  }
+  const batches = [];
+  for (let i = 0; i < symbols.length; i += 20) batches.push(symbols.slice(i, i + 20));
+  let next = 0;
+  const worker = async () => {
+    while (next < batches.length) {
+      const batch = batches[next++];
+      const q = batch.map((x) => `symbol=${encodeURIComponent(x.t.toLowerCase())}%7c${x.etf ? "etf" : "stocks"}`).join("&");
+      try {
+        const r = await fetch(`https://api.nasdaq.com/api/quote/watchlist?${q}`, { headers: BROWSER_HEADERS, signal: AbortSignal.timeout(20000) });
+        for (const x of (await r.json())?.data || []) {
+          const price = num(x.lastSalePrice), changePct = num(x.percentageChange), change = num(x.netChange);
+          if (x.symbol && Number.isFinite(price) && price > 0) out.set(String(x.symbol).toUpperCase(), { price, changePct, change, status: x.marketStatus || null, at: x.lastTradeTimestampDateTime || null });
+        }
+      } catch {}
+      await new Promise((res) => setTimeout(res, 150));
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(parallel, batches.length) }, worker));
   return out;
 }
 

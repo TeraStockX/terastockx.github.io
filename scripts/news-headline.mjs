@@ -107,7 +107,11 @@ export function tidySentence(s) {
 const SMALL = new Set(["a", "an", "and", "as", "at", "but", "by", "for", "from", "in", "into", "of", "on", "or", "the", "to", "with", "its"]);
 const KEEP_UPPER = /^(AI|CEO|CFO|COO|CTO|FDA|EPA|SEC|US|USA|U\.S\.|UK|EU|LNG|IPO|ETF|NYSE|IT|R&D|M&A|5G|GPU|CPU|EV|EVS|II|III|IV|LLC|LP|NV|SA|AG|SE|PLC|ESG|Q[1-4]|FY\d*|DAC|MW|GW|TV|PC|NFL|NBA|NHL|MLB)$/;
 export function tidyTitle(s) {
-  const t = String(s || "").replace(/\s+/g, " ").trim().replace(/^[“"]+|[”"]+$/g, "");
+  const t = String(s || "").replace(/\s+/g, " ").trim().replace(/^[“"]+|[”"]+$/g, "")
+    // "November 23, 2026 KT-621 Phase 2b … Results Exhibit 99.1" → "KT-621 Phase 2b … Results"
+    .replace(new RegExp(`^${MONTH}\\.?\\s+\\d{1,2},?\\s+\\d{4}\\s*[-–—:|]?\\s+`, "i"), "")
+    .replace(/\s*[-–—(]?\s*Exhibit\s+\d+(?:\.\d+)?\)?\s*$/i, "")
+    .trim();
   const letters = t.replace(/[^A-Za-z]/g, "");
   if (letters.length < 12 || letters.replace(/[^A-Z]/g, "").length / letters.length < 0.85) return t;
   return t.split(" ").map((w, i) => {
