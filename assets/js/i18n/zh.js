@@ -5,7 +5,7 @@ export default {
   "short": "中文",
   "locale": "zh-CN"
  },
- "ui": { "slogan": "投资者的智能工具。", "notApplicable": "不适用", "bdMissing": "◐ = 因缺少数据无法评分的领域：按中性的 {s} 分计算，但不超过公司其他领域的平均分，因此缺失数据永远不会提高评分。", "bdNote": "以 50 分为起点，每个领域按 权重 ×（得分 − 50）加分或减分；合计即为 TeraScore（{s}，四舍五入）。", "bdMissingShort": "无数据 → {s}", "bdLowers": "拉低", "bdLifts": "提高", "bdTitle": "哪些因素提高、哪些因素拉低 TeraScore？", "basis3y": "3 年依据", "netCashLoss": "净现金但亏损：{s} 分", "runwayCap": "公司消耗现金时作为流动性评分的上限", "capLabel": "上限", "yearsUnit": "{n} 年",
+ "ui": { "classTitle": "该公司有多个上市股票类别，主要区别在于投票权。所有类别的财务数据和 TeraScore 相同。", "classNonVoting": "无投票权", "classVoting": "有投票权", "classLetter": "{c} 类股", "slogan": "投资者的智能工具。", "notApplicable": "不适用", "bdMissing": "◐ = 因缺少数据无法评分的领域：按中性的 {s} 分计算，但不超过公司其他领域的平均分，因此缺失数据永远不会提高评分。", "bdNote": "以 50 分为起点，每个领域按 权重 ×（得分 − 50）加分或减分；合计即为 TeraScore（{s}，四舍五入）。", "bdMissingShort": "无数据 → {s}", "bdLowers": "拉低", "bdLifts": "提高", "bdTitle": "哪些因素提高、哪些因素拉低 TeraScore？", "basis3y": "3 年依据", "netCashLoss": "净现金但亏损：{s} 分", "runwayCap": "公司消耗现金时作为流动性评分的上限", "capLabel": "上限", "yearsUnit": "{n} 年",
   "pfCurrency": "货币",
   "pfAllocTitle": "配置",
   "pfByHolding": "按持仓",

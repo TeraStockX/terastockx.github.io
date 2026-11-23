@@ -421,6 +421,23 @@ async function allListings() {
   return [...nasdaq, ...other].filter((x) => !seen.has(x.ticker) && seen.add(x.ticker));
 }
 
+// Share classes of the listed securities (ticker → "A", "B", "C" … or "V" / "NV" for voting / non-voting),
+// from the security names of the listings; refreshed by the daily run, fetched once by other runs.
+const CLASSES_FILE = join(DATA, "classes.json");
+function writeClasses(list) {
+  const classes = Object.fromEntries(list.filter((x) => x.cls).map((x) => [x.ticker, x.cls]));
+  const out = JSON.stringify({ generated: new Date().toISOString(), classes }) + "\n";
+  writeFileSync(CLASSES_FILE, out);
+  if (OVERLAY) { mkdirSync(OVERLAY, { recursive: true }); writeFileSync(join(OVERLAY, "classes.json"), out); }
+}
+async function ensureClasses() {
+  const fresh = (f) => { try { return existsSync(f) && Date.now() - Date.parse(readJson(f).generated) < 3 * 86400000; } catch { return false; } };
+  if (fresh(CLASSES_FILE)) return;
+  const kept = OVERLAY && join(OVERLAY, "classes.json");
+  if (kept && fresh(kept)) { writeFileSync(CLASSES_FILE, readFileSync(kept)); return; }
+  try { writeClasses(await allListings()); } catch (e) { console.warn(`Share classes not updated: ${e.message}`); }
+}
+
 async function secTickers() {
   const j = await get("https://www.sec.gov/files/company_tickers_exchange.json");
   const map = new Map();
@@ -507,6 +524,7 @@ async function updateCompanies() {
   mkdirSync(COMPANIES, { recursive: true });
   console.log("Downloading listings…");
   let list = await allListings();
+  writeClasses(list);
   const byEx = {};
   for (const x of list) byEx[x.exchange] = (byEx[x.exchange] || 0) + 1;
   console.log(`  ${list.length} common stocks`, byEx);
@@ -692,6 +710,13 @@ function buildIndex({ snapshot = false } = {}) {
   writeFileSync(join(DATA, "benchmarks.json"), JSON.stringify({ generated: new Date().toISOString(), engineVersion: ENGINE_VERSION, sectors: benchmarks }) + "\n");
   ensureBacktest(all, benchmarks);
 
+  // Companies with several listed share classes (same SEC registrant): each row gets its class label.
+  const classes = existsSync(CLASSES_FILE) ? readJson(CLASSES_FILE).classes || {} : {};
+  const registrant = (c) => c.cik || c.name;
+  const listed = new Map();
+  for (const c of all) listed.set(registrant(c), (listed.get(registrant(c)) || 0) + 1);
+  const shareClass = (c) => (listed.get(registrant(c)) > 1 ? classes[c.ticker] || c.ticker.match(/[.-]([A-Z])$/)?.[1] || null : null);
+
   const news = [];
   const recentNews = []; // headlines of large companies for the top stories
   const logos = logoSet(DATA);
@@ -699,6 +724,8 @@ function buildIndex({ snapshot = false } = {}) {
     const a = analyze(c, { benchmarks });
     const row = { t: c.ticker, n: c.name, s: c.sector || null, ex: c.exchange || null };
     if (c.industry) row.i = c.industry;
+    const cls = shareClass(c);
+    if (cls) row.cl = cls;
     if (c.currency && c.currency !== "USD") row.cur = c.currency;
     if (c.demo) row.demo = true;
     if (logos.has(c.ticker)) row.lg = 1;
@@ -804,4 +831,5 @@ if (!indexOnly && !quotesOnly && !onlyTickers && limit === Infinity) {
   await updateEtfHistory().catch((e) => console.warn(`ETF history: ${e.message}`));
 }
 // Weekly snapshots are recorded only by full data updates, not by index rebuilds.
+await ensureClasses();
 buildIndex({ snapshot: !indexOnly && !quotesOnly && !onlyTickers && limit === Infinity });

@@ -9,6 +9,19 @@ export const EXCHANGES = { Q: "NASDAQ", N: "NYSE", A: "NYSE American", Z: "Cboe 
 // Warrants, units, rights and notes share the issuer's SEC filings; only the shares themselves are analyzed.
 export const DERIVATIVE = /\b(warrants?|units?|rights?|notes? due|debentures?|subordinated|preferred|depositary shares, each representing a fractional|when issued)\b/i;
 
+// Share class from the security name ("Alphabet Inc. - Class C Capital Stock" → "C",
+// "Liberty Media Corporation - Series A ..." → "A", "... Common Stock (Voting)" → "V", "Non-Voting" → "NV").
+// Shown only where one company has several listed share classes (GOOGL / GOOG, BRK.A / BRK.B …).
+export function shareClassOf(securityName) {
+  const n = String(securityName || "");
+  const m = n.match(/\b(?:Class|Series)\s+([A-Z])\b/);
+  if (m) return m[1];
+  if (/\bnon[- ]?voting\b/i.test(n)) return "NV";
+  if (/\bvoting\b/i.test(n)) return "V";
+  return null;
+}
+const withClass = (o, securityName) => { const cls = shareClassOf(securityName); return cls ? { ...o, cls } : o; };
+
 export function cleanName(n) {
   return String(n)
     .replace(/\s+-\s+.*$/, "")
@@ -25,14 +38,14 @@ function parseTable(txt) {
 export function parseNasdaqListed(txt) {
   return parseTable(txt)
     .filter((r) => r["Test Issue"] === "N" && r.ETF === "N" && !DERIVATIVE.test(r["Security Name"]))
-    .map((r) => ({ ticker: r.Symbol, name: cleanName(r["Security Name"]), exchange: EXCHANGES.Q }));
+    .map((r) => withClass({ ticker: r.Symbol, name: cleanName(r["Security Name"]), exchange: EXCHANGES.Q }, r["Security Name"]));
 }
 
 export function parseOtherListed(txt) {
   return parseTable(txt)
     .filter((r) => EXCHANGES[r.Exchange] && r.Exchange !== "Q" && r["Test Issue"] === "N" && r.ETF === "N")
     .filter((r) => !DERIVATIVE.test(r["Security Name"]) && !/[$^+=]/.test(r["ACT Symbol"]))
-    .map((r) => ({ ticker: r["ACT Symbol"], name: cleanName(r["Security Name"]), exchange: EXCHANGES[r.Exchange] }));
+    .map((r) => withClass({ ticker: r["ACT Symbol"], name: cleanName(r["Security Name"]), exchange: EXCHANGES[r.Exchange] }, r["Security Name"]));
 }
 
 // Exchange-traded funds of both directories (NYSE Arca included). Shown only in the portfolio:

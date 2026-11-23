@@ -1,6 +1,6 @@
 export default {
   meta: { name: "Deutsch", short: "DE", locale: "de-DE" },
-  ui: { "slogan": "Das smarte Werkzeug für Anleger.", "notApplicable": "entfällt", "bdMissing": "◐ = mangels Daten nicht bewertbarer Bereich: zählt neutral mit {s} Punkten, höchstens aber mit dem Durchschnitt der übrigen Bereiche, fehlende Daten können den Wert also nie verbessern.", "bdNote": "Ausgehend von 50 fügt jeder Bereich Gewicht × (Punktzahl − 50) hinzu oder zieht es ab; die Summe ist der TeraScore ({s}, gerundet).", "bdMissingShort": "keine Daten → {s}", "bdLowers": "Senkt", "bdLifts": "Hebt", "bdTitle": "Was hebt und was senkt den TeraScore?", "basis3y": "3-J.-Basis", "netCashLoss": "Nettoliquidität, Verlust: {s} Pkt.", "runwayCap": "begrenzt die Liquidität, solange Geld verbrannt wird", "capLabel": "Obergrenze", "yearsUnit": "{n} J.",
+  ui: { "classTitle": "Das Unternehmen hat mehrere börsennotierte Aktiengattungen; sie unterscheiden sich vor allem im Stimmrecht. Finanzdaten und TeraScore sind bei allen gleich.", "classNonVoting": "Stimmrechtslos", "classVoting": "Stimmberechtigt", "classLetter": "Klasse {c}", "slogan": "Das smarte Tool für Anleger.", "notApplicable": "entfällt", "bdMissing": "◐ = mangels Daten nicht bewertbarer Bereich: zählt neutral mit {s} Punkten, höchstens aber mit dem Durchschnitt der übrigen Bereiche, fehlende Daten können den Wert also nie verbessern.", "bdNote": "Ausgehend von 50 fügt jeder Bereich Gewicht × (Punktzahl − 50) hinzu oder zieht es ab; die Summe ist der TeraScore ({s}, gerundet).", "bdMissingShort": "keine Daten → {s}", "bdLowers": "Senkt", "bdLifts": "Hebt", "bdTitle": "Was hebt und was senkt den TeraScore?", "basis3y": "3-J.-Basis", "netCashLoss": "Nettoliquidität, Verlust: {s} Pkt.", "runwayCap": "begrenzt die Liquidität, solange Geld verbrannt wird", "capLabel": "Obergrenze", "yearsUnit": "{n} J.",
     pfCurrency: "Währung",
     pfAllocTitle: "Aufteilung",
     pfByHolding: "Nach Positionen",
@@ -17,7 +17,7 @@ export default {
     etfDist: "ausschüttend",
     cmpPartialNote: "In den Berichten dieser Unternehmen fehlen Daten, daher ist ihre Analyse unvollständig und ihre Bewertung weniger sicher: {list}. Bereiche mit „keine Daten“ bleiben im TeraScore unberücksichtigt (sie zählen nicht als null).",
     showMore: "Mehr anzeigen",
-    tagline: "Fundamentalanalyse von Aktien, klar aufbereitet.",
+    tagline: "Fundamentalanalyse, klar aufbereitet.",
     heroText: "Alle an Nasdaq, NYSE, NYSE American und Cboe notierten Unternehmen, bewertet in zehn Anlagedimensionen – Rentabilität, Cashflow-Qualität, Bilanzstärke, Wachstum, Bewertung und Risiko – auf Basis geprüfter SEC-Berichte und im Vergleich zu Sektorkollegen.",
     navCompanies: "Unternehmen", navCompare: "Vergleich", navMethod: "Methodik", language: "Sprache",
     searchPlaceholder: "Ticker oder Firmenname suchen (z. B. AAPL, Apple)",

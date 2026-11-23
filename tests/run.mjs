@@ -178,6 +178,20 @@ test("Listings: common stocks of Nasdaq, NYSE, NYSE American and Cboe; no ETFs, 
   const other = parseOtherListed("ACT Symbol|Security Name|Exchange|CQS Symbol|ETF|Round Lot Size|Test Issue|NASDAQ Symbol\nKO|Coca-Cola Company (The) Common Stock|N|KO|N|100|N|KO\nBRK.B|Berkshire Hathaway Inc. Class B Common Stock|N|BRK.B|N|100|N|BRK=B\nSPY|SPDR S&P 500|P|SPY|Y|100|N|SPY\nABR$D|Arbor Preferred|N|ABRpD|N|100|N|ABR-D\nIMO|Imperial Oil Limited Common Stock|A|IMO|N|100|N|IMO");
   assert.deepEqual(other.map((x) => [x.ticker, x.exchange]), [["KO", "NYSE"], ["BRK.B", "NYSE"], ["IMO", "NYSE American"]]);
   assert.equal(cleanName("Berkshire Hathaway Inc. Class B Common Stock"), "Berkshire Hathaway Inc.");
+  assert.equal(other.find((x) => x.ticker === "BRK.B").cls, "B");
+});
+
+test("Share classes from the listings: GOOGL is class A, GOOG class C", async () => {
+  const { shareClassOf } = await import("../scripts/listings.mjs");
+  assert.equal(shareClassOf("Alphabet Inc. - Class A Common Stock"), "A");
+  assert.equal(shareClassOf("Alphabet Inc. - Class C Capital Stock"), "C");
+  assert.equal(shareClassOf("Liberty Media Corporation - Series C Liberty Formula One Common Stock"), "C");
+  assert.equal(shareClassOf("McCormick & Company, Incorporated Common Stock (Voting)"), "V");
+  assert.equal(shareClassOf("McCormick & Company, Incorporated Common Stock Non-Voting"), "NV");
+  assert.equal(shareClassOf("Apple Inc. - Common Stock"), null);
+  const nq = parseNasdaqListed("Symbol|Security Name|Market Category|Test Issue|Financial Status|Round Lot Size|ETF|NextShares\nGOOGL|Alphabet Inc. - Class A Common Stock|Q|N|N|100|N|N\nGOOG|Alphabet Inc. - Class C Capital Stock|Q|N|N|100|N|N");
+  assert.deepEqual(nq.map((x) => [x.ticker, x.name, x.cls]), [["GOOGL", "Alphabet Inc.", "A"], ["GOOG", "Alphabet Inc.", "C"]]);
+  for (const [code, d] of Object.entries(LANGS)) for (const k of ["classLetter", "classVoting", "classNonVoting", "classTitle", "slogan"]) assert.ok(d.ui[k], `${code}: ui.${k}`);
 });
 
 test("Reporting currency of foreign filers", () => {

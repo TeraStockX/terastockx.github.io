@@ -198,13 +198,17 @@ function dqChip(row) {
 const coName = (row) => dict().names?.[row?.t] || row?.n || "";
 
 // The company cell of every list: star, logo, ticker (link), exchange and badges, name.
+// Share class of a company with several listed classes (GOOGL "Class A", GOOG "Class C", BRK.B …).
+const classLabel = (cl) => (cl === "V" ? t("ui.classVoting") : cl === "NV" ? t("ui.classNonVoting") : t("ui.classLetter", { c: cl }));
+const classBadge = (row) => (row?.cl ? `<span class="badge cls" title="${esc(t("ui.classTitle"))}">${esc(classLabel(row.cl))}</span>` : "");
+
 function companyCell(row, { star = true, watch = null } = {}) {
   const on = (watch || new Set(getWatch())).has(row.t);
   return `<div class="co">
       ${star ? starBtn(row.t, on) : ""}${logo(row)}
       <div class="co-txt">
         <div class="co-top">${companyLink(row, `<span class="tick">${esc(row.t)}</span>`)}${row.demo ? `<span class="badge">${esc(t("ui.demoBadge"))}</span>` : ""}${row.ex ? `<span class="badge ex">${esc(row.ex)}</span>` : ""}${isNewListing(row) ? `<span class="badge new">${esc(t("dq.newBadge"))}</span>` : ""}${partialMark(row, true)}</div>
-        <div class="cname-row"><span class="cname small">${esc(coName(row))}</span>${partialMark(row)}</div>
+        <div class="cname-row"><span class="cname small">${esc(coName(row))}</span>${classBadge(row)}${partialMark(row)}</div>
       </div>
     </div>`;
 }
@@ -478,8 +482,7 @@ async function renderList() {
     <section class="glass hero">
       <div>
         <h1>TeraStock<b>X</b></h1>
-        <div class="tagline">${esc(t("ui.tagline"))}</div>
-        <div class="slogan">${esc(t("ui.slogan"))}</div>
+        <div class="tagline">${esc(t("ui.tagline"))} ${esc(t("ui.slogan"))}</div>
         <p>${esc(t("ui.heroText"))}</p>
         <div class="hero-stats">
           <div class="hero-stat"><div class="v">${num(idx.companies.filter((c) => isNum(c.sc?.overall)).length, 0)}</div><div class="k">${esc(t("ui.ratedCompanies"))}</div></div>
@@ -548,6 +551,7 @@ async function renderList() {
     <div class="pager" id="pager"></div>
     ${idx.companies.some((c) => c.demo) ? `<p class="small muted" style="margin-top:16px">${esc(t("ui.demoNote"))}</p>` : ""}
   `;
+  fitTagline();
 
   const draw = () => {
     const q = listState.q.trim();
@@ -1026,7 +1030,7 @@ async function renderCompany(ticker) {
         <div>
         <h1>${esc(coName({ t: c.ticker, n: c.name }))}</h1>${dict().names?.[c.ticker] ? `<div class="small muted">${esc(c.name)}</div>` : ""}
         <div class="sub">
-          <span class="ticker-chip">${esc(c.ticker)}</span><span class="badge ex">${esc(c.exchange || "NASDAQ")}</span>${row && isNewListing(row) ? `<span class="badge new">${esc(t("dq.newBadge"))}</span>` : ""}
+          <span class="ticker-chip">${esc(c.ticker)}</span><span class="badge ex">${esc(c.exchange || "NASDAQ")}</span>${classBadge(row)}${row && isNewListing(row) ? `<span class="badge new">${esc(t("dq.newBadge"))}</span>` : ""}
           ${c.country ? `<span>· ${esc(c.country)}</span>` : ""}
           ${c.sector ? `<span>· ${esc(sectorName(c.sector))}</span>` : ""}
           ${c.industry ? `<span>· ${esc(c.industry)}</span>` : ""}
@@ -1071,6 +1075,18 @@ const riskExplain = () => t("ui.riskExplain", {
   bs: Math.round(RISK_WEIGHTS.balanceSheet * 100), co: Math.round(RISK_WEIGHTS.consistency * 100), cf: Math.round(RISK_WEIGHTS.cashFlow * 100),
   pr: Math.round(RISK_WEIGHTS.profitability * 100), li: Math.round(RISK_WEIGHTS.liquidity * 100),
 });
+
+// Home: the tagline and the slogan share at most two lines; on narrow screens the text shrinks a little.
+function fitTagline(maxLines = 2, minPx = 13) {
+  const el = document.querySelector(".hero .tagline");
+  if (!el) return;
+  el.style.fontSize = "";
+  const lines = () => { const cs = getComputedStyle(el); return Math.round(el.getBoundingClientRect().height / parseFloat(cs.lineHeight)); };
+  let fs = parseFloat(getComputedStyle(el).fontSize);
+  while (lines() > maxLines && fs > minPx) { fs -= 0.5; el.style.fontSize = `${fs}px`; }
+}
+let fitTimer = 0;
+window.addEventListener("resize", () => { clearTimeout(fitTimer); fitTimer = setTimeout(() => fitTagline(), 150); });
 
 // Extra line under a metric's value: the 3-year scoring basis, or why a special rule applied.
 function partNote(p, cur) {

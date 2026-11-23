@@ -1,6 +1,6 @@
 export default {
   meta: { name: "Français", short: "FR", locale: "fr-FR" },
-  ui: { "slogan": "L'outil intelligent des investisseurs.", "notApplicable": "sans objet", "bdMissing": "◐ = domaine non notable faute de données : il compte pour une valeur neutre de {s}, ou pour la moyenne des autres domaines de l'entreprise si elle est plus basse, des données manquantes ne peuvent donc jamais relever la note.", "bdNote": "Au départ de 50, chaque domaine ajoute ou retire son poids × (sa note − 50) ; la somme donne le TeraScore ({s}, arrondi).", "bdMissingShort": "pas de données → {s}", "bdLowers": "Font baisser", "bdLifts": "Font monter", "bdTitle": "Qu'est-ce qui fait monter ou baisser le TeraScore ?", "basis3y": "base 3 ans", "netCashLoss": "trésorerie nette, en perte : {s} pts", "runwayCap": "plafonne la liquidité tant que l'entreprise brûle du cash", "capLabel": "plafond", "yearsUnit": "{n} ans",
+  ui: { "classTitle": "La société a plusieurs catégories d'actions cotées ; elles diffèrent surtout par le droit de vote. Les données financières et le TeraScore sont les mêmes pour toutes.", "classNonVoting": "Sans droit de vote", "classVoting": "Avec droit de vote", "classLetter": "Classe {c}", "slogan": "L'outil malin des investisseurs.", "notApplicable": "sans objet", "bdMissing": "◐ = domaine non notable faute de données : il compte pour une valeur neutre de {s}, ou pour la moyenne des autres domaines de l'entreprise si elle est plus basse, des données manquantes ne peuvent donc jamais relever la note.", "bdNote": "Au départ de 50, chaque domaine ajoute ou retire son poids × (sa note − 50) ; la somme donne le TeraScore ({s}, arrondi).", "bdMissingShort": "pas de données → {s}", "bdLowers": "Font baisser", "bdLifts": "Font monter", "bdTitle": "Qu'est-ce qui fait monter ou baisser le TeraScore ?", "basis3y": "base 3 ans", "netCashLoss": "trésorerie nette, en perte : {s} pts", "runwayCap": "plafonne la liquidité tant que l'entreprise brûle du cash", "capLabel": "plafond", "yearsUnit": "{n} ans",
     pfCurrency: "Devise",
     pfAllocTitle: "Répartition",
     pfByHolding: "Par position",
@@ -17,7 +17,7 @@ export default {
     etfDist: "distribuant",
     cmpPartialNote: "Des données manquent dans les rapports de ces entreprises : leur analyse est partielle et leurs notes moins sûres : {list}. Les domaines marqués « pas de données » sont exclus du TeraScore (ils ne comptent pas pour zéro).",
     showMore: "Afficher plus",
-    tagline: "L'analyse fondamentale des actions, en toute clarté.",
+    tagline: "L'analyse fondamentale, en toute clarté.",
     heroText: "Toutes les sociétés cotées au Nasdaq, au NYSE, au NYSE American et sur Cboe, notées selon dix dimensions d'investissement – rentabilité, qualité des flux, solidité du bilan, croissance, valorisation et risque – à partir des rapports audités de la SEC et comparées à leurs pairs sectoriels.",
     navCompanies: "Sociétés", navCompare: "Comparer", navMethod: "Méthodologie", language: "Langue",
     searchPlaceholder: "Rechercher un ticker ou une société (ex. AAPL, Apple)",
