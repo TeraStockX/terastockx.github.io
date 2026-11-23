@@ -1,0 +1,4 @@
+v9-home-hu-phone {"text":"Fundamentális részvényelemzés, átláthatóan. Az okos befektetői eszköz.","fs":"8.25px","lines":1} no errors
+v9-home-en-phone {"text":"Fundamental equity analysis, made clear. The smart tool for investors.","fs":"8.25px","lines":1} no errors
+v9-home-en-desktop {"text":"Fundamental equity analysis, made clear. The smart tool for investors.","fs":"22px","lines":1} no errors
+v9-home-hu-desktop {"text":"Fundamentális részvényelemzés, átláthatóan. Az okos befektetői eszköz.","fs":"22px","lines":1} no errors
