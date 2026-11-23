@@ -1,0 +1,2 @@
+chain-home-phone {"hero":"4660 | Vállalat TeraScore-ral | 0 | Figyelőlista | Most | Frissítve"} no errors
+chain-market-phone {"asOf":"Árfolyamok: most (kb. 15 perces késéssel). Hétköznap az amerikai kereskedési időben 5 percenként, előtte és utána 10 percenként frissülnek az árfolyamok, a TeraScore-ok, a hírek és az új jelentések."} no errors

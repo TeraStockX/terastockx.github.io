@@ -1,0 +1,65 @@
+now 2026-11-23T13:57:50Z
+=== intraday history
+45188631579 2026-11-23T13:54:48Z 2026-11-23T13:55:54Z workflow_dispatch in_progress 
+45187789778 2026-11-23T13:49:45Z 2026-11-23T13:54:50Z workflow_dispatch completed success
+45186945963 2026-11-23T13:44:43Z 2026-11-23T13:49:49Z workflow_dispatch completed success
+45181891161 2026-11-23T13:14:06Z 2026-11-23T13:15:05Z schedule completed success
+45169195822 2026-11-23T11:53:24Z 2026-11-23T11:54:20Z schedule completed success
+45167473389 2026-11-23T11:41:40Z 2026-11-23T11:42:46Z workflow_dispatch completed success
+=== pages runs (daily workflow)
+2026-11-23T13:44:37Z push completed success
+2026-11-23T12:14:04Z push completed success
+2026-11-23T11:41:07Z push completed success
+2026-11-23T05:33:53Z schedule completed success
+=== intraday 45187789778
+build 2026-11-23T13:50:01.1821348Z Cache restored from key: intraday-45186945963
+build 2026-11-23T13:50:18.7776264Z   new filings: 117 in the SEC feed, 5 companies to refresh (90 kept from earlier runs today)
+build 2026-11-23T13:50:19.7385769Z   refreshed: 0 with a new report, 5 with a new current report; 0 left for the next run
+build 2026-11-23T13:50:24.2033155Z   quotes updated: 5857 companies, 5521 ETFs
+deploy 2026-11-23T13:50:49.9466507Z Creating Pages deployment with payload:
+deploy 2026-11-23T13:50:50.9539962Z Created deployment for b2642210398df62d0c69c5c9690a747fecc89542, ID: b2642210398df62d0c69c5c9690a747fecc89542
+deploy 2026-11-23T13:50:55.9551073Z Getting Pages deployment status...
+next 2026-11-23T13:51:01.8032125Z ^[[36;1m  echo "Outside the intraday hours: no next run (the schedule starts the chain again)."; exit 0^[[0m
+next 2026-11-23T13:51:01.8041788Z ^[[36;1mif [ "$others" -gt 0 ]; then echo "Another run is already waiting; it continues the chain."; exit 0; fi^[[0m
+next 2026-11-23T13:51:01.8044211Z ^[[36;1mecho "Next run started."^[[0m
+next 2026-11-23T13:51:02.9834068Z Waiting 223s
+next 2026-11-23T13:54:48.3134127Z Next run started.
+=== intraday 45186945963
+build 2026-11-23T13:44:54.3903718Z Cache restored from key: intraday-45181891161
+build 2026-11-23T13:45:14.0377767Z   new filings: 112 in the SEC feed, 18 companies to refresh (74 kept from earlier runs today)
+build 2026-11-23T13:45:16.4808530Z   refreshed: 0 with a new report, 18 with a new current report; 0 left for the next run
+build 2026-11-23T13:45:19.1444963Z   quotes updated: 5857 companies, 5521 ETFs
+deploy 2026-11-23T13:45:38.2795330Z Creating Pages deployment with payload:
+deploy 2026-11-23T13:45:38.7770514Z Created deployment for b2642210398df62d0c69c5c9690a747fecc89542, ID: b2642210398df62d0c69c5c9690a747fecc89542
+deploy 2026-11-23T13:45:43.7778078Z Getting Pages deployment status...
+next 2026-11-23T13:45:49.7531987Z ^[[36;1m  echo "Outside the intraday hours: no next run (the schedule starts the chain again)."; exit 0^[[0m
+next 2026-11-23T13:45:49.7540982Z ^[[36;1mif [ "$others" -gt 0 ]; then echo "Another run is already waiting; it continues the chain."; exit 0; fi^[[0m
+next 2026-11-23T13:45:49.7543097Z ^[[36;1mecho "Next run started."^[[0m
+next 2026-11-23T13:45:50.7175124Z Waiting 233s
+next 2026-11-23T13:49:46.1055895Z Next run started.
+=== intraday 45181891161
+build 2026-11-23T13:14:15.2388351Z Cache restored from key: intraday-45169195822
+build 2026-11-23T13:14:28.7449373Z   new filings: 92 in the SEC feed, 46 companies to refresh (29 kept from earlier runs today)
+build 2026-11-23T13:14:37.2716228Z   refreshed: 3 with a new report, 43 with a new current report; 0 left for the next run
+build 2026-11-23T13:14:39.7935271Z   quotes updated: 5857 companies, 5519 ETFs
+deploy 2026-11-23T13:14:57.8591384Z Creating Pages deployment with payload:
+deploy 2026-11-23T13:14:58.3106762Z Created deployment for 85bc8b5dc96c355e60f9c69eec29ed39bd49d77c, ID: 85bc8b5dc96c355e60f9c69eec29ed39bd49d77c
+deploy 2026-11-23T13:15:03.3121128Z Getting Pages deployment status...
+=== intraday 45169195822
+build 2026-11-23T11:53:35.1552744Z Cache restored from key: intraday-45167473389
+build 2026-11-23T11:53:51.2730370Z   new filings: 35 in the SEC feed, 3 companies to refresh (26 kept from earlier runs today)
+build 2026-11-23T11:53:51.7991027Z   refreshed: 0 with a new report, 3 with a new current report; 0 left for the next run
+build 2026-11-23T11:53:54.2685742Z   quotes updated: 5858 companies, 5521 ETFs
+deploy 2026-11-23T11:54:12.7677310Z Creating Pages deployment with payload:
+deploy 2026-11-23T11:54:13.2694264Z Created deployment for 7861a5ecc3da6a256d95b7f41066a5e9eb874df5, ID: 7861a5ecc3da6a256d95b7f41066a5e9eb874df5
+deploy 2026-11-23T11:54:18.2705673Z Getting Pages deployment status...
+=== intraday 45167473389
+build 2026-11-23T11:42:07.5639251Z   new filings: 32 in the SEC feed, 26 companies to refresh (0 kept from earlier runs today)
+build 2026-11-23T11:42:12.6104962Z   refreshed: 3 with a new report, 23 with a new current report; 0 left for the next run
+build 2026-11-23T11:42:16.1551600Z   quotes updated: 5858 companies, 5521 ETFs
+deploy 2026-11-23T11:42:37.4384030Z Creating Pages deployment with payload:
+deploy 2026-11-23T11:42:38.9171854Z Created deployment for 7861a5ecc3da6a256d95b7f41066a5e9eb874df5, ID: 7861a5ecc3da6a256d95b7f41066a5e9eb874df5
+deploy 2026-11-23T11:42:43.9180000Z Getting Pages deployment status...
+=== live data
+index.generated 2026-11-23T13:55:29.280Z quotesAt - rows 5879
+pulse {"generated":"2026-11-23T13:55:26.671Z","quotesAt":"2026-11-23T13:55:26.671Z","indices":[{"t":"SPY","n":"State Street SPDR S&P 500 ETF Trust","px":690.43,"dc":-2.0060348681269558},{"t":"QQQ","n":"Invesco QQQ Trust, Series 1","px":608.45,"dc":-2.2432717350861964},{"t":"DIA","n":"State Street SPDR Dow
