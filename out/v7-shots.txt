@@ -1,0 +1,3 @@
+v7-home-en-phone {"tagline":"Fundamental equity analysis, made clear.","slogan":"The smart tool for investors."} no errors
+v7-home-hu-phone {"tagline":"Fundamentális részvényelemzés, átláthatóan.","slogan":"Az okos eszköz befektetőknek."} no errors
+v7-home-en-desktop {"tagline":"Fundamental equity analysis, made clear.","slogan":"The smart tool for investors."} no errors

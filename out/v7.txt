@@ -1,0 +1,15 @@
+now 2026-11-23T21:46:55Z run 45272246625
+build 2026-11-23T21:41:49.9234438Z (node:2462) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse(
+build 2026-11-23T21:42:05.2034668Z   refreshed: 5 with a new report, 1 with a new current report; 0 left for the next run
+build 2026-11-23T21:42:19.6714579Z   quotes updated: 5857 companies (1884 with a quote of the day), 0 ETFs in the screener; session: post; live quotes: 304, kept from today's session: 2100
+build 2026-11-23T21:42:25.5037837Z (node:2509) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse(
+build 2026-11-23T21:42:27.1220999Z   if-no-files-found: error
+build 2026-11-23T21:42:28.2208301Z (node:2535) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse(
+deploy 2026-11-23T21:42:43.5065041Z   error_count: 10
+--- backtest.json
+{"generated":"2026-11-23T20:58:04.468Z","engineVersion":"2.1.0","period":{"first":"2021-02","last":"2025-11","lastPrice":"2026-11"},"minMarketCap":300000000,"observations":57528,"companies":3897,"formationDates":20,"rankIC":0.218,"positiveShare":1,"quintiles":[{"q":1,"avgScore":19,"excess":-0.067,"bigLoss":0.372,"drawdown":-0.548},{"q":2,"avgScore":38,"excess":0.041,"bigLoss":0.137,"drawdown":-0.356},{"q":3,"avgScore":54,"excess":0.072,"bigLoss":0.06,"drawdown":-0.276},{"q":4,"avgScore":64,"excess":0.075,"bigLoss":0.038,"drawdown":-0.255},{"q":5,"avgScore":75,"excess":0.092,"bigLoss":0.034,"drawdown":-0.247}],"riskQuintiles":[{"q":1,"drawdown":-0.231,"bigLoss":0.027},{"q":2,"drawdown":-0.25,"bigLoss":0.038},{"q":3,"drawdown":-0.292,"bigLoss":0.073},{"q":4,"drawdown":-0.372,"bigLoss":0.152},{"q":5,"drawdown":-0.537,"bigLoss":0.351}],"bands":[{"band":"excellent","share":0.032,"excess":0.113,"bigLoss":0.027},{"band":"strong","share":0.263,"excess":0.082,"bigLoss":0.033},{"band":"moderate","share":0.336,"excess":0.073,"bigLoss":0.057},{"band":"weak","share":0.211,"excess":0.036,"bigLoss":0.161},{"band":"poor","share":0.158,"excess":-0.086,"bigLoss":0.408}],"fundamental":{"years":29293,"aucLossOverall":0.893,"aucLossRisk":0.882,"aucDividendCut":0.776,"dividendLevels":[{"level":"safe","n":4749,"cutRate":0.041},{"level":"moderate","n":3610,"cutRate":0.116},{"level":"risky","n":1865,"cutRate":0.205},{"level":"unsafe","n":1547,"cutRate":0.424}]}}
+
+--- index engine
+{"generated":"2026-11-23T21:42:24.265Z","engineVersion":"2.1.0","scoreKeys":["overall","profitability","cashFlow","balan
+--- scoring.js
+ENGINE_VERSION = "2.1.0"
