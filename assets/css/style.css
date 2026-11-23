@@ -537,23 +537,21 @@ h1, h2, h3 { overflow-wrap: break-word; hyphens: auto; }
 /* ---------- Market today ---------- */
 .daychg { font-size: 12px; padding: 2px 8px; vertical-align: middle; }
 /* Home page: market and top stories in one small block */
-.home-pulse { padding: 4px 12px; margin-bottom: 14px; display: flex; flex-direction: column; }
-.hp-line { display: flex; align-items: center; gap: 10px; padding: 6px 0; min-width: 0; }
-.hp-line + .hp-line { border-top: 1px solid var(--border); }
-.hp-label { flex: none; font-weight: 700; font-size: 13px; color: var(--text); white-space: nowrap; text-decoration: none; }
-.hp-label:hover { text-decoration: none; color: var(--accent); }
-.hp-items { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px 14px; font-size: 13px; color: var(--text-2); }
-.hp-items.wrap { flex-wrap: wrap; }
-.hp-items.scroll { overflow-x: auto; scrollbar-width: none; white-space: nowrap; gap: 8px; mask-image: linear-gradient(90deg, #000 88%, transparent); -webkit-mask-image: linear-gradient(90deg, #000 88%, transparent); }
-.hp-items.scroll::-webkit-scrollbar { display: none; }
-.hp-item { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
-.hp-story { display: inline-flex; align-items: center; gap: 6px; flex: none; color: var(--text-2); text-decoration: none; padding: 2px 9px 2px 8px; border-radius: 999px; background: var(--glass-strong); border: 1px solid var(--border); }
+.home-pulse { padding: 8px 12px 6px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px; }
+.hp-title { display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 13px; color: var(--text); text-decoration: none; }
+.hp-title:hover { text-decoration: none; color: var(--accent); }
+.hp-more { font-size: 20px; line-height: 1; color: var(--accent); }
+.hp-items { display: flex; align-items: center; gap: 14px; min-width: 0; font-size: 12.5px; color: var(--text-2); white-space: nowrap; overflow-x: auto; scrollbar-width: none; }
+.hp-items::-webkit-scrollbar { display: none; }
+.hp-item { display: inline-flex; align-items: baseline; gap: 5px; flex: none; }
+.hp-items b.up { color: var(--good-ink); } .hp-items b.down { color: var(--critical-ink); }
+.hp-line { display: flex; align-items: center; gap: 10px; min-width: 0; padding-top: 5px; border-top: 1px solid var(--border); }
+.hp-label { flex: none; font-weight: 700; font-size: 12.5px; color: var(--text); text-decoration: none; }
+.hp-items.scroll { flex: 1; gap: 8px; mask-image: linear-gradient(90deg, #000 88%, transparent); -webkit-mask-image: linear-gradient(90deg, #000 88%, transparent); }
+.hp-story { display: inline-flex; align-items: baseline; gap: 5px; flex: none; color: var(--text-2); text-decoration: none; padding: 3px 9px; border-radius: 999px; background: var(--glass-strong); border: 1px solid var(--border); font-size: 12px; }
 .hp-story:hover { text-decoration: none; border-color: var(--border-strong); color: var(--text); }
-.hp-story b { color: var(--text); font-size: 12px; }
-.hp-kind { font-size: 12px; color: var(--text-3); }
-.hp-more { flex: none; font-size: 22px; line-height: 1; padding: 0 2px 2px 6px; color: var(--accent); text-decoration: none; }
-.hp-more:hover { text-decoration: none; }
-.home-pulse .daychg { padding: 1px 7px; font-size: 12px; }
+.hp-story > b:first-child { color: var(--text); }
+.hp-kind { color: var(--text-3); }
 .pulse-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; margin: 8px 0 12px; }
 .index-strip { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); gap: 10px; }
 .index-chip { padding: 10px 14px; }
@@ -609,6 +607,10 @@ a.co:hover { text-decoration: none; } a.co:hover .tick { text-decoration: underl
 .dq-partial { display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; padding: 2px 7px; border-radius: 999px; background: rgba(250,178,25,.14); border: 1px solid rgba(250,178,25,.35); font-size: 11px; font-weight: 700; color: var(--warning-ink); cursor: help; }
 td .dq-partial { display: flex; width: max-content; margin-left: auto; }
 /* Data-quality chip in search suggestions and headers */
+.co-txt { flex: 1; min-width: 0; }
+.cname-row { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.cname-row .cname { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cname-row .dq-chip { margin-left: auto; }
 .dq-chip { display: inline-flex; align-items: center; gap: 4px; flex: none; padding: 2px 7px; border-radius: 999px; font-size: 11px; font-weight: 800; white-space: nowrap; cursor: help; }
 .dq-chip-partial { background: rgba(250,178,25,.16); border: 1px solid rgba(250,178,25,.4); color: var(--warning-ink); }
 .dq-chip-little { background: rgba(249,115,22,.16); border: 1px solid rgba(249,115,22,.4); color: var(--serious-ink); }
@@ -734,3 +736,20 @@ table.ocr-table td.num .ocr-note { font-size: 11px; line-height: 1.3; margin-top
 .donut-legend .lg-v { font-variant-numeric: tabular-nums; font-weight: 700; }
 .pf-charts { grid-template-columns: 1fr; }
 @media (min-width: 900px) { .pf-charts { grid-template-columns: 1fr 1fr; } .pf-charts .chart.wide { grid-column: auto; } }
+
+/* Company page: the share of the analysis backed by data (below 100%) */
+.coverage-badge { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 10px; padding: 5px 12px; border-radius: 999px; font-size: 13px; font-weight: 700; background: rgba(94,162,255,.12); border: 1px solid rgba(94,162,255,.35); color: var(--text); }
+.coverage-badge.low { background: rgba(250,178,25,.16); border-color: rgba(250,178,25,.45); color: var(--warning-ink); }
+/* Phones: the list starts sooner (selects side by side, lower controls) */
+@media (max-width: 640px) {
+  .controls { gap: 8px; margin-bottom: 10px; }
+  .controls .search input { height: 44px; }
+  .controls .search svg { top: 13px; }
+  .controls .select { flex: 1 1 0; min-width: 0; height: 44px; font-size: 14px; padding-left: 12px; padding-right: 28px; background-position: right 10px center; }
+  .filters > summary { padding-top: 11px; padding-bottom: 11px; }
+}
+/* The partial mark: next to the exchange on phones, at the end of the name line elsewhere */
+.dq-chip.dq-m { display: none; }
+@media (max-width: 640px) { .dq-chip.dq-m { display: inline-flex; } .dq-chip.dq-d { display: none; } }
+.company-head .coverage-badge { margin: 10px 0 0; }
+@media (max-width: 640px) { .co-top { flex-wrap: wrap; row-gap: 3px; } .co-top .dq-chip { margin-left: 4px; padding: 1px 6px; font-size: 10.5px; } }

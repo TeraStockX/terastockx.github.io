@@ -53,9 +53,10 @@ export function typoDistance(a, b, max = 2) {
 const SUFFIX = /\b(incorporated|inc|corporation|corp|company|co|limited|ltd|plc|holdings?|group|sa|nv|ag|se|spa|lp|llc|the|class [abc]|common stock|ordinary shares?|american depositary shares?|ads|adr)\b/g;
 const strip = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 // "Coca-Cola Co" → "coca cola"; "AT&T Inc." → "at&t"
-export const normName = (s) => strip(s).replace(/[’']/g, "").replace(/[^a-z0-9& ]+/g, " ").replace(SUFFIX, " ").replace(/\s+/g, " ").trim();
-export const normQuery = (s) => strip(s).replace(/[’']/g, "").replace(/[^a-z0-9& ]+/g, " ").replace(/\s+/g, " ").trim();
-const compact = (s) => s.replace(/[^a-z0-9]/g, "");
+// Latin letters, digits and CJK characters (names in Chinese: "苹果") are kept.
+export const normName = (s) => strip(s).replace(/[’']/g, "").replace(/[^a-z0-9&\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af ]+/g, " ").replace(SUFFIX, " ").replace(/\s+/g, " ").trim();
+export const normQuery = (s) => strip(s).replace(/[’']/g, "").replace(/[^a-z0-9&\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af ]+/g, " ").replace(/\s+/g, " ").trim();
+const compact = (s) => s.replace(/[^a-z0-9\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]/g, "");
 
 // Names people use instead of the company's own.
 const ALIASES = { google: "GOOGL", youtube: "GOOGL", facebook: "META", instagram: "META", whatsapp: "META", tsmc: "TSM", "jp morgan": "JPM", "coca cola": "KO" };

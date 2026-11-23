@@ -160,7 +160,9 @@ function missingDims(row) {
   const defs = PROFILES[PF[row.pf] || "general"];
   return Object.keys(OVERALL_WEIGHTS).filter((k) => (defs[k] || []).length && !isNum(row.sc[k]));
 }
-const isPartial = (row) => isNum(row?.sc?.overall) && (missingDims(row).length > 0 || (isNum(row.cm) && row.cm < PARTIAL_BELOW));
+// Lists mark a partial analysis only when less than 80% of the TeraScore rests on data; the company page shows
+// the share whenever it is below 100%.
+const isPartial = (row) => isNum(row?.sc?.overall) && isNum(row.cm) && row.cm < PARTIAL_BELOW;
 function isNewListing(row) {
   const ref = indexCache?.generated ? new Date(indexCache.generated) : new Date();
   return (!!row?.fs && ref - new Date(row.fs) <= 365 * 86400000) || (isNum(row?.ipo) && row.ipo >= ref.getUTCFullYear() - 1);
@@ -170,25 +172,30 @@ function partialTitle(row) {
   const p = isNum(row.cm) ? row.cm : "–";
   return dims ? t("dq.partialTitle", { p, d: dims }) : t("dq.partialTitleParts", { p });
 }
-const partialMark = (row) => (isPartial(row)
-  ? `<span class="dq dq-partial" title="${esc(partialTitle(row))}">${DQ_HALF} ${isNum(row.cm) ? `${row.cm}%` : esc(t("dq.partial"))}</span>` : "");
+// "◐ Partial · 65%": between the company's name and its TeraScore, so the scores stay in line; on phones a
+// shorter "◐ 65% data" next to the exchange, where there is room.
+const partialMark = (row, phone = false) => (isPartial(row)
+  ? `<span class="dq-chip dq-chip-partial ${phone ? "dq-m" : "dq-d"}" title="${esc(partialTitle(row))}">${DQ_HALF}${esc(t(phone ? "dq.partialMobile" : "dq.partialShort", { p: row.cm }))}</span>` : "");
 // The TeraScore cell of a list: the score with the partial mark, or why there is no score.
 function overallCell(row) {
-  if (isNum(row?.sc?.overall)) return `${scorePill(row.sc.overall)}${partialMark(row)}`;
+  if (isNum(row?.sc?.overall)) return scorePill(row.sc.overall);
   if (row?.sc) return `<span class="dq dq-little" title="${esc(t("dq.littleTitle"))}">${esc(t("dq.little"))}</span>`;
   const isNew = isNewListing(row);
   return `<span class="dq ${isNew ? "dq-new" : "dq-none"}" title="${esc(t(isNew ? "dq.newTitle" : "dq.noneTitle"))}">${esc(t(isNew ? "dq.newListing" : "dq.none"))}</span>`;
 }
-const dqLegend = (rows) => (rows.some(isPartial) ? `<p class="small muted dq-legend"><span class="dq-partial-inline">${DQ_HALF} %</span> = ${esc(t("dq.legend"))}</p>` : "");
+const dqLegend = (rows) => (rows.some(isPartial) ? `<p class="small muted dq-legend">${esc(t("dq.legend"))}</p>` : "");
 // A small coloured chip for search suggestions and headers: partial analysis (under 80% of the TeraScore backed
 // by data), little data, no analysis yet; nothing for a fully analysed company or a fund.
 function dqChip(row) {
   if (!row || row.etf) return "";
-  if (isPartial(row)) return `<span class="dq-chip dq-chip-partial" title="${esc(partialTitle(row))}">${DQ_HALF}${isNum(row.cm) ? `${row.cm}%` : esc(t("dq.partial"))}</span>`;
+  if (isPartial(row)) return partialMark(row);
   if (row.sc && !isNum(row.sc.overall)) return `<span class="dq-chip dq-chip-little" title="${esc(t("dq.littleTitle"))}">${esc(t("dq.little"))}</span>`;
   if (!row.sc) return `<span class="dq-chip dq-chip-none" title="${esc(t(isNewListing(row) ? "dq.newTitle" : "dq.noneTitle"))}">${esc(t(isNewListing(row) ? "dq.newListing" : "dq.none"))}</span>`;
   return "";
 }
+
+// The company's name in the page's language where one is commonly used (e.g. 苹果 for Apple in Chinese).
+const coName = (row) => dict().names?.[row?.t] || row?.n || "";
 
 // The company cell of every list: star, logo, ticker (link), exchange and badges, name.
 function companyCell(row, { star = true, watch = null } = {}) {
@@ -196,8 +203,8 @@ function companyCell(row, { star = true, watch = null } = {}) {
   return `<div class="co">
       ${star ? starBtn(row.t, on) : ""}${logo(row)}
       <div class="co-txt">
-        <div class="co-top">${companyLink(row, `<span class="tick">${esc(row.t)}</span>`)}${row.demo ? `<span class="badge">${esc(t("ui.demoBadge"))}</span>` : ""}${row.ex ? `<span class="badge ex">${esc(row.ex)}</span>` : ""}${isNewListing(row) ? `<span class="badge new">${esc(t("dq.newBadge"))}</span>` : ""}</div>
-        <div class="cname small">${esc(row.n || "")}</div>
+        <div class="co-top">${companyLink(row, `<span class="tick">${esc(row.t)}</span>`)}${row.demo ? `<span class="badge">${esc(t("ui.demoBadge"))}</span>` : ""}${row.ex ? `<span class="badge ex">${esc(row.ex)}</span>` : ""}${isNewListing(row) ? `<span class="badge new">${esc(t("dq.newBadge"))}</span>` : ""}${partialMark(row, true)}</div>
+        <div class="cname-row"><span class="cname small">${esc(coName(row))}</span>${partialMark(row)}</div>
       </div>
     </div>`;
 }
@@ -365,9 +372,17 @@ addEventListener("hashchange", () => route());
 // Search items, prepared once per list of rows.
 const searchCache = new WeakMap();
 function searchItems(rows) {
-  let items = searchCache.get(rows);
-  if (!items) { items = prepareSearch(rows); searchCache.set(rows, items); }
-  return items;
+  const names = dict().names;
+  const key = names ? lang() : "";
+  let cached = searchCache.get(rows);
+  if (!cached || cached.key !== key) {
+    // Names in the page's language are searchable too ("苹果").
+    const items = prepareSearch(names ? rows.map((r) => (names[r.t] ? { ...r, n: `${r.n} ${names[r.t]}` } : r)) : rows);
+    if (names) items.forEach((it, i) => { it.row = rows[i]; });
+    cached = { key, items };
+    searchCache.set(rows, cached);
+  }
+  return cached.items;
 }
 const pickerField = (id, placeholder, value = "", label = placeholder) => `<div class="ac"><input id="${id}" placeholder="${esc(placeholder)}" aria-label="${esc(label)}" autocomplete="off" autocapitalize="off" spellcheck="false" value="${esc(value)}"><ul class="ac-list" id="${id}-ac" role="listbox" hidden></ul></div>`;
 
@@ -390,7 +405,7 @@ function attachPicker(input, items, onPick, { limit = 8 } = {}) {
   const render = () => {
     if (!results.length) { close(); return; }
     list.innerHTML = results.map((r, i) => `<li role="option" id="${list.id}-${i}" data-i="${i}" class="${i === active ? "on" : ""}" aria-selected="${i === active}">
-      ${r.row.etf ? letterLogo(r.row) : logo(r.row)}<span class="ac-t">${esc(r.row.dt || r.row.t)}</span>${r.row.etf ? `<span class="badge">ETF</span>${r.row.ex ? `<span class="badge ex">${esc(r.row.ex)}${r.row.cur ? ` · ${esc(r.row.cur)}` : ""}</span>` : ""}` : r.row.ex ? `<span class="badge ex">${esc(r.row.ex)}</span>` : ""}<span class="ac-n">${esc(r.row.n || "")}</span>${dqChip(r.row)}</li>`).join("");
+      ${r.row.etf ? letterLogo(r.row) : logo(r.row)}<span class="ac-t">${esc(r.row.dt || r.row.t)}</span>${r.row.etf ? `<span class="badge">ETF</span>${r.row.ex ? `<span class="badge ex">${esc(r.row.ex)}${r.row.cur ? ` · ${esc(r.row.cur)}` : ""}</span>` : ""}` : r.row.ex ? `<span class="badge ex">${esc(r.row.ex)}</span>` : ""}<span class="ac-n">${esc(coName(r.row))}</span>${dqChip(r.row)}</li>`).join("");
     list.hidden = false;
     input.setAttribute("aria-expanded", "true");
     if (active >= 0) input.setAttribute("aria-activedescendant", `${list.id}-${active}`);
@@ -744,7 +759,7 @@ async function renderTrend() {
     const watch = new Set(getWatch());
     const list = (items) => `<div class="glass table-wrap"><table class="list"><thead><tr><th>${esc(t("ui.company"))}</th><th class="num">${esc(t("ui.overallScore"))}</th><th class="num">${esc(t("ui.trendChange"))}</th></tr></thead><tbody>
       ${items.map((c) => `<tr data-t="${esc(c.t)}" tabindex="0"><td>${companyCell(c, { watch })}</td>
-        <td class="num">${scorePill(c.sc.overall)}<br><span class="small muted">${esc(t("ui.trendFrom", { v: c.sc.overall - c[k] }))}</span>${partialMark(c)}</td><td class="num">${changePill(c[k])}</td></tr>`).join("")}</tbody></table></div>${dqLegend(items)}`;
+        <td class="num">${scorePill(c.sc.overall)}<br><span class="small muted">${esc(t("ui.trendFrom", { v: c.sc.overall - c[k] }))}</span></td><td class="num">${changePill(c[k])}</td></tr>`).join("")}</tbody></table></div>${dqLegend(items)}`;
     const up = [...rows].sort((a, b) => b[k] - a[k]).filter((c) => c[k] > 0).slice(0, 25);
     const down = [...rows].sort((a, b) => a[k] - b[k]).filter((c) => c[k] < 0).slice(0, 25);
     body.innerHTML = `<div class="trend-cols">
@@ -811,7 +826,7 @@ function storyRow(s) {
     ${starBtn(s.t, getWatch().includes(s.t))}
     <a class="nrow-logo" href="#/c/${encodeURIComponent(s.t)}" tabindex="-1" aria-hidden="true">${logo(row)}</a>
     <div class="nrow-main">
-      <div class="nrow-top"><a class="tick" href="#/c/${encodeURIComponent(s.t)}">${esc(s.t)}</a><span class="nrow-name muted">${esc(s.n)}</span>
+      <div class="nrow-top"><a class="tick" href="#/c/${encodeURIComponent(s.t)}">${esc(s.t)}</a><span class="nrow-name muted">${esc(coName(s))}</span>
         <span class="pill tone-${KIND_TONE[s.kind] || "none"} nrow-kind"><span class="dot"></span>${esc(t(`pulse.kind.${s.kind}`))}</span>${when && s.kind !== "move" ? `<span class="small muted">${esc(updatedWhen(when))}</span>` : ""}</div>
       ${s.title ? `<div class="nrow-title clamp3" lang="en" title="${esc(s.title)}">${esc(s.title)}${s.url ? ` <a class="nrow-src" href="${esc(s.url)}" target="_blank" rel="noopener" title="${esc(t("pulse.readMore"))}">SEC ↗</a>` : ""}</div>` : ""}
     </div>
@@ -833,7 +848,7 @@ function eventRow(e) {
     ${starBtn(e.t, getWatch().includes(e.t))}
     <a class="nrow-logo" href="#/c/${encodeURIComponent(e.t)}" tabindex="-1" aria-hidden="true">${logo(row)}</a>
     <div class="nrow-main">
-      <div class="nrow-top"><a class="tick" href="#/c/${encodeURIComponent(e.t)}">${esc(e.t)}</a><span class="nrow-name muted">${esc(e.n)}</span>
+      <div class="nrow-top"><a class="tick" href="#/c/${encodeURIComponent(e.t)}">${esc(e.t)}</a><span class="nrow-name muted">${esc(coName(e))}</span>
         <span class="pill tone-${SEV_TONE[e.severity]} nrow-kind"><span class="dot"></span>${esc(t(`ui.sev${e.severity}`))}</span><span class="small muted">${esc(date(e.date))}</span></div>
       <div class="nrow-title">${e.items.map((i) => esc(eventName(i))).join(" · ")}${e.title ? ` – <span lang="en">${esc(e.title)}</span>` : ""} <a class="nrow-src" href="${esc(e.url)}" target="_blank" rel="noopener" title="${esc(t("ui.viewFiling"))}">8-K ↗</a></div>
     </div>
@@ -875,22 +890,25 @@ async function renderNews() {
 // ---------- Market today ----------
 
 const dayChange = (v) => (isNum(v) ? `<span class="pill tone-${v > 0 ? "good" : v < 0 ? "critical" : "none"} daychg"><span class="dot"></span>${v > 0 ? "+" : ""}${num(v, 2)}%</span>` : "");
-const INDEX_NAMES = { SPY: "S&P 500", QQQ: "Nasdaq 100", DIA: "Dow Jones", IWM: "Russell 2000" };
+const INDEX_EN = { SPY: "S&P 500", QQQ: "Nasdaq 100", DIA: "Dow Jones", IWM: "Russell 2000" };
+// Index names in the page's language ("标普500" in Chinese), else the usual English ones.
+const INDEX_NAMES = new Proxy(INDEX_EN, { get: (o, k) => dict().pulse?.indexNames?.[k] ?? o[k] });
 
-// Home page: the market and the top stories, one line each, with an arrow to the news page.
+// Home page: "Market today" as a small title, the three numbers on one line under it, then the top stories
+// to swipe; every part leads to the news page.
 function homePulse(p) {
   // Before the open the regular changes are the previous day's: the pre-market changes are shown instead.
   const pre = p.session === "pre" && (p.indices || []).some((e) => isNum(e.xc));
   const ai = pre ? null : (p.themes || []).find((x) => x.id === "ai");
-  const market = (p.indices || []).filter((e) => isNum(pre ? e.xc : e.dc)).slice(0, 2).map((e) => `<span class="hp-item">${esc(INDEX_NAMES[e.t] || e.t)} ${dayChange(pre ? e.xc : e.dc)}</span>`);
-  if (ai && isNum(ai.change)) market.push(`<span class="hp-item">${esc(t("pulse.themes.ai"))} ${dayChange(ai.change)}</span>`);
-  if (pre && market.length) market.push(`<span class="hp-note muted">${esc(t("pulse.when.pre"))}</span>`);
-  const stories = (p.stories || []).slice(0, 5).map((s) => `<a class="hp-story" href="#/c/${encodeURIComponent(s.t)}" title="${esc(`${t(`pulse.kind.${s.kind}`)}${s.title ? `: ${s.title}` : ""}`)}"><b>${esc(s.t)}</b>${isNum(s.move) ? dayChange(s.move) : ""}<span class="hp-kind">${esc(t(`pulse.kind.${s.kind}`))}</span></a>`);
+  const chg = (v) => `<b class="${v > 0 ? "up" : v < 0 ? "down" : ""}">${v > 0 ? "+" : ""}${num(v, 2)}%</b>`;
+  const market = (p.indices || []).filter((e) => isNum(pre ? e.xc : e.dc)).slice(0, 2).map((e) => `<span class="hp-item">${esc(INDEX_NAMES[e.t] || e.t)} ${chg(pre ? e.xc : e.dc)}</span>`);
+  if (ai && isNum(ai.change)) market.push(`<span class="hp-item">${esc(t("pulse.themesShort.ai"))} ${chg(ai.change)}</span>`);
+  const stories = (p.stories || []).slice(0, 6).map((s) => `<a class="hp-story" href="#/c/${encodeURIComponent(s.t)}" title="${esc(`${t(`pulse.kind.${s.kind}`)}${s.title ? `: ${s.title}` : ""}`)}"><b>${esc(s.t)}</b>${isNum(s.move) ? chg(s.move) : ""}<span class="hp-kind">${esc(t(`pulse.kind.${s.kind}`))}</span></a>`);
   if (!market.length && !stories.length) return "";
-  const line = (label, items, cls) => `<div class="hp-line"><a class="hp-label" href="#/news">${label}</a><div class="hp-items ${cls}">${items.join("")}</div><a class="hp-more" href="#/news" aria-label="${esc(t("ui.marketMore"))}">›</a></div>`;
   return `<div class="glass home-pulse">
-    ${market.length ? line(esc(t("ui.marketToday")), market, "wrap") : ""}
-    ${stories.length ? line(esc(t("pulse.storiesTitle")), stories, "scroll") : ""}
+    <a class="hp-title" href="#/news"><span>${esc(t("ui.marketToday"))}${pre ? ` <span class="muted">· ${esc(t("pulse.when.pre"))}</span>` : ""}</span><span class="hp-more" aria-hidden="true">›</span></a>
+    ${market.length ? `<div class="hp-items hp-market">${market.join("")}</div>` : ""}
+    ${stories.length ? `<div class="hp-line"><a class="hp-label" href="#/news">${esc(t("pulse.storiesTitle"))}</a><div class="hp-items scroll">${stories.join("")}</div></div>` : ""}
   </div>`;
 }
 
@@ -1002,7 +1020,7 @@ async function renderCompany(ticker) {
       <div class="head-id">
         ${logo(row || { t: c.ticker, n: c.name }, "lg")}
         <div>
-        <h1>${esc(c.name)}</h1>
+        <h1>${esc(coName({ t: c.ticker, n: c.name }))}</h1>${dict().names?.[c.ticker] ? `<div class="small muted">${esc(c.name)}</div>` : ""}
         <div class="sub">
           <span class="ticker-chip">${esc(c.ticker)}</span><span class="badge ex">${esc(c.exchange || "NASDAQ")}</span>${row && isNewListing(row) ? `<span class="badge new">${esc(t("dq.newBadge"))}</span>` : ""}
           ${c.country ? `<span>· ${esc(c.country)}</span>` : ""}
@@ -1010,6 +1028,7 @@ async function renderCompany(ticker) {
           ${c.industry ? `<span>· ${esc(c.industry)}</span>` : ""}
           ${a.ok ? `<span>· ${esc(t("ui.lastFy", { y: a.latestYear }))}</span>` : ""}
         </div>
+        ${a.ok && isNum(a.scores.overall) && isNum(a.completeness) && a.completeness < 100 ? `<div class="coverage-badge ${a.completeness < PARTIAL_BELOW ? "low" : ""}" title="${esc(t("dq.legend"))}">${DQ_HALF}<span>${esc(t("dq.coverageBadge", { p: a.completeness }))}</span></div>` : ""}
         </div>
       </div>
       <div class="head-actions">
@@ -1044,7 +1063,7 @@ async function renderCompany(ticker) {
 }
 
 // Why a TeraScore is partial or missing, and which figures were estimated.
-const isPartialAnalysis = (a) => isNum(a.scores.overall) && (a.missing.length > 0 || a.completeness < PARTIAL_BELOW);
+const isPartialAnalysis = (a) => isNum(a.scores.overall) && a.completeness < PARTIAL_BELOW;
 function dataQualityNotice(a) {
   const out = [];
   const dims = a.missing.map((k) => t(`dims.${k}.name`)).join(", ");
@@ -1424,7 +1443,7 @@ async function renderCompare(tickers) {
   let table = "";
   if (comps.length) {
     const rowsOf = comps.map((c) => indexCache?.byT?.get(c.ticker) || { t: c.ticker, n: c.name });
-    const head = `<tr><th></th>${comps.map((c, i) => `<th><a class="cmp-co" href="#/c/${encodeURIComponent(c.ticker)}">${logo(rowsOf[i])}<span>${esc(c.ticker)}</span></a><span class="small muted">${esc(c.name)}</span>${dqChip(rowsOf[i])}</th>`).join("")}</tr>`;
+    const head = `<tr><th></th>${comps.map((c, i) => `<th><a class="cmp-co" href="#/c/${encodeURIComponent(c.ticker)}">${logo(rowsOf[i])}<span>${esc(c.ticker)}</span></a><span class="small muted">${esc(coName({ t: c.ticker, n: c.name }))}</span>${dqChip(rowsOf[i])}</th>`).join("")}</tr>`;
     // A dimension the company's filings do not allow to score: "no data", not a dash that looks like zero.
     const noData = `<span class="small cmp-nodata" title="${esc(t("dq.legend"))}">${esc(t("ui.noData"))}</span>`;
     const dimRows = ["overall", ...DIMENSIONS].map((d) => {
@@ -1529,7 +1548,7 @@ async function renderPortfolio(prefill = "") {
       <tbody>${p.positions.map((h) => `<tr>
         <td>${h.row?.etf
           ? `<div class="co">${letterLogo({ t: tickerOf(h), n: h.row.n })}<div class="co-txt"><div class="tick">${esc(tickerOf(h))} <span class="badge">ETF</span>${h.row.ex ? `<span class="badge ex">${esc(h.row.ex)} · ${esc(h.row.cur || "USD")}</span>` : ""}</div><div class="cname">${esc(h.row.n)}</div>${isNum(h.row.er) ? `<div class="small muted">${esc(t("ui.etfExpense", { v: `${num(h.row.er * 100, 2)}%` }))}${h.row.ucits ? ` · ${esc(t(h.row.acc ? "ui.etfAcc" : "ui.etfDist"))}` : ""}</div>` : ""}</div></div>`
-          : `<a class="co" href="#/c/${encodeURIComponent(h.t)}">${logo(h.row || { t: h.t })}<div class="co-txt"><div class="tick">${esc(h.t)}</div><div class="cname">${esc(h.row?.n || t("ui.notFound", { t: h.t }))}</div></div></a>`}</td>
+          : `<a class="co" href="#/c/${encodeURIComponent(h.t)}">${logo(h.row || { t: h.t })}<div class="co-txt"><div class="tick">${esc(h.t)}</div><div class="cname">${esc(h.row ? coName(h.row) : t("ui.notFound", { t: h.t }))}</div></div></a>`}</td>
         <td class="num"><input class="pf-shares" type="number" min="0" step="any" inputmode="decimal" value="${esc(h.shares)}" data-t="${esc(h.t)}" aria-label="${esc(t("ui.pfShares"))} ${esc(h.t)}"></td>
         <td class="num col-md">${h.row?.ucits ? fullMoney(h.row.pxLocal, h.row.cur) : isNum(h.price) ? fmt(h.price, "usd") : "–"}</td>
         <td class="num">${isNum(h.value) ? fullMoney(inCur(h.value), cur) : "–"}</td>
