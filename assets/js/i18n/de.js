@@ -17,7 +17,7 @@ export default {
     etfDist: "ausschüttend",
     cmpPartialNote: "In den Berichten dieser Unternehmen fehlen Daten, daher ist ihre Analyse unvollständig und ihre Bewertung weniger sicher: {list}. Bereiche mit „keine Daten“ bleiben im TeraScore unberücksichtigt (sie zählen nicht als null).",
     showMore: "Mehr anzeigen",
-    tagline: "Fundamentalanalyse, klar aufbereitet.",
+    tagline: "Fundamentale Aktienanalyse, klar aufbereitet.",
     heroText: "Alle an Nasdaq, NYSE, NYSE American und Cboe notierten Unternehmen, bewertet in zehn Anlagedimensionen – Rentabilität, Cashflow-Qualität, Bilanzstärke, Wachstum, Bewertung und Risiko – auf Basis geprüfter SEC-Berichte und im Vergleich zu Sektorkollegen.",
     navCompanies: "Unternehmen", navCompare: "Vergleich", navMethod: "Methodik", language: "Sprache",
     searchPlaceholder: "Ticker oder Firmenname suchen (z. B. AAPL, Apple)",

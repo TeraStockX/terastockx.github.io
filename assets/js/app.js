@@ -480,9 +480,11 @@ async function renderList() {
 
   app.innerHTML = `
     <section class="glass hero">
-      <div>
+      <div class="hero-head">
         <h1>TeraStock<b>X</b></h1>
         <div class="tagline">${esc(t("ui.tagline"))} ${esc(t("ui.slogan"))}</div>
+      </div>
+      <div class="hero-body">
         <p>${esc(t("ui.heroText"))}</p>
         <div class="hero-stats">
           <div class="hero-stat"><div class="v">${num(idx.companies.filter((c) => isNum(c.sc?.overall)).length, 0)}</div><div class="k">${esc(t("ui.ratedCompanies"))}</div></div>
@@ -1076,14 +1078,19 @@ const riskExplain = () => t("ui.riskExplain", {
   pr: Math.round(RISK_WEIGHTS.profitability * 100), li: Math.round(RISK_WEIGHTS.liquidity * 100),
 });
 
-// Home: the tagline and the slogan share at most two lines; on narrow screens the text shrinks a little.
-function fitTagline(maxLines = 2, minPx = 13) {
+// Home: the slogan ("…, made clear. The smart tool for investors.") always stays on one line; where the
+// full size does not fit (phones) the text is scaled down to the available width.
+function fitTagline(minPx = 8) {
   const el = document.querySelector(".hero .tagline");
   if (!el) return;
   el.style.fontSize = "";
-  const lines = () => { const cs = getComputedStyle(el); return Math.round(el.getBoundingClientRect().height / parseFloat(cs.lineHeight)); };
+  el.classList.add("one-line");
+  const avail = el.parentElement.clientWidth;
+  const need = el.scrollWidth;
   let fs = parseFloat(getComputedStyle(el).fontSize);
-  while (lines() > maxLines && fs > minPx) { fs -= 0.5; el.style.fontSize = `${fs}px`; }
+  if (need > avail) fs = Math.max(minPx, Math.floor(((fs * avail) / need) * 4) / 4);
+  el.style.fontSize = `${fs}px`;
+  while (el.scrollWidth > el.parentElement.clientWidth && fs > minPx) { fs -= 0.25; el.style.fontSize = `${fs}px`; }
 }
 let fitTimer = 0;
 window.addEventListener("resize", () => { clearTimeout(fitTimer); fitTimer = setTimeout(() => fitTagline(), 150); });
