@@ -12,20 +12,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: { ref: diag }
-      - name: Intraday run log summary
+      - name: Run summaries
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p out
           {
-          gh run view 45167473389 --repo TeraStockX/terastockx.github.io --log 2>&1 | grep -E "new filings|refreshed:|quotes updated|ERROR|index.json:|search pages|kept from|warn" | cut -c1-300 | head -40
-          echo "--- live"
-          curl -s https://terastockx.com/data/index.json -o idx.json && node -e 'const i=require("./idx.json"); console.log("generated", i.generated, "rows", i.companies.length, "lg", i.companies.filter(r=>r.lg).length, "dc", i.companies.filter(r=>r.dc!=null).length); const today=new Date().toISOString().slice(0,10); const lr=i.companies.filter(r=>r.lr && r.lr.startsWith(today)); console.log("reports filed today:", lr.length, lr.slice(0,10).map(r=>r.t+":"+r.lr).join(" "));'
-          curl -s https://terastockx.com/data/fx.json | head -c 200; echo
-          curl -s https://terastockx.com/assets/js/search.js | head -c 120; echo
-          } 2>&1 | tee out/intraday-log.txt
+          echo "=== daily 45118568408"
+          gh run view 45118568408 --repo TeraStockX/terastockx.github.io --log 2>&1 | grep -E "logos:|Done:|ERROR|insider|price histories|removed|ETF|data/index.json|search pages|fx|error" | grep -v "Node.js 20" | cut -c1-260 | head -30
+          for r in 45169195822 45181891161; do
+            echo "=== intraday $r"
+            gh run view $r --repo TeraStockX/terastockx.github.io --log 2>&1 | grep -E "new filings|refreshed:|quotes updated|Cache restored|Cache saved|cache|ERROR" | grep -v "Node.js 20" | cut -c1-260 | head -12
+          done
+          echo "=== intraday schedule history"
+          gh run list --repo TeraStockX/terastockx.github.io --workflow intraday.yml --limit 20 --json createdAt,event,status,conclusion -q '.[] | "\(.createdAt) \(.event) \(.status) \(.conclusion)"'
+          } 2>&1 | tee out/runs.txt
       - name: Save results to the diag branch
         if: always()
         run: |
           git config user.name diag; git config user.email diag@users.noreply.github.com
-          git add out && git commit -qm "diag: intraday log results" && git push -q origin HEAD:diag
+          git add out && git commit -qm "diag: run summaries" && git push -q origin HEAD:diag
