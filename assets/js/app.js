@@ -386,15 +386,17 @@ function attachPicker(input, items, onPick, { limit = 8 } = {}) {
   return { resolve: () => searchCompanies(items, input.value, 1)[0]?.row || null };
 }
 
-// When the data was updated: "Today 17:18", "Yesterday 22:50", or the full date when older than that.
-function updatedWhen(iso) {
+// When the data was updated, in words and without a clock time: "Now" (within 15 minutes), "Today",
+// "Yesterday", or the date when it is older than that. { lower: true } for use inside a sentence.
+function updatedWhen(iso, { lower = false } = {}) {
   const d = new Date(iso);
   if (isNaN(d)) return "–";
+  const now = new Date();
   const dayStart = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
-  const days = Math.round((dayStart(new Date()) - dayStart(d)) / 86400000);
-  if (days > 1) return esc(date(iso));
-  const time = d.toLocaleTimeString(dict().meta.locale, { hour: "2-digit", minute: "2-digit" });
-  return `${esc(t(days === 1 ? "ui.yesterday" : "ui.today"))} <span class="hs-time">${esc(time)}</span>`;
+  const days = Math.round((dayStart(now) - dayStart(d)) / 86400000);
+  const word = days <= 0 ? t(now - d < 15 * 60000 ? "ui.now" : "ui.today") : days === 1 ? t("ui.yesterday") : null;
+  if (!word) return date(iso);
+  return lower ? word.toLocaleLowerCase(dict().meta.locale) : word;
 }
 
 const LIST_COLS = [
@@ -431,7 +433,7 @@ async function renderList() {
         <div class="hero-stats">
           <div class="hero-stat"><div class="v">${num(idx.companies.filter((c) => isNum(c.sc?.overall)).length, 0)}</div><div class="k">${esc(t("ui.ratedCompanies"))}</div></div>
           <a class="hero-stat hs-watch ${watchMode ? "on" : ""}" id="watch-btn" href="${watchMode ? "#/" : "#/watchlist"}" aria-pressed="${watchMode}"><div class="v">${starSvg(true)}<span id="watch-count">${getWatch().length}</span></div><div class="k">${esc(t("ui.watchlist"))}</div></a>
-          <div class="hero-stat"><div class="v">${updatedWhen(idx.generated)}</div><div class="k">${esc(t("ui.updatedLabel"))}</div></div>
+          <div class="hero-stat"><div class="v">${esc(updatedWhen(idx.generated))}</div><div class="k">${esc(t("ui.updatedLabel"))}</div></div>
         </div>
       </div>
       <img class="hero-art" src="assets/img/hero.svg" alt="" width="560" height="360">
@@ -777,7 +779,6 @@ async function renderNews() {
 
 const dayChange = (v) => (isNum(v) ? `<span class="pill tone-${v > 0 ? "good" : v < 0 ? "critical" : "none"} daychg"><span class="dot"></span>${v > 0 ? "+" : ""}${num(v, 2)}%</span>` : "");
 const INDEX_NAMES = { SPY: "S&P 500", QQQ: "Nasdaq 100", DIA: "Dow Jones", IWM: "Russell 2000" };
-const pulseTime = (p) => { const d = new Date(p.quotesAt || p.generated); return isNaN(d) ? "" : `${date(d.toISOString())} ${d.toLocaleTimeString(dict().meta.locale, { hour: "2-digit", minute: "2-digit" })}`; };
 
 function marketStrip(p) {
   const ai = (p.themes || []).find((x) => x.id === "ai");
@@ -822,7 +823,7 @@ function pulseView(p) {
   return `
     <div class="pulse-head">
       <h2 class="section-title" style="margin:0">${esc(t("ui.marketToday"))}</h2>
-      <span class="small muted">${esc(t("pulse.asOf", { d: pulseTime(p) }))}</span>
+      <span class="small muted">${esc(t("pulse.asOf", { d: updatedWhen(p.quotesAt || p.generated, { lower: true }) }))}</span>
     </div>
     ${p.indices?.length ? `<div class="index-strip">${p.indices.map((e) => `<div class="glass index-chip"><div class="small muted">${esc(INDEX_NAMES[e.t] || e.t)} <span class="muted">(${esc(e.t)})</span></div><div class="index-val">${fmt(e.px, "usd")} ${dayChange(e.dc)}</div></div>`).join("")}</div>` : ""}
     ${hl ? `<div class="score-name" style="margin:18px 0 8px">${esc(t("pulse.headlines"))}</div><ul class="hl-list">${hl}</ul>` : ""}
@@ -1424,7 +1425,7 @@ async function renderPortfolio(prefill = "") {
         <td class="num col-xl">${isNum(h.row?.ds) ? `<span class="pill tone-${DIVIDEND_TONE[dividendLevelOf(h.row.ds)]}"><span class="dot"></span>${h.row.ds}</span>` : "–"}</td>
         <td><button class="icon-btn" data-rm="${esc(h.t)}" aria-label="${esc(t("ui.remove"))} ${esc(h.t)}">×</button></td></tr>`).join("")}</tbody>
     </table></div>
-    <p class="small muted" style="margin-top:12px">${esc(t("ui.pfNote", { d: date(idx.generated) }))}${p.etfWeight > 0 ? ` ${esc(t("ui.etfNote"))}` : ""}</p>
+    <p class="small muted" style="margin-top:12px">${esc(t("ui.pfNote", { d: updatedWhen(idx.generated, { lower: true }) }))}${p.etfWeight > 0 ? ` ${esc(t("ui.etfNote"))}` : ""}</p>
     ${p.missingYield.length ? `<div class="notice" style="margin-top:10px"><span>ℹ️</span><span>${esc(t("ui.etfYieldMissing", { list: p.missingYield.join(", ") }))}</span></div>` : ""}` : `<div class="glass empty">${esc(t("ui.pfEmpty"))}</div>`;
 
   app.innerHTML = `
