@@ -309,6 +309,17 @@ table.cmp td.best { color: var(--good-ink); font-weight: 700; }
 .event-co { color: var(--text); }
 .event-co .muted { font-size: 13px; }
 .event-items { display: flex; flex-direction: column; gap: 2px; font-weight: 600; font-size: 14px; }
+/* Top stories: big news of large companies */
+.stories { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr)); gap: 12px; margin-bottom: 8px; }
+.story { padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+.story-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.story-head .event-co-row { min-width: 0; margin-bottom: 0; }
+.story-move { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; white-space: nowrap; }
+.story-kind { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.news-title { margin: 0; font-weight: 600; font-size: 15px; line-height: 1.4; color: var(--text); overflow-wrap: anywhere; }
+.news-title q { quotes: "\201C" "\201D"; }
+.session-note { padding: 10px 14px; margin: 0 0 12px; line-height: 1.45; }
+.ext-quote { margin-top: 4px; }
 
 /* Phones and tablets: navigation moves to a bottom tab bar with labels (outside the blurred header,
    so "fixed" is relative to the viewport). On phones seven tabs do not fit: the methodology is
@@ -504,6 +515,16 @@ h1, h2, h3 { overflow-wrap: break-word; hyphens: auto; }
 .market-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 10px 14px; margin-bottom: 14px; color: var(--text-2); font-size: 14px; text-decoration: none; }
 .market-strip:hover { text-decoration: none; border-color: var(--border-strong); }
 .market-strip b { color: var(--text); }
+/* Home page: top stories in one compact box under the market line */
+.top-news { padding: 10px 14px 6px; margin: -4px 0 14px; display: flex; flex-direction: column; }
+.top-news-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 4px; font-size: 14px; }
+.tn-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--border); color: var(--text-2); font-size: 14px; text-decoration: none; }
+.tn-row:first-of-type { border-top: 0; }
+.tn-row:hover { text-decoration: none; color: var(--text); }
+.tn-row .logo { flex: none; }
+.tn-text { flex: 1; min-width: 0; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.tn-text b { color: var(--text); }
+.tn-move { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 1px; white-space: nowrap; }
 .pulse-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; margin: 8px 0 12px; }
 .index-strip { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); gap: 10px; }
 .index-chip { padding: 10px 14px; }

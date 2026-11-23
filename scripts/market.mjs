@@ -72,6 +72,45 @@ export async function etfSummary(symbol) {
 
 // Exchange rates: US dollars per one unit of each currency. ECB reference rates first,
 // open.er-api.com for currencies the ECB does not publish (e.g. TWD).
+// ---------- Outside the regular session ----------
+
+const MONTHS = { Jan: "01", Feb: "02", Mar: "03", Apr: "04", May: "05", Jun: "06", Jul: "07", Aug: "08", Sep: "09", Oct: "10", Nov: "11", Dec: "12" };
+const isoDay = (s) => { const m = String(s || "").match(/([A-Z][a-z]{2})[a-z]*\.? (\d{1,2}), (\d{4})/); return m && MONTHS[m[1]] ? `${m[3]}-${MONTHS[m[1]]}-${m[2].padStart(2, "0")}` : null; };
+
+// US market session: "pre" (pre-market, 4:00–9:30 New York time), "open", "post" (after-hours, 16:00–20:00)
+// or "closed"; and the previous trading day.
+export async function marketSession() {
+  try {
+    const r = await fetch("https://api.nasdaq.com/api/market-info", { headers: BROWSER_HEADERS, signal: AbortSignal.timeout(20000) });
+    const d = (await r.json())?.data;
+    if (!d) return null;
+    const st = `${d.mrktStatus || ""} ${d.marketIndicator || ""}`.toUpperCase();
+    const session = /PRE/.test(st) ? "pre" : /AFTER|POST/.test(st) ? "post" : /OPEN/.test(st) && !/CLOSE/.test(st) ? "open" : "closed";
+    return { session, previousTradeDate: isoDay(d.previousTradeDate), businessDay: d.isBusinessDay ?? null };
+  } catch {
+    return null;
+  }
+}
+
+// Latest trades of up to 20 symbols per request (pre-market and after-hours included), with the change
+// against the previous close as Nasdaq reports it. symbols: [{ t, etf }].
+export async function extendedQuotes(symbols) {
+  const out = new Map();
+  for (let i = 0; i < symbols.length; i += 20) {
+    const batch = symbols.slice(i, i + 20);
+    const q = batch.map((x) => `symbol=${encodeURIComponent(x.t.toLowerCase())}%7c${x.etf ? "etf" : "stocks"}`).join("&");
+    try {
+      const r = await fetch(`https://api.nasdaq.com/api/quote/watchlist?${q}`, { headers: BROWSER_HEADERS, signal: AbortSignal.timeout(20000) });
+      for (const x of (await r.json())?.data || []) {
+        const price = num(x.lastSalePrice), changePct = num(x.percentageChange), change = num(x.netChange);
+        if (x.symbol && Number.isFinite(price) && price > 0) out.set(String(x.symbol).toUpperCase(), { price, changePct, change, status: x.marketStatus || null, at: x.lastTradeTimestampDateTime || null });
+      }
+    } catch {}
+    await new Promise((res) => setTimeout(res, 250));
+  }
+  return out;
+}
+
 export async function fxToUsd() {
   const rates = { USD: 1 };
   try {

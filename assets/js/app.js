@@ -439,6 +439,7 @@ async function renderList() {
       <img class="hero-art" src="assets/img/hero.svg" alt="" width="560" height="360">
     </section>
     <div id="market-strip"></div>
+    <div id="home-stories"></div>
     <div id="alerts"></div>
     ${installBanner()}
     <div class="controls">
@@ -660,8 +661,14 @@ async function renderList() {
   };
   draw();
   drawAlerts();
-  loadPulse().then((p) => { const el = document.getElementById("market-strip"); if (el && p) el.innerHTML = marketStrip(p); }).catch(() => {});
   document.getElementById("install-x")?.addEventListener("click", () => { try { localStorage.setItem("tsx-install-hide", "1"); } catch {} document.getElementById("install-banner")?.remove(); });
+  // The market in one line, the top stories of large companies right below it, the latest major events at the end.
+  loadPulse().then((p) => {
+    const strip = document.getElementById("market-strip");
+    if (strip && p) strip.innerHTML = marketStrip(p);
+    const box = document.getElementById("home-stories");
+    if (box && p?.stories?.length) box.innerHTML = topNewsBox(p.stories.slice(0, 3));
+  }).catch(() => {});
   loadNews().then((n) => {
     const top = (n.events || []).filter(isTopEvent).slice(0, 4);
     const el = document.getElementById("home-news");
@@ -748,8 +755,43 @@ function eventCard(e, withCompany = true) {
     </div>
     ${withCompany ? (() => { const row = fullRow(e); return `<div class="event-co-row">${starBtn(e.t, getWatch().includes(e.t))}<a class="event-co" href="#/c/${encodeURIComponent(e.t)}">${logo(row)}<span><span class="tick">${esc(e.t)}</span>${row.ex ? `<span class="badge ex">${esc(row.ex)}</span>` : ""} <span class="muted">${esc(e.n)}</span></span></a></div>`; })() : ""}
     <div class="event-items">${e.items.map((i) => `<span>${esc(eventName(i))} <span class="small muted">(8-K ${esc(i)})</span></span>`).join("")}</div>
+    ${e.title ? `<p class="news-title"><q lang="en">${esc(e.title)}</q></p>` : ""}
     <a class="small" href="${esc(e.url)}" target="_blank" rel="noopener">${esc(t("ui.viewFiling"))} ↗</a>
   </div>`;
+}
+
+// ---------- Top stories ----------
+
+// Big news of large companies: the kind of news, the move of the share price (also before the open and after
+// the close) and the headline of the company's own press release, in its original English.
+const KIND_TONE = { critical: "critical", cyber: "serious", major: "serious", restructuring: "warning" };
+const cap1 = (s) => (s ? s.charAt(0).toLocaleUpperCase(dict().meta.locale) + s.slice(1) : s);
+function storyCard(s) {
+  const row = fullRow(s);
+  const when = s.at || (s.date ? `${s.date}T12:00:00` : null);
+  return `<article class="glass story">
+    <div class="story-head">
+      <div class="event-co-row">${starBtn(s.t, getWatch().includes(s.t))}<a class="event-co" href="#/c/${encodeURIComponent(s.t)}">${logo(row)}<span><span class="tick">${esc(s.t)}</span>${row.ex ? `<span class="badge ex">${esc(row.ex)}</span>` : ""} <span class="muted">${esc(s.n)}</span></span></a></div>
+      ${isNum(s.move) ? `<div class="story-move">${dayChange(s.move)}<span class="small muted">${esc(t(`pulse.when.${s.when || "day"}`))}</span></div>` : ""}
+    </div>
+    <div class="story-kind"><span class="pill tone-${KIND_TONE[s.kind] || "none"}"><span class="dot"></span>${esc(t(`pulse.kind.${s.kind}`))}</span>${when && s.kind !== "move" ? `<span class="small muted">${esc(updatedWhen(when))}</span>` : ""}</div>
+    ${s.title ? `<p class="news-title"><q lang="en">${esc(s.title)}</q></p>` : ""}
+    ${s.url ? `<a class="small" href="${esc(s.url)}" target="_blank" rel="noopener">${esc(t("pulse.readMore"))} ↗</a>` : ""}
+  </article>`;
+}
+// Home page: the top stories in a compact box (one line each: company, kind and headline, move).
+function topNewsBox(list) {
+  return `<div class="glass top-news">
+    <div class="top-news-head"><b>${esc(t("pulse.storiesTitle"))}</b><a class="small" href="#/news">${esc(t("pulse.moreNews"))} ›</a></div>
+    ${list.map((s) => `<a class="tn-row" href="#/c/${encodeURIComponent(s.t)}">${logo(fullRow(s))}<span class="tn-text"><b>${esc(s.t)}</b> · ${esc(t(`pulse.kind.${s.kind}`))}${s.title ? `: <span lang="en">${esc(s.title)}</span>` : ""}</span>${isNum(s.move) ? `<span class="tn-move">${dayChange(s.move)}${s.when && s.when !== "day" ? `<span class="small muted">${esc(t(`pulse.when.${s.when}`))}</span>` : ""}</span>` : ""}</a>`).join("")}
+  </div>`;
+}
+function storiesView(p, { limit = 8, home = false } = {}) {
+  const list = (p?.stories || []).slice(0, limit);
+  if (!list.length) return home ? "" : `<h2 class="section-title">${esc(t("pulse.storiesTitle"))}</h2><div class="glass empty small">${esc(t("pulse.storiesNone"))}</div>`;
+  return `<h2 class="section-title"${home ? ' style="margin-top:28px"' : ""}>${esc(t("pulse.storiesTitle"))}${home ? ` <a class="small" href="#/news">${esc(t("pulse.moreNews"))} ›</a>` : ""}</h2>
+    ${home ? "" : `<p class="small muted" style="max-width:820px;margin:-4px 0 12px">${esc(t("pulse.storiesNote"))}</p>`}
+    <div class="stories"${home ? ' style="margin-bottom:20px"' : ""}>${list.map(storyCard).join("")}</div>`;
 }
 
 async function renderNews() {
@@ -759,6 +801,7 @@ async function renderNews() {
   const state = { filter: "top" };
   app.innerHTML = `
     <div class="prose" style="max-width:none;margin-top:8px"><h1>${esc(t("ui.newsTitle"))}</h1></div>
+    ${storiesView(pulse)}
     ${pulseView(pulse)}
     <h2 class="section-title">${esc(t("ui.eventsTitle"))}</h2>
     <p class="small muted" style="max-width:820px;margin:-4px 0 12px">${esc(t("ui.newsIntro"))}</p>
@@ -781,11 +824,13 @@ const dayChange = (v) => (isNum(v) ? `<span class="pill tone-${v > 0 ? "good" : 
 const INDEX_NAMES = { SPY: "S&P 500", QQQ: "Nasdaq 100", DIA: "Dow Jones", IWM: "Russell 2000" };
 
 function marketStrip(p) {
-  const ai = (p.themes || []).find((x) => x.id === "ai");
-  const items = (p.indices || []).slice(0, 2).map((e) => `<span>${esc(INDEX_NAMES[e.t] || e.t)} ${dayChange(e.dc)}</span>`);
+  // Before the open the regular changes are the previous day's: the pre-market changes are shown instead.
+  const pre = p.session === "pre" && (p.indices || []).some((e) => isNum(e.xc));
+  const ai = pre ? null : (p.themes || []).find((x) => x.id === "ai");
+  const items = (p.indices || []).slice(0, 2).map((e) => `<span>${esc(INDEX_NAMES[e.t] || e.t)} ${dayChange(pre ? e.xc : e.dc)}</span>`);
   if (ai) items.push(`<span>${esc(t("pulse.themes.ai"))} ${dayChange(ai.change)}</span>`);
   if (!items.length) return "";
-  return `<a class="glass market-strip" href="#/news"><b>${esc(t("ui.marketToday"))}</b>${items.join("")}<span class="small muted">${esc(t("ui.marketMore"))} ›</span></a>`;
+  return `<a class="glass market-strip" href="#/news"><b>${esc(t("ui.marketToday"))}${pre ? ` <span class="small muted">(${esc(t("pulse.when.pre"))})</span>` : ""}</b>${items.join("")}<span class="small muted">${esc(t("ui.marketMore"))} ›</span></a>`;
 }
 
 function headlineText(h) {
@@ -825,7 +870,8 @@ function pulseView(p) {
       <h2 class="section-title" style="margin:0">${esc(t("ui.marketToday"))}</h2>
       <span class="small muted">${esc(t("pulse.asOf", { d: updatedWhen(p.quotesAt || p.generated, { lower: true }) }))}</span>
     </div>
-    ${p.indices?.length ? `<div class="index-strip">${p.indices.map((e) => `<div class="glass index-chip"><div class="small muted">${esc(INDEX_NAMES[e.t] || e.t)} <span class="muted">(${esc(e.t)})</span></div><div class="index-val">${fmt(e.px, "usd")} ${dayChange(e.dc)}</div></div>`).join("")}</div>` : ""}
+    ${p.session === "pre" ? `<p class="glass session-note small">${esc(t("pulse.preNote", { d: p.prevDay ? date(p.prevDay) : "–" }))}</p>` : p.session === "post" ? `<p class="glass session-note small">${esc(t("pulse.postNote"))}</p>` : ""}
+    ${p.indices?.length ? `<div class="index-strip">${p.indices.map((e) => `<div class="glass index-chip"><div class="small muted">${esc(INDEX_NAMES[e.t] || e.t)} <span class="muted">(${esc(e.t)})</span></div><div class="index-val">${fmt(e.px, "usd")} ${dayChange(e.dc)}</div>${isNum(e.xc) && e.xs ? `<div class="small muted">${esc(cap1(t(`pulse.when.${e.xs}`)))} ${dayChange(e.xc)}</div>` : ""}</div>`).join("")}</div>` : ""}
     ${hl ? `<div class="score-name" style="margin:18px 0 8px">${esc(t("pulse.headlines"))}</div><ul class="hl-list">${hl}</ul>` : ""}
     ${themeCards ? `<div class="score-name" style="margin:18px 0 8px">${esc(t("pulse.themesTitle"))}</div><div class="theme-grid">${themeCards}</div>` : ""}
     ${sectorBars ? `<div class="score-name" style="margin:18px 0 8px">${esc(t("pulse.sectorsTitle"))}</div><div class="glass pad sec-list">${sectorBars}</div>` : ""}
@@ -913,7 +959,7 @@ async function renderCompany(ticker) {
         </div>
       </div>
       <div class="head-actions">
-        ${isNum(mk.price) ? `<div class="quote"><div class="px">${fmt(mk.price, "usd")} ${dayChange(mk.changePct)}</div><div class="mc">${esc(t("ui.marketCap"))}: ${a.ok && isNum(a.metrics.marketCap) ? money(a.metrics.marketCap) : isNum(mk.marketCap) ? money(mk.marketCap) : "–"}</div></div>` : ""}
+        ${isNum(mk.price) ? `<div class="quote"><div class="px">${fmt(mk.price, "usd")} ${dayChange(mk.changePct)}</div>${isNum(mk.ext?.changePct) ? `<div class="small muted ext-quote">${esc(cap1(t("pulse.extLabel", { w: t(`pulse.when.${mk.ext.session}`), p: fmt(mk.ext.price, "usd") })))} ${dayChange(mk.ext.changePct)}</div>` : ""}<div class="mc">${esc(t("ui.marketCap"))}: ${a.ok && isNum(a.metrics.marketCap) ? money(a.metrics.marketCap) : isNum(mk.marketCap) ? money(mk.marketCap) : "–"}</div></div>` : ""}
         <button class="btn" id="watch">${starSvg(watched)}<span>${esc(t(watched ? "ui.removeWatch" : "ui.addWatch"))}</span></button>
         <a class="btn" href="#/compare/${encodeURIComponent(c.ticker)}">${esc(t("ui.compareWith"))}</a>
         <a class="btn" href="#/portfolio/${encodeURIComponent(c.ticker)}">${esc(t(getPortfolio().some((h) => h.t === c.ticker) ? "ui.inPortfolio" : "ui.addPortfolio"))}</a>

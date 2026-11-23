@@ -21,11 +21,12 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseCompanyFacts } from "./sec-parse.mjs";
 import { sectorFromSic, sectorFromNasdaq, profileFor } from "./sectors.mjs";
-import { nasdaqScreener, nasdaqEtfScreener, etfSummary, priceHistory, priceBudgetLeft, fxToUsd } from "./market.mjs";
-import { majorEvents } from "./events.mjs";
+import { nasdaqScreener, nasdaqEtfScreener, etfSummary, priceHistory, priceBudgetLeft, fxToUsd, marketSession, extendedQuotes } from "./market.mjs";
+import { majorEvents, recentFilings } from "./events.mjs";
+import { headlineFor } from "./news-headline.mjs";
 import { fillMissingFilings } from "./xbrl-instance.mjs";
 import { buildSeo } from "./seo.mjs";
-import { buildPulse } from "./pulse.mjs";
+import { buildPulse, INDEX_ETFS } from "./pulse.mjs";
 import { parseNasdaqListed, parseOtherListed, parseEtfs } from "./listings.mjs";
 import { insiderActivity } from "./insider.mjs";
 import { updateLogos, logoSet } from "./logos.mjs";
@@ -90,11 +91,64 @@ function latestReport(sub) {
   return null;
 }
 
+// ---------- News of large companies ----------
+
+// Companies above this market cap get headlines for their recent 8-K filings (press release titles):
+// leadership changes, results, deals and the major events.
+const BIG_NEWS_CAP = 1e10;
+const isBig = (marketCap) => (marketCap ?? 0) >= BIG_NEWS_CAP;
+const EVENT_DAYS = 365;
+const STORY_DAYS = 3; // news of the last days for the top stories
+
+// Recent 8-Ks with headlines; a headline is downloaded once and kept in the company file.
+async function companyNews(sub, old) {
+  const cached = new Map((old?.news || []).filter((n) => n.title).map((n) => [n.url, n]));
+  const out = [];
+  for (const f of recentFilings(sub)) {
+    const hit = cached.get(f.url);
+    if (hit) { out.push({ ...f, title: hit.title, kind: hit.kind }); continue; }
+    const h = await headlineFor(f, async (url, type) => { const r = await get(url, type); await sleep(110); return r; });
+    out.push({ ...f, ...h });
+  }
+  return out;
+}
+
+// Major events with the headlines of the news; leadership changes of large companies (chief executive,
+// chief financial officer, chair) are kept among the major events too, for 12 months like the others.
+function eventsWithNews(events, news, old, now = new Date()) {
+  const info = new Map();
+  for (const e of old?.events || []) if (e.title || e.kind) info.set(e.url, e);
+  for (const n of news || []) info.set(n.url, n);
+  const out = events.map((e) => { const x = info.get(e.url); return x ? { ...e, title: x.title ?? null, kind: x.kind ?? null } : e; });
+  const have = new Set(out.map((e) => e.url));
+  for (const e of [...(news || []), ...(old?.events || [])]) {
+    if (e.kind !== "leadership" || have.has(e.url) || (now - new Date(e.date)) / 86400000 > EVENT_DAYS) continue;
+    have.add(e.url);
+    out.push({ date: e.date, items: ["5.02"], severity: 4, url: e.url, title: e.title ?? null, kind: "leadership" });
+  }
+  return out.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0)).slice(0, 14);
+}
+
+// Market session of this run's quotes (intraday runs): pre-market, open, after-hours or closed.
+let SESSION = null;
+// Before the open and after the close, the latest trades of this many of the largest companies are read.
+const EXT_TOP = 300;
+
 // Intraday: current prices only. Market cap moves with the price; everything else stays from the daily run.
 async function updateQuotes(screener = null) {
   screener ||= await nasdaqScreener();
   const etfQuotes = await nasdaqEtfScreener();
   if (!screener.size) { console.warn("  no quotes; nothing updated"); return; }
+  // The regular-session quotes do not move before the open or after the close: there the latest trades of
+  // the largest companies and the index funds are read too (pre-market, after-hours).
+  SESSION = await marketSession();
+  let ext = new Map();
+  if (SESSION?.session === "pre" || SESSION?.session === "post") {
+    const big = [...screener.entries()].filter(([, q]) => q.marketCap > 0).sort((a, b) => b[1].marketCap - a[1].marketCap).slice(0, EXT_TOP).map(([t]) => ({ t }));
+    ext = await extendedQuotes([...big, ...INDEX_ETFS.map((t) => ({ t, etf: true }))]);
+    console.log(`  ${SESSION.session === "pre" ? "pre-market" : "after-hours"} quotes: ${ext.size}`);
+  }
+  const extOf = (t) => { const x = ext.get(t); return x && Number.isFinite(x.changePct) ? { session: SESSION.session, price: x.price, changePct: x.changePct, at: x.at } : undefined; };
   let n = 0;
   for (const f of readdirSync(COMPANIES)) {
     const c = readJson(join(COMPANIES, f));
@@ -103,18 +157,62 @@ async function updateQuotes(screener = null) {
     const m = c.market || {};
     const ratio = Number.isFinite(m.price) && m.price > 0 ? q.price / m.price : null;
     c.market = { ...m, price: q.price, priceDate: todayIso(), changePct: q.changePct ?? null,
-      marketCap: q.marketCap || (Number.isFinite(m.marketCap) && ratio ? m.marketCap * ratio : m.marketCap ?? null), quoteTime: new Date().toISOString() };
+      marketCap: q.marketCap || (Number.isFinite(m.marketCap) && ratio ? m.marketCap * ratio : m.marketCap ?? null), quoteTime: new Date().toISOString(), ext: extOf(c.ticker) };
     writeFileSync(join(COMPANIES, f), JSON.stringify(c) + "\n");
     n++;
   }
   const ef = join(DATA, "etfs.json");
   if (existsSync(ef) && etfQuotes.size) {
     const e = readJson(ef);
-    for (const r of e.etfs) { const q = etfQuotes.get(r.t); if (q && Number.isFinite(q.price)) { r.px = q.price; if (Number.isFinite(q.changePct)) r.dc = q.changePct; } }
+    for (const r of e.etfs) {
+      const q = etfQuotes.get(r.t);
+      if (q && Number.isFinite(q.price)) { r.px = q.price; if (Number.isFinite(q.changePct)) r.dc = q.changePct; }
+      const x = extOf(r.t);
+      if (x) { r.xc = +x.changePct.toFixed(2); r.xp = x.price; r.xs = x.session; } else { delete r.xc; delete r.xp; delete r.xs; }
+    }
     e.quotesAt = new Date().toISOString();
+    e.session = SESSION ? { session: SESSION.session, previousTradeDate: SESSION.previousTradeDate } : null;
     writeFileSync(ef, JSON.stringify(e) + "\n");
   }
-  console.log(`  quotes updated: ${n} companies, ${etfQuotes.size} ETFs`);
+  console.log(`  quotes updated: ${n} companies, ${etfQuotes.size} ETFs${SESSION ? `; session: ${SESSION.session}` : ""}`);
+}
+
+// Large companies whose recent news has not been read yet (when this was introduced, or a company that grew
+// past the size limit): a limited number per intraday run, the largest first; the daily update reads all.
+async function backfillNews(budgetMs = 150000) {
+  const start = Date.now();
+  const todo = [];
+  for (const f of readdirSync(COMPANIES)) {
+    const c = readJson(join(COMPANIES, f));
+    if (c.cik && !c.newsChecked && isBig(c.market?.marketCap)) todo.push({ t: c.ticker, mc: c.market.marketCap });
+  }
+  if (!todo.length) return;
+  todo.sort((a, b) => b.mc - a.mc);
+  let n = 0;
+  for (const { t } of todo) {
+    if (Date.now() - start > budgetMs) break;
+    const file = join(COMPANIES, `${t}.json`);
+    const c = readJson(file);
+    try {
+      const sub = await get(`https://data.sec.gov/submissions/CIK${String(c.cik).padStart(10, "0")}.json`);
+      await sleep(110);
+      if (!sub) continue;
+      c.news = await companyNews(sub, c);
+      if (!c.news.length) delete c.news;
+      c.events = eventsWithNews(majorEvents(sub), c.news, c);
+      // Not marked as a refresh of the filings: a report that is still waiting for its download stays due.
+      c.newsChecked = new Date().toISOString();
+      writeFileSync(file, JSON.stringify(c) + "\n");
+      if (OVERLAY) {
+        mkdirSync(join(OVERLAY, "companies"), { recursive: true });
+        writeFileSync(join(OVERLAY, "companies", `${t}.json`), readFileSync(file));
+      }
+      n++;
+    } catch (e) {
+      console.warn(`  ${t} news: ${e.message}`);
+    }
+  }
+  console.log(`  news of large companies: ${n} read now, ${todo.length - n} left for the next runs`);
 }
 
 // ---------- Intraday: companies with new filings ----------
@@ -175,7 +273,9 @@ async function refreshCurrentFilings(screener) {
         await sleep(110);
         if (!sub) { failed++; continue; }
         const cur = readJson(join(COMPANIES, `${c.ticker}.json`));
-        cur.events = majorEvents(sub);
+        const news = isBig(cur.market?.marketCap) ? await companyNews(sub, cur).catch(() => cur.news) : undefined;
+        cur.events = eventsWithNews(majorEvents(sub), news, cur);
+        if (news) { cur.news = news.length ? news : undefined; cur.newsChecked = new Date().toISOString(); }
         cur.lastReport = latestReport(sub) || cur.lastReport || null;
         cur.eventsRetrieved = new Date().toISOString();
         writeCompany(cur);
@@ -232,6 +332,7 @@ async function fetchCompany(item, sec, q = {}, fx = {}) {
   const file = join(COMPANIES, `${item.ticker}.json`);
   const old = existsSync(file) ? readJson(file) : null;
   const hist = old?.prices?.data?.length ? old.prices : null;
+  const news = sub && isBig(q.marketCap ?? old?.market?.marketCap) ? await companyNews(sub, old).catch((e) => { console.warn(`  ${item.ticker} news: ${e.message}`); return old?.news; }) : undefined;
   const currency = parsed.currency || "USD";
   const price = q.price ?? (hist ? hist.data.at(-1)[1] : null);
   const shares = parsed.sharesOutstanding ?? null;
@@ -266,7 +367,9 @@ async function fetchCompany(item, sec, q = {}, fx = {}) {
       ipoYear: q.ipoYear ?? old?.market?.ipoYear ?? null,
     },
     foreignPrivateIssuer: (sub?.filings?.recent?.form || []).some((f) => f === "20-F" || f === "40-F"),
-    events: majorEvents(sub),
+    events: eventsWithNews(majorEvents(sub), news, old),
+    news: news?.length ? news : undefined,
+    newsChecked: news ? new Date().toISOString() : undefined,
     insiders: old?.insiders ?? null,
     scoreHistory: old?.scoreHistory ?? undefined,
     prices: hist,
@@ -445,6 +548,7 @@ function buildIndex({ snapshot = false } = {}) {
   writeFileSync(join(DATA, "benchmarks.json"), JSON.stringify({ generated: new Date().toISOString(), engineVersion: ENGINE_VERSION, sectors: benchmarks }) + "\n");
 
   const news = [];
+  const recentNews = []; // headlines of large companies for the top stories
   const logos = logoSet(DATA);
   const companies = all.map((c) => {
     const a = analyze(c, { benchmarks });
@@ -473,6 +577,9 @@ function buildIndex({ snapshot = false } = {}) {
     if (Number.isFinite(c.market?.price)) row.px = c.market.price;
     if (!row.mc && Number.isFinite(c.market?.marketCap) && c.market.marketCap > 0) row.mc = Math.round(c.market.marketCap);
     if (Number.isFinite(c.market?.changePct)) row.dc = +c.market.changePct.toFixed(2);
+    // Pre-market or after-hours change of the largest companies (intraday runs outside the session).
+    if (Number.isFinite(c.market?.ext?.changePct)) { row.xc = +c.market.ext.changePct.toFixed(2); row.xs = c.market.ext.session; }
+    for (const n of c.news || []) if (now - new Date(n.at || n.date) <= STORY_DAYS * 86400000) recentNews.push({ t: c.ticker, ...n });
     if (c.firstSeen) row.fs = c.firstSeen;
     if (c.market?.ipoYear) row.ipo = c.market.ipoYear;
     if (c.lastReport?.date) row.lr = `${c.lastReport.date}|${c.lastReport.form}`;
@@ -516,7 +623,7 @@ function buildIndex({ snapshot = false } = {}) {
   // Market today (big moves, new reports, score changes, new listings).
   const etfFile = join(DATA, "etfs.json");
   const etfData = existsSync(etfFile) ? readJson(etfFile) : { etfs: [] };
-  const pulse = buildPulse({ rows: companies.map((r) => ({ ...r, o: Array.isArray(r.sc) ? r.sc[0] : null })), etfs: etfData.etfs || [], now, quotesAt: quotesOnly ? now.toISOString() : etfData.quotesAt || null });
+  const pulse = buildPulse({ rows: companies.map((r) => ({ ...r, o: Array.isArray(r.sc) ? r.sc[0] : null })), etfs: etfData.etfs || [], now, quotesAt: quotesOnly ? now.toISOString() : etfData.quotesAt || null, news: recentNews, session: SESSION ? { session: SESSION.session, previousTradeDate: SESSION.previousTradeDate } : etfData.session || null });
   writeFileSync(join(DATA, "pulse.json"), JSON.stringify(pulse) + "\n");
   // Major-events feed: newest first. Critical events and major events of companies above $1 billion
   // are kept for the full 12 months; of the rest only the latest 150.
@@ -531,9 +638,12 @@ function buildIndex({ snapshot = false } = {}) {
   console.log(`search pages: ${seo.pages} company pages, sitemap with ${seo.sitemap} URLs${process.env.SITE_URL ? "" : " (no SITE_URL: sitemap skipped)"}.`);
 }
 
+// The market session (before the open, open, after the close, closed) for the market summary.
+if (!indexOnly && !quotesOnly) SESSION = await marketSession();
 if (quotesOnly) {
   const screener = await nasdaqScreener();
   if (!skipFilings) await refreshCurrentFilings(screener).catch((e) => console.warn(`new filings: ${e.message}`));
+  if (!skipFilings) await backfillNews().catch((e) => console.warn(`news: ${e.message}`));
   await updateQuotes(screener);
 } else if (!indexOnly) await updateCompanies();
 // Company logos: new companies get theirs on the next full update (see scripts/logos.mjs).

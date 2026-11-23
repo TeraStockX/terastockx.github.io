@@ -8,6 +8,7 @@
 export const EVENT_SEVERITY = {
   "1.03": 5, // Bankruptcy or receivership
   "4.02": 5, // Non-reliance on previously issued financial statements (restatement)
+  "1.05": 4, // Material cybersecurity incident
   "2.04": 4, // Triggering events that accelerate a financial obligation
   "3.01": 4, // Notice of delisting / failure to satisfy listing rules
   "5.01": 4, // Change in control
@@ -45,4 +46,28 @@ export function majorEvents(sub, { now = new Date(), days = 365, max = 12 } = {}
     .sort((a, b) => b.severity - a.severity || (a.date < b.date ? 1 : -1))
     .slice(0, max)
     .sort((a, b) => (a.date < b.date ? 1 : -1));
+}
+
+// Recent 8-K filings of a large company for the news pages, whatever they report (leadership changes,
+// results, deals and the major events above), newest first; headlines are added by news-headline.mjs.
+export const NEWS_ITEMS = new Set(["1.01", "1.02", "1.03", "1.05", "2.01", "2.02", "2.04", "2.05", "2.06", "3.01", "4.01", "4.02", "5.01", "5.02", "7.01", "8.01"]);
+export function recentFilings(sub, { now = new Date(), days = 10, max = 8 } = {}) {
+  const r = sub?.filings?.recent;
+  if (!r?.form) return [];
+  const cik = String(Number(sub.cik));
+  const out = [];
+  for (let i = 0; i < r.form.length && out.length < max; i++) {
+    if (r.form[i] !== "8-K") continue;
+    if ((now - new Date(r.filingDate[i])) / DAY > days) break;
+    const items = String(r.items?.[i] || "").split(",").map((s) => s.trim()).filter((s) => NEWS_ITEMS.has(s));
+    if (!items.length) continue;
+    const acc = r.accessionNumber[i];
+    out.push({
+      date: r.filingDate[i],
+      at: Number.isFinite(Date.parse(r.acceptanceDateTime?.[i])) ? new Date(r.acceptanceDateTime[i]).toISOString() : null,
+      items,
+      url: `https://www.sec.gov/Archives/edgar/data/${cik}/${acc.replace(/-/g, "")}/${r.primaryDocument?.[i] || ""}`,
+    });
+  }
+  return out;
 }

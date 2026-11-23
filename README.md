@@ -42,8 +42,9 @@ scripts/sectors.mjs           SIC-kód → szektor és elemzési profil
 scripts/market.mjs            árfolyam, piaci kapitalizáció, devizaárfolyamok, havi árfolyam-előzmények
 scripts/listings.mjs          tőzsdelisták (Nasdaq, NYSE, NYSE American, Cboe)
 scripts/insider.mjs           bennfentes ügyletek (SEC Form 4 negyedéves adatbázis)
-scripts/events.mjs            jelentős 8-K események
-scripts/pulse.mjs             „Piac ma”: indexek, témák (pl. AI-részvények), legnagyobb mozgások, új jelentések, TeraScore-változások, új tőzsdei cégek
+scripts/events.mjs            jelentős 8-K események, a nagy cégek friss 8-K bejelentései
+scripts/news-headline.mjs     hírcímek: a 8-K-hoz csatolt sajtóközlemény (Exhibit 99) címe, ennek hiányában a bejelentett pont első mondata
+scripts/pulse.mjs             „Fő hírek” (nagy cégek vezetőváltásai, felvásárlásai, gyorsjelentései, nagy árfolyammozgásai, nyitás előtt és zárás után is) és „Piac ma”: indexek, témák (pl. AI-részvények), szektorok, legnagyobb mozgások, új jelentések, TeraScore-változások, új tőzsdei cégek
 scripts/xbrl-instance.mjs     a companyfactsből hiányzó jelentések kiolvasása az XBRL-fájlból
 scripts/gen-docs.mjs          docs/SABLON.md generálása
 tests/                        tesztek (npm test)
@@ -71,7 +72,7 @@ Az árfolyam- és piaci adatok (Nasdaq, Yahoo Finance, Stooq) opcionálisak: ha 
 
 ## Online közzététel (GitHub Pages)
 
-A `.github/workflows/deploy.yml` minden `main`-re pusholáskor közzéteszi az oldalt, minden nap pedig frissíti az adatokat (a bennfentes adatokat hétfőnként); hétköznap az amerikai kereskedési időben (13:00–22:00 UTC) 5 percenként, előtte és utána (11:00–13:00 és 22:00–01:00 UTC) 10 percenként az árfolyamokat, az aznap beadott jelentések alapján a cégek adatait és TeraScore-ját, valamint a „Piac ma” összefoglalót is (`.github/workflows/intraday.yml`). Mivel a GitHub az ütemezett futásokat terhelés idején késve vagy egyáltalán nem indítja, minden napközbeni futás a végén maga indítja a következőt; az ütemezés csak elindítja (vagy újraindítja) ezt a láncot. A cégek logóit a napi frissítés tölti le és kicsinyíti (`scripts/logos.mjs`). Az adatok a `data` ágra kerülnek, amely mindig egyetlen commitot tartalmaz, így a repó nem nő hétről hétre.
+A `.github/workflows/deploy.yml` minden `main`-re pusholáskor közzéteszi az oldalt, minden nap pedig frissíti az adatokat (a bennfentes adatokat hétfőnként); hétköznap az amerikai kereskedési időben (13:00–22:00 UTC) 5 percenként, előtte és utána (11:00–13:00 és 22:00–01:00 UTC) 10 percenként az árfolyamokat, az aznap beadott jelentések alapján a cégek adatait és TeraScore-ját, valamint a „Piac ma” összefoglalót is (`.github/workflows/intraday.yml`). Mivel a GitHub az ütemezett futásokat terhelés idején késve vagy egyáltalán nem indítja, minden napközbeni futás a végén maga indítja a következőt; az ütemezés csak elindítja (vagy újraindítja) ezt a láncot. A 10 milliárd dollárnál nagyobb cégek friss 8-K bejelentéseihez a frissítés letölti a csatolt sajtóközlemény címét (pl. „NVIDIA Board Reinstates Jensen Huang as President, CEO and Board Director”), ezekből és a nagy árfolyammozgásokból állnak össze a „Fő hírek”. Nyitás előtt és zárás után a 300 legnagyobb cég és az indexalapok legutóbbi kötései is letöltődnek, így a nyitás előtti mozgások is látszanak. A cégek logóit a napi frissítés tölti le és kicsinyíti (`scripts/logos.mjs`). Az adatok a `data` ágra kerülnek, amely mindig egyetlen commitot tartalmaz, így a repó nem nő hétről hétre.
 
 1. **Settings → Pages → Source: GitHub Actions**
 2. **Settings → Secrets and variables → Actions → New repository secret:** `SEC_USER_AGENT` = `Név email@cim.hu`

@@ -439,7 +439,106 @@ test("Market today: baskets, movers, reports, score changes, new listings and he
   assert.deepEqual(p.scoreMoves.map((r) => r.t), ["KO"]);
   assert.deepEqual(p.newListings.map((r) => r.t), ["ANT"]);
   const types = p.headlines.map((h) => h.type);
-  for (const ty of ["index", "theme", "move", "report", "score", "listing"]) assert.ok(types.includes(ty), ty);
+  for (const ty of ["index", "theme", "report", "score", "listing"]) assert.ok(types.includes(ty), ty);
+  // Big moves of large companies are top stories now (NVDA −5% at $4 trillion, ANT +12%); KO +0.5% is not.
+  assert.deepEqual(p.stories.map((x) => x.t).sort(), ["ANT", "NVDA"]);
+  assert.ok(p.stories.every((x) => x.kind === "move" && x.when === "day"));
+});
+
+test("Top stories: news of large companies with headlines, pre-market moves, one story per company", async () => {
+  const { buildStories } = await import("../scripts/pulse.mjs");
+  const now = new Date("2026-11-23T14:20:00Z");
+  const rows = [
+    { t: "NVDA", n: "NVIDIA", mc: 3.1e12, dc: -12.06, xc: 31.53, xs: "pre" },
+    { t: "AAPL", n: "Apple", mc: 4e12, dc: -1.2, xc: 1.39, xs: "pre" },
+    { t: "ORCL", n: "Oracle", mc: 5e11, dc: -9, xc: 15.89, xs: "pre" },
+    { t: "PRU", n: "Prudential", mc: 4e10, dc: -2 },
+    { t: "JPM", n: "JPMorgan", mc: 7e11, dc: -3, xc: 0.4, xs: "pre" },
+    { t: "SMAL", n: "Small Co", mc: 5e9, dc: -1 },
+    { t: "MID", n: "Mid Co", mc: 3e10, dc: 1, xc: 0.2, xs: "pre" },
+  ];
+  const news = [
+    { t: "NVDA", date: "2026-11-23", at: "2026-11-23T13:57:54.000Z", items: ["5.02"], kind: "leadership", title: "NVIDIA Board Reinstates Jensen Huang as President, CEO and Board Director", url: "https://www.sec.gov/x/nvda.htm" },
+    { t: "NVDA", date: "2026-11-21", items: ["8.01"], kind: "other", title: "Something else", url: "u2" },
+    { t: "PRU", date: "2026-11-23", items: ["5.02", "7.01"], kind: "board", title: "Prudential Financial elects Jay Wintrob to Board of Directors", url: "u3" },
+    { t: "JPM", date: "2026-11-21", items: ["2.02"], kind: "results", title: "JPMorgan Chase Reports Third-Quarter Results", url: "u4" },
+    { t: "SMAL", date: "2026-11-23", items: ["5.02"], kind: "leadership", title: "Small Co names new CEO", url: "u5" },
+    { t: "MID", date: "2026-11-23", items: ["2.02"], kind: "results", title: "Mid Co results", url: "u6" },
+  ];
+  const st = buildStories({ rows, news, session: { session: "pre", previousTradeDate: "2026-11-20" }, now });
+  assert.equal(st[0].t, "NVDA", "the CEO news of the largest company with the biggest move comes first");
+  assert.equal(st[0].kind, "leadership");
+  assert.equal(st[0].move, 31.53);
+  assert.equal(st[0].when, "pre", "before the open the pre-market change counts, not the previous day's −12%");
+  assert.match(st[0].title, /Reinstates Jensen Huang/);
+  const byT = Object.fromEntries(st.map((x) => [x.t, x]));
+  assert.equal(byT.ORCL?.kind, "move", "a +16% pre-market move of a $500 billion company is a story without news");
+  assert.equal(byT.JPM?.kind, "results", "results of a company above $100 billion are news");
+  for (const t of ["AAPL", "PRU", "SMAL", "MID"]) assert.ok(!byT[t], `${t} is not a top story`);
+  assert.equal(st.filter((x) => x.t === "NVDA").length, 1, "one story per company");
+  // During the session the regular change counts; before the open a previous-day move alone is no story.
+  const open = buildStories({ rows: [{ t: "ORCL", n: "Oracle", mc: 5e11, dc: -9 }], news: [], session: { session: "pre" }, now });
+  assert.equal(open.length, 0);
+  assert.equal(buildStories({ rows: [{ t: "ORCL", n: "Oracle", mc: 5e11, dc: -9 }], news: [], session: { session: "open" }, now })[0].when, "day");
+  // After the close: a big move of the day stays the story even if the after-hours change is small;
+  // a big after-hours move (results after the close) is shown as such; at night it is the last session's.
+  const post = buildStories({ rows: [{ t: "ORCL", n: "Oracle", mc: 5e11, dc: -9, xc: 0.3, xs: "post" }, { t: "NVDA", n: "NVIDIA", mc: 4e12, dc: 0.5, xc: -6, xs: "post" }], news: [], session: { session: "post" }, now });
+  assert.deepEqual(post.map((x) => [x.t, x.move, x.when]), [["NVDA", -6, "post"], ["ORCL", -9, "day"]]);
+  assert.equal(buildStories({ rows: [{ t: "ORCL", n: "Oracle", mc: 5e11, dc: -9 }], news: [], session: { session: "closed" }, now })[0].when, "last");
+});
+
+test("News headlines: press-release titles, the reported item, kinds of news", async () => {
+  const h = await import("../scripts/news-headline.mjs");
+  const fx = (f) => readFileSync(new URL(`./fixtures/8k/${f}`, import.meta.url), "utf8");
+  const ph = (f) => h.pressHeadline(fx(f));
+  assert.equal(ph("nvda-reinstated-ex99.htm").title, "NVIDIA Board Reinstates Jensen Huang as President, CEO and Board Director");
+  assert.match(ph("nvda-reinstated-ex99.htm").lede, /^NVIDIA today announced that effective immediately, Jensen Huang has been reinstated as President and Chief Executive Officer/);
+  assert.equal(ph("nvda-transition-ex99.htm").title, "NVIDIA Announces CEO Transition", "bullet points under the headline are left out");
+  assert.equal(ph("nvda-results-ex99.htm").title, "NVIDIA Announces Financial Results for Third Quarter Fiscal 2027");
+  assert.equal(ph("pru-board-ex99.htm").title, "Prudential Financial elects Jay Wintrob to Board of Directors", "the filing envelope and 'Exhibit 99.1' are not the title");
+  assert.ok(!/NYSE/.test(ph("pru-board-ex99.htm").lede), "ticker brackets are left out");
+  assert.equal(ph("ghm-ex99.htm").title, "Graham Corporation Acquires Hauschild Group, Expanding its Global Materials Processing Platform", "all-caps titles in title case");
+  assert.equal(ph("ncra-ex99.htm").title, "Nocera Signs Binding Letter of Intent to Invest $22 Million for an Approximately 44% Stake in BitRock, a Self-Powered AI Data Center Developer in Alberta", "italic sub-headline left out");
+  assert.equal(ph("slxn-ex99.htm").title, "Silexion Therapeutics Opens First Two Clinical Sites in Germany for Phase 2/3 Trial of SIL204 in Locally Advanced Pancreatic Cancer");
+  assert.equal(h.itemSentence(fx("nvda-reinstated-8k.htm"), ["5.02", "9.01"]), "The Board of Directors of NVIDIA Corporation reinstated Jen-Hsun Huang as NVIDIA’s President, Chief Executive Officer and member of the Board of Directors, effective immediately.");
+  assert.match(h.itemSentence(fx("lifx-8k.htm"), ["5.02"]), /^Life360, Inc\. and Chris Hulls, co-founder and Executive Chairman .* will retire as Executive Chairman, effective December 31, 2026\.$/);
+  assert.match(h.itemSentence(fx("tpg-8k.htm"), ["7.01", "9.01"]), /^TPG Inc\. posted on its website updated supplemental financial information/);
+  assert.equal(h.exhibitPath(fx("nvda-reinstated-index.htm")), "/Archives/edgar/data/1045810/000104581026000090/nov23pressrelease.htm");
+  assert.equal(h.firstSentence("Harvey C. Jones was named Chair of the Board. He has served since 1993."), "Harvey C. Jones was named Chair of the Board.");
+  assert.equal(h.firstSentence("Acme Inc. today reported results for the U.S. market. Revenue rose."), "Acme Inc. today reported results for the U.S. market.");
+  assert.equal(h.classifyNews(["5.02", "9.01"], "NVIDIA Board Reinstates Jensen Huang as President, CEO and Board Director"), "leadership");
+  assert.equal(h.classifyNews(["5.02", "7.01"], "Prudential Financial elects Jay Wintrob to Board of Directors"), "board");
+  assert.equal(h.classifyNews(["5.02"], "The Committee approved the annual bonus plan of the CEO"), "board", "pay decisions are no leadership change");
+  assert.equal(h.classifyNews(["1.01", "7.01"], "Graham Corporation Acquires Hauschild Group"), "deal");
+  assert.equal(h.classifyNews(["1.01"], "Entry into a credit agreement with a bank syndicate"), "other");
+  assert.equal(h.classifyNews(["2.02", "9.01"], "NVIDIA Announces Financial Results"), "results");
+  assert.equal(h.classifyNews(["1.03"], "Chapter 11"), "critical");
+  // Whole flow with the filing's index page and press release (no network).
+  const files = { "0001045810-26-000090-index.htm": "nvda-reinstated-index.htm", "nov23pressrelease.htm": "nvda-reinstated-ex99.htm" };
+  const get = async (url) => { const f = Object.keys(files).find((k) => url.endsWith(k)); return f ? fx(files[f]) : null; };
+  const r = await h.headlineFor({ url: "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000090/nvda-20261122.htm", items: ["5.02", "9.01"] }, get);
+  assert.deepEqual(r, { title: "NVIDIA Board Reinstates Jensen Huang as President, CEO and Board Director", kind: "leadership" });
+  // Without a press release: the item's first sentence from the 8-K itself.
+  const r2 = await h.headlineFor({ url: "https://www.sec.gov/Archives/edgar/data/1581760/000158176026000189/lifx-20261122.htm", items: ["5.02"] }, async (url) => (url.endsWith("lifx-20261122.htm") ? fx("lifx-8k.htm") : null));
+  assert.equal(r2.kind, "leadership");
+  assert.match(r2.title, /retire as Executive Chairman/);
+});
+
+test("Recent 8-K filings of a company for the news, newest first", async () => {
+  const { recentFilings, EVENT_SEVERITY } = await import("../scripts/events.mjs");
+  const sub = { cik: "0001045810", filings: { recent: {
+    form: ["8-K", "4", "8-K", "8-K", "8-K"],
+    filingDate: ["2026-11-23", "2026-11-20", "2026-11-17", "2026-11-12", "2026-08-17"],
+    acceptanceDateTime: ["2026-11-23T08:57:54.000Z", "", "2026-11-17T16:20:51.000Z", "2026-11-12T08:52:41.000Z", ""],
+    accessionNumber: ["0001045810-26-000090", "x", "0001045810-26-000088", "0001045810-26-000082", "0001045810-26-000069"],
+    primaryDocument: ["nvda-20261122.htm", "f4.xml", "nvda-20261117.htm", "nvda-20261111.htm", "nvda-20260817.htm"],
+    items: ["5.02,9.01", "", "2.02,9.01", "5.02,9.01", "1.01"],
+  } } };
+  const list = recentFilings(sub, { now: new Date("2026-11-23T15:00:00Z"), days: 14 });
+  assert.deepEqual(list.map((f) => f.date), ["2026-11-23", "2026-11-17", "2026-11-12"]);
+  assert.deepEqual(list[0].items, ["5.02"], "exhibits (9.01) are not news");
+  assert.equal(list[0].url, "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000090/nvda-20261122.htm");
+  assert.equal(EVENT_SEVERITY["1.05"], 4, "cybersecurity incidents are major events");
 });
 
 test("SEC parser: less common capex tags and convertible-only debt are read", () => {
