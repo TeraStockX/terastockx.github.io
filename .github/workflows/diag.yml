@@ -18,7 +18,7 @@ jobs:
         run: |
           mkdir -p out
           for i in $(seq 1 60); do
-            id=$(gh run list --repo TeraStockX/terastockx.github.io --workflow intraday.yml --limit 10 --json databaseId,headSha,status -q '[.[] | select(.headSha | startswith("08ce307d")) | select(.status == "completed")][0].databaseId')
+            id=$(gh run list --repo TeraStockX/terastockx.github.io --workflow intraday.yml --limit 10 --json databaseId,headSha,status -q '[.[] | select(.headSha | startswith("8ad36dab")) | select(.status == "completed")][0].databaseId')
             if [ -n "$id" ]; then echo "run $id"; echo "$id" > out/run-id; break; fi
             sleep 20
           done
@@ -34,15 +34,8 @@ jobs:
           curl -sL "https://terastockx.com/data/companies/NVDA.json?x=$(date +%s)" -o nvda.json
           node -e 'const c=require("./nvda.json"); console.log("NVDA price", c.market?.price, c.market?.changePct, "newsVersion", c.newsVersion, "news", JSON.stringify((c.news||[]).map(n=>[n.date,n.kind,n.title])), "events", JSON.stringify((c.events||[]).slice(0,3).map(e=>[e.date,e.items,e.title])), "ext", JSON.stringify(c.market?.ext));'
           } 2>&1 | tee out/stories.txt
-      - uses: actions/setup-node@v4
-        with: { node-version: 22 }
-      - name: Live screenshots
-        run: |
-          npm install --no-save --no-audit --no-fund playwright@1.49.1 >/dev/null 2>&1
-          npx playwright install --with-deps chromium >/dev/null 2>&1
-          node live.cjs 2>&1 | tee out/stories-shots.txt
       - name: Save results to the diag branch
         if: always()
         run: |
           git config user.name diag; git config user.email diag@users.noreply.github.com
-          git add out && git commit -qm "diag: top stories live check" && git push -q origin HEAD:diag
+          git add out && git commit -qm "diag: faster live quotes check" && git push -q origin HEAD:diag
