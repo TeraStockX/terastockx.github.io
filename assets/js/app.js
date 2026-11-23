@@ -3,6 +3,7 @@ import { portfolioSummary, PORTFOLIO_LIMITS } from "./portfolio.js";
 import { SCREENS, screenById } from "./screens.js";
 import { LANGS, lang, setLang, t, fill, fmt, money, date, num, dict } from "./i18n/index.js";
 import { barChart, lineChart, wireCharts } from "./charts.js";
+import { prepareSearch, searchCompanies, scoreAll, STRONG, popularity } from "./search.js";
 
 const app = document.getElementById("app");
 const CONTACT_EMAIL = "info@terastockx.com";
@@ -324,6 +325,67 @@ addEventListener("hashchange", () => route());
 
 // ---------- List page ----------
 
+// ---------- Company search ----------
+
+// Search items, prepared once per list of rows.
+const searchCache = new WeakMap();
+function searchItems(rows) {
+  let items = searchCache.get(rows);
+  if (!items) { items = prepareSearch(rows); searchCache.set(rows, items); }
+  return items;
+}
+const pickerField = (id, placeholder, value = "", label = placeholder) => `<div class="ac"><input id="${id}" placeholder="${esc(placeholder)}" aria-label="${esc(label)}" autocomplete="off" autocapitalize="off" spellcheck="false" value="${esc(value)}"><ul class="ac-list" id="${id}-ac" role="listbox" hidden></ul></div>`;
+
+// A company field with suggestions by ticker or name, typos allowed ("trsla" → Tesla). onPick(row) runs
+// when one is chosen (tap, or Enter for the highlighted one). Returns { resolve() }: the best match of what
+// was typed, for a form sent without choosing.
+function attachPicker(input, items, onPick, { limit = 8 } = {}) {
+  const list = document.getElementById(`${input.id}-ac`);
+  let results = [], active = -1, timer = null;
+  input.setAttribute("role", "combobox");
+  input.setAttribute("aria-autocomplete", "list");
+  input.setAttribute("aria-expanded", "false");
+  input.setAttribute("aria-controls", list.id);
+  const close = () => {
+    results = []; active = -1;
+    list.hidden = true; list.innerHTML = "";
+    input.setAttribute("aria-expanded", "false");
+    input.removeAttribute("aria-activedescendant");
+  };
+  const render = () => {
+    if (!results.length) { close(); return; }
+    list.innerHTML = results.map((r, i) => `<li role="option" id="${list.id}-${i}" data-i="${i}" class="${i === active ? "on" : ""}" aria-selected="${i === active}">
+      ${r.row.etf ? letterLogo(r.row) : logo(r.row)}<span class="ac-t">${esc(r.row.t)}</span>${r.row.etf ? `<span class="badge">ETF</span>` : r.row.ex ? `<span class="badge ex">${esc(r.row.ex)}</span>` : ""}<span class="ac-n">${esc(r.row.n || "")}</span></li>`).join("");
+    list.hidden = false;
+    input.setAttribute("aria-expanded", "true");
+    if (active >= 0) input.setAttribute("aria-activedescendant", `${list.id}-${active}`);
+  };
+  const update = () => { results = input.value.trim() ? searchCompanies(items, input.value, limit) : []; active = results.length ? 0 : -1; render(); };
+  const choose = (r) => { close(); if (r) onPick(r.row); };
+  input.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(update, 60); });
+  input.addEventListener("focus", () => { if (input.value.trim()) update(); });
+  input.addEventListener("blur", () => setTimeout(close, 150));
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      if (!results.length) return;
+      e.preventDefault();
+      active = (active + (e.key === "ArrowDown" ? 1 : -1) + results.length) % results.length;
+      render();
+    } else if (e.key === "Enter") {
+      clearTimeout(timer);
+      if (!results.length && input.value.trim()) update();
+      if (results.length && active >= 0) { e.preventDefault(); choose(results[active]); }
+    } else if (e.key === "Escape") close();
+  });
+  list.addEventListener("pointerdown", (e) => {
+    const li = e.target.closest("li[data-i]");
+    if (!li) return;
+    e.preventDefault();
+    choose(results[Number(li.dataset.i)]);
+  });
+  return { resolve: () => searchCompanies(items, input.value, 1)[0]?.row || null };
+}
+
 // When the data was updated: "Today 17:18", "Yesterday 22:50", or the full date when older than that.
 function updatedWhen(iso) {
   const d = new Date(iso);
@@ -416,6 +478,7 @@ async function renderList() {
         <button type="button" class="btn" id="reset-filters">${esc(t("ui.reset"))}</button>
       </div>
     </details>
+    <p class="small muted fuzzy-note" id="fuzzy-note" hidden></p>
     <div class="list-meta"><span id="count"></span><span>${esc(t("ui.analyzedOf", { a: num(analyzed, 0), n: num(idx.count, 0) }))}</span></div>
     <div class="glass table-wrap"><table class="list">
       <thead><tr>
@@ -435,7 +498,13 @@ async function renderList() {
   `;
 
   const draw = () => {
-    const q = listState.q.trim().toLowerCase();
+    const q = listState.q.trim();
+    // Matches by ticker or name; typo matches ("trsla") only when nothing else matches.
+    const scores = q ? scoreAll(searchItems(idx.companies), q) : null;
+    const fuzzy = !!scores && scores.size > 0 && ![...scores.values()].some((v) => v >= STRONG);
+    const note = document.getElementById("fuzzy-note");
+    note.hidden = !fuzzy;
+    note.textContent = fuzzy ? t("ui.searchFuzzy", { q }) : "";
     const watch = new Set(getWatch());
     const screen = screenById(listState.preset);
     // Extra column for screens ranked by a figure that is not already a column.
@@ -460,7 +529,7 @@ async function renderList() {
       (!L.minDrop || (isNum(c.dd) && c.dd <= -L.minDrop)) &&
       (!L.styles.length || L.styles.every((st) => (c.st || []).includes(st))) &&
       (!L.noCrit || !(c.cf || []).length) &&
-      (!q || c.t.toLowerCase().startsWith(q) || c.n.toLowerCase().includes(q)) &&
+      (!scores || scores.has(c.t)) &&
       (!screen || screen.filter(c)));
     document.getElementById("filters-count").textContent = [screen ? t(`screens.${screen.id}.name`) : "", filtersActive() ? t("ui.filtersActive", { n: filtersActive() }) : ""].filter(Boolean).join(" · ");
     const k = listState.sort;
@@ -473,8 +542,12 @@ async function renderList() {
       if (!isNum(vb)) return -1;
       return listState.dir * (va - vb) || a.t.localeCompare(b.t);
     });
-    const exact = rows.findIndex((c) => c.t.toLowerCase() === q);
-    if (exact > 0) rows.unshift(rows.splice(exact, 1)[0]);
+    // Typo matches by closeness and size; otherwise the exact ticker or name first, then the chosen order.
+    if (fuzzy) rows.sort((a, b) => scores.get(b.t) + popularity(b.mc) - (scores.get(a.t) + popularity(a.mc)));
+    else if (scores) {
+      const top = rows.filter((c) => scores.get(c.t) >= 950).sort((a, b) => scores.get(b.t) - scores.get(a.t));
+      if (top.length) rows = [...top, ...rows.filter((c) => !top.includes(c))];
+    }
 
     const pages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
     listState.page = Math.min(listState.page, pages - 1);
@@ -504,8 +577,15 @@ async function renderList() {
   };
 
   const q = document.getElementById("q");
-  q.addEventListener("input", () => { listState.q = q.value; listState.page = 0; draw(); });
-  q.addEventListener("keydown", (e) => { if (e.key === "Enter") { const first = document.querySelector("#rows tr[data-t]"); if (first) location.hash = `#/c/${first.dataset.t}`; } });
+  let qTimer = null;
+  q.addEventListener("input", () => { clearTimeout(qTimer); qTimer = setTimeout(() => { listState.q = q.value; listState.page = 0; draw(); }, 80); });
+  q.addEventListener("keydown", (e) => {
+    if (e.key !== "Enter") return;
+    clearTimeout(qTimer);
+    if (listState.q !== q.value) { listState.q = q.value; listState.page = 0; draw(); }
+    const first = document.querySelector("#rows tr[data-t]");
+    if (first) location.hash = `#/c/${first.dataset.t}`;
+  });
   document.getElementById("sector").addEventListener("change", (e) => { listState.sector = e.target.value; listState.page = 0; draw(); });
   app.querySelector(".screens").addEventListener("click", (e) => {
     const b = e.target.closest("[data-screen]"); if (!b) return;
@@ -787,8 +867,7 @@ async function renderData(ticker) {
   app.innerHTML = `
     <div class="prose" style="max-width:none;margin-top:8px"><h1>${esc(t("ui.dataTitle"))}</h1><p style="max-width:820px">${esc(t("ui.dataIntro"))}</p></div>
     <div class="compare-pick">
-      <input id="data-pick" list="data-list" placeholder="${esc(t("ui.dataPick"))}" autocomplete="off" value="${esc(ticker || "")}">
-      <datalist id="data-list">${idx.companies.map((x) => `<option value="${esc(x.t)}">${esc(x.n)}</option>`).join("")}</datalist>
+      ${pickerField("data-pick", t("ui.dataPick"), ticker || "")}
     </div>
     ${c ? `<div class="company-head" style="margin-bottom:14px"><div><h2 style="font-size:24px">${esc(c.name)}</h2>
         <div class="sub"><span class="ticker-chip">${esc(c.ticker)}</span>${c.sector ? `<span>· ${esc(sectorName(c.sector))}</span>` : ""}</div></div>
@@ -796,10 +875,7 @@ async function renderData(ticker) {
         ${rawView(c, await analyzeWith(c), true)}`
       : `<div class="styles">${chips.map((x) => `<a class="tag" href="#/data/${encodeURIComponent(x.t)}">${esc(x.t)}</a>`).join("")}</div>
          ${ticker ? `<div class="glass empty" style="margin-top:14px">${esc(t("ui.notFound", { t: ticker }))}</div>` : ""}`}`;
-  const pick = document.getElementById("data-pick");
-  const go = () => { const v = pick.value.trim().toUpperCase(); if (v && idx.companies.some((x) => x.t === v)) location.hash = `#/data/${encodeURIComponent(v)}`; };
-  pick.addEventListener("change", go);
-  pick.addEventListener("keydown", (e) => { if (e.key === "Enter") go(); });
+  attachPicker(document.getElementById("data-pick"), searchItems(idx.companies), (row) => { location.hash = `#/data/${encodeURIComponent(row.t)}`; });
   if (c) wireRaw(app, c);
 }
 
@@ -1270,20 +1346,15 @@ async function renderCompare(tickers) {
     </div>
     <div class="compare-pick">
       ${comps.map((c) => `<span class="glass chip">${esc(c.ticker)}<button data-rm="${esc(c.ticker)}" aria-label="${esc(t("ui.remove"))}">×</button></span>`).join("")}
-      ${comps.length < MAX_COMPARE ? `<input id="cmp-add" list="cmp-list" placeholder="${esc(t("ui.addCompany"))}" autocomplete="off">
-        <datalist id="cmp-list">${idx.companies.filter((c) => c.sc).map((c) => `<option value="${esc(c.t)}">${esc(c.n)}</option>`).join("")}</datalist>` : ""}
+      ${comps.length < MAX_COMPARE ? pickerField("cmp-add", t("ui.addCompany")) : ""}
     </div>
     ${table}`;
 
   app.querySelectorAll("[data-rm]").forEach((b) => b.addEventListener("click", () => go(tickers.filter((x) => x !== b.dataset.rm))));
   const add = document.getElementById("cmp-add");
   if (add) {
-    const commit = () => {
-      const v = add.value.trim().toUpperCase();
-      if (v && idx.companies.some((c) => c.t === v) && !tickers.includes(v)) go([...tickers, v]);
-    };
-    add.addEventListener("change", commit);
-    add.addEventListener("keydown", (e) => { if (e.key === "Enter") commit(); });
+    idx.analysed ||= idx.companies.filter((c) => c.sc);
+    attachPicker(add, searchItems(idx.analysed), (row) => { if (!tickers.includes(row.t)) go([...tickers, row.t]); });
   }
 }
 
@@ -1359,8 +1430,7 @@ async function renderPortfolio(prefill = "") {
   app.innerHTML = `
     <div class="prose" style="max-width:none;margin-top:8px"><h1>${esc(t("ui.navPortfolio"))}</h1><p style="max-width:820px">${esc(t("ui.pfIntro"))}</p></div>
     <form class="glass pad pf-add" id="pf-add">
-      <input id="pf-t" list="pf-list" placeholder="${esc(t("ui.pfAddPlaceholder"))}" autocomplete="off" value="${esc(prefill)}" aria-label="${esc(t("ui.company"))}">
-      <datalist id="pf-list">${idx.companies.filter((c) => isNum(c.px)).map((c) => `<option value="${esc(c.t)}">${esc(c.n)}</option>`).join("")}${(etfs.etfs || []).filter((e) => !idx.companies.some((c) => c.t === e.t)).map((e) => `<option value="${esc(e.t)}">ETF · ${esc(e.n)}</option>`).join("")}</datalist>
+      ${pickerField("pf-t", t("ui.pfAddPlaceholder"), prefill, t("ui.company"))}
       <input id="pf-n" type="number" min="0" step="any" inputmode="decimal" placeholder="${esc(t("ui.pfShares"))}" aria-label="${esc(t("ui.pfShares"))}">
       <button class="btn btn-primary" type="submit">${esc(t("ui.pfAdd"))}</button>
       ${getWatch().length ? `<button class="btn" type="button" id="pf-watch">${esc(t("ui.pfFromWatch"))}</button>` : ""}
@@ -1373,9 +1443,20 @@ async function renderPortfolio(prefill = "") {
 
   if (prefill) document.getElementById("pf-n").focus();
   const save = (next) => { setPortfolio(next); renderPortfolio(); };
+  // Stocks with a price and ETFs, searched by ticker or name.
+  if (!idx.pfRows || idx.pfRowsEtfs !== etfs) {
+    idx.pfRows = [...idx.companies.filter((c) => isNum(c.px)), ...(etfs.etfs || []).filter((e) => !idx.byT.has(e.t)).map((e) => ({ ...e, etf: true, mc: e.aum }))];
+    idx.pfRowsEtfs = etfs;
+  }
+  const picker = attachPicker(document.getElementById("pf-t"), searchItems(idx.pfRows), (row) => {
+    document.getElementById("pf-t").value = row.t;
+    document.getElementById("pf-n").focus();
+  });
   document.getElementById("pf-add").addEventListener("submit", (e) => {
     e.preventDefault();
-    const tk = document.getElementById("pf-t").value.trim().toUpperCase();
+    let tk = document.getElementById("pf-t").value.trim().toUpperCase();
+    // A name or a mistyped ticker: the best match.
+    if (tk && !rows.has(tk)) tk = picker.resolve()?.t || tk;
     const n = Number(document.getElementById("pf-n").value);
     if (!rows.has(tk)) { document.getElementById("pf-msg").textContent = t("ui.notFound", { t: tk }); return; }
     if (!(n > 0)) { document.getElementById("pf-msg").textContent = t("ui.pfNeedShares"); return; }

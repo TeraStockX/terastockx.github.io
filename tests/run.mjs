@@ -555,3 +555,32 @@ test("Screenshot import: forints, Hungarian units, quantity columns, value ÷ pr
   ]);
   assert.deepEqual(merged.map((h) => [h.t, h.shares]), [["AAPL", 10], ["MSFT", 10], ["KO", null]]);
 });
+
+test("Search: tickers and names, typos ('trsla' → Tesla), size breaks ties", async () => {
+  const { typoDistance, prepareSearch, searchCompanies, scoreAll, STRONG } = await import("../assets/js/search.js");
+  assert.equal(typoDistance("trsla", "tesla"), 0.5, "neighbouring key");
+  assert.equal(typoDistance("tsela", "tesla"), 0.5, "swapped letters");
+  assert.equal(typoDistance("aple", "apple"), 0.5, "doubled letter typed once");
+  assert.equal(typoDistance("nvdia", "nvidia"), 1, "missing letter");
+  assert.equal(typoDistance("abcdef", "uvwxyz", 2), Infinity);
+  const items = prepareSearch([
+    { t: "TSLA", n: "Tesla, Inc.", mc: 1.2e12 }, { t: "TSLL", n: "Direxion Daily TSLA Bull 2X Shares", mc: 5e9 },
+    { t: "AAPL", n: "Apple Inc.", mc: 4e12 }, { t: "APLE", n: "Apple Hospitality REIT, Inc.", mc: 3e9 },
+    { t: "NVDA", n: "NVIDIA CORP", mc: 4e12 }, { t: "GOOGL", n: "Alphabet Inc. Class A", mc: 3e12 },
+    { t: "KO", n: "Coca-Cola Co", mc: 3e11 }, { t: "T", n: "AT&T Inc.", mc: 2e11 }, { t: "JPM", n: "JPMorgan Chase & Co", mc: 8e11 },
+  ]);
+  const top = (q) => searchCompanies(items, q, 3).map((r) => r.t);
+  assert.equal(top("trsla")[0], "TSLA");
+  assert.equal(top("tesla")[0], "TSLA");
+  assert.deepEqual(top("aple").slice(0, 2), ["APLE", "AAPL"], "the exact ticker first, then Apple");
+  assert.equal(top("apple")[0], "AAPL");
+  assert.equal(top("nvdia")[0], "NVDA");
+  assert.equal(top("google")[0], "GOOGL");
+  assert.equal(top("coca kola")[0], "KO");
+  assert.equal(top("jp morgan")[0], "JPM");
+  assert.equal(top("t")[0], "T");
+  assert.deepEqual(top("ts"), ["TSLA", "TSLL"], "short queries: prefixes only, no typo matches");
+  const sc = scoreAll(items, "trsla");
+  assert.ok(sc.get("TSLA") > 0 && sc.get("TSLA") < STRONG, "a typo match is weaker than an exact one");
+  assert.ok(scoreAll(items, "tesla").get("TSLA") >= STRONG);
+});
