@@ -1,7 +1,7 @@
 // TeraStockX service worker: makes the site installable and usable offline.
 // Network first for everything, so code and data are always current when online;
 // the cache is only a fallback (offline, or a failed request).
-const CACHE = "tsx-v9";
+const CACHE = "tsx-v10";
 const SHELL = [
   "./", "index.html", "manifest.webmanifest",
   "assets/css/style.css",
