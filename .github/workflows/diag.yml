@@ -18,7 +18,7 @@ jobs:
         run: |
           mkdir -p out
           for i in $(seq 1 60); do
-            id=$(gh run list --repo TeraStockX/terastockx.github.io --workflow intraday.yml --limit 10 --json databaseId,headSha,status -q '[.[] | select((.headSha | startswith("369a5064")) or (.headSha | startswith("e4cac28e"))) | select(.status == "completed")][0].databaseId')
+            id=$(gh run list --repo TeraStockX/terastockx.github.io --workflow intraday.yml --limit 10 --json databaseId,headSha,status -q '[.[] | select(.headSha | startswith("e4cac28e")) | select(.status == "completed")][0].databaseId')
             if [ -n "$id" ]; then break; fi
             sleep 20
           done
@@ -27,16 +27,16 @@ jobs:
           [ -n "$id" ] && gh run view $id --repo TeraStockX/terastockx.github.io --log 2>&1 | grep -E "European ETFs|quotes updated|news of large|new filings|refreshed:|rror" | grep -v "Node.js 20" | sed -E 's/^([a-z]+)\t[^\t]*\t/\1 /' | cut -c1-240 | head -12
           sleep 45
           curl -sL "https://terastockx.com/data/ucits.json?x=$(date +%s)" | head -c 600; echo
-          } 2>&1 | tee out/v3.txt
+          } 2>&1 | tee out/v4.txt
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
       - name: Live screenshots
         run: |
           npm install --no-save --no-audit --no-fund playwright@1.49.1 >/dev/null 2>&1
           npx playwright install --with-deps chromium >/dev/null 2>&1
-          node live.cjs 2>&1 | tee out/v3-shots.txt
+          node live.cjs 2>&1 | tee out/v4-shots.txt
       - name: Save results to the diag branch
         if: always()
         run: |
           git config user.name diag; git config user.email diag@users.noreply.github.com
-          git add out && git commit -qm "diag: v3 live check" && git push -q origin HEAD:diag
+          git add out && git commit -qm "diag: zh live check" && git push -q origin HEAD:diag
