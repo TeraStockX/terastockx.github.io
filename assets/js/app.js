@@ -479,6 +479,7 @@ async function renderList() {
       <div>
         <h1>TeraStock<b>X</b></h1>
         <div class="tagline">${esc(t("ui.tagline"))}</div>
+        <div class="slogan">${esc(t("ui.slogan"))}</div>
         <p>${esc(t("ui.heroText"))}</p>
         <div class="hero-stats">
           <div class="hero-stat"><div class="v">${num(idx.companies.filter((c) => isNum(c.sc?.overall)).length, 0)}</div><div class="k">${esc(t("ui.ratedCompanies"))}</div></div>
