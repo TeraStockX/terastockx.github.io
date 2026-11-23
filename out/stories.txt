@@ -1,20 +1,27 @@
-now 2026-11-23T14:49:53Z run 45197462442
-build 2026-11-23T14:45:18.5012420Z (node:2299) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
-build 2026-11-23T14:45:36.3581252Z   new filings: 140 in the SEC feed, 1 companies to refresh (115 kept from earlier runs today)
-build 2026-11-23T14:45:36.6174939Z   refreshed: 0 with a new report, 1 with a new current report; 0 left for the next run
-build 2026-11-23T14:48:06.7050055Z   news of large companies: 621 read now, 263 left for the next runs
-build 2026-11-23T14:48:12.9287682Z   quotes updated: 5857 companies, 0 ETFs; session: open
-build 2026-11-23T14:48:16.2637185Z (node:2380) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
-build 2026-11-23T14:48:16.9503545Z   if-no-files-found: error
-build 2026-11-23T14:48:17.7435572Z (node:2406) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
-deploy 2026-11-23T14:48:29.6194583Z   error_count: 10
-pulse 2026-11-23T14:48:13.351Z session open 2026-11-20
-  NVDA leadership -12.06 day NVIDIA Board Reinstates Jensen Huang as President, CEO and Board Director
-  CRWD deal -5.76 day CrowdStrike to Acquire Zscaler, Bringing Network Security and Zero Trust to the Falcon Pla
-  PNC leadership -2.23 day (d) On November 17, 2026, the Board of Directors of The PNC Financial Services Group, Inc.
-  BAM deal -2.55 day Brookfield to Acquire PGP Glass, a Leading Global Manufacturer of Specialty Glass Packagin
-  MU move -13.89 day 
-  AMD move -13.25 day 
-  SNDK move -16.05 day 
-  AVGO move -12.19 day 
-NVDA newsChecked 2026-11-23T14:45:38.054Z news [["2026-11-23","leadership","NVIDIA Board Reinstates Jensen Huang as President, CEO and Board Director"],["2026-11-17","results","NVIDIA Announces Financial Results for Third Quarter Fiscal 2027"]] events [["2026-11-23",["5.02"],"NVIDIA Board Reinstates Jensen Huang as President, CEO and Board Director"],["2026-08-17",["1.01"],null]] ext undefined
+now 2026-11-23T15:12:44Z run 45201146615
+build 2026-11-23T15:05:04.5003012Z (node:2255) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+build 2026-11-23T15:05:16.3637029Z   new filings: 143 in the SEC feed, 1 companies to refresh (977 kept from earlier runs today)
+build 2026-11-23T15:05:16.9802119Z   refreshed: 0 with a new report, 1 with a new current report; 0 left for the next run
+build 2026-11-23T15:07:36.5571618Z   news of large companies: 884 read now, 0 left for the next runs
+build 2026-11-23T15:11:43.5984946Z   quotes updated: 5857 companies (1884 with a quote of the day), 0 ETFs in the screener; session: open; live quotes: 2100, kept from today's session: 2100
+build 2026-11-23T15:11:47.1555944Z (node:2498) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+build 2026-11-23T15:11:47.9601553Z   if-no-files-found: error
+build 2026-11-23T15:11:48.7790463Z (node:2521) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+deploy 2026-11-23T15:12:03.2279344Z   error_count: 10
+pulse 2026-11-23T15:11:44.032Z session open 2026-11-20
+  NVDA leadership 32.3 day NVIDIA Board Reinstates Jensen Huang as President, CEO and Board Director
+  ZS deal 16.01 day CrowdStrike to Acquire Zscaler, Bringing Network Security and Zero Trust to the Falcon Pla
+  CRWD deal -9.84 day CrowdStrike to Acquire Zscaler, Bringing Network Security and Zero Trust to the Falcon Pla
+  DELL move 23.19 day 
+  SKHY move 20.01 day 
+  KYMR move 25.45 day November 23, 2026 KT-621 Phase 2b Atopic Dermatitis Trial Results Exhibit 99.1
+  ASX move 21.72 day 
+  BAM deal 2.45 day Brookfield to Acquire PGP Glass, a Leading Global Manufacturer of Specialty Glass Packagin
+row NVDA px 166.07 dc 32.3 xc -
+row AAPL px 349.105 dc 1.91 xc -
+row MU px 697.83 dc 17.38 xc -
+row AMD px 446.4307 dc 5.19 xc -
+row PNC px 216.84 dc 1.75 xc -
+row JFIN px 1.16 dc undefined xc -
+rows with dc 1888
+NVDA price 166.07 32.3 newsVersion 2 news [["2026-11-23","leadership","NVIDIA Board Reinstates Jensen Huang as President, CEO and Board Director"],["2026-11-17","results","NVIDIA Announces Financial Results for Third Quarter Fiscal 2027"]] events [["2026-11-23",["5.02"],"NVIDIA Board Reinstates Jensen Huang as President, CEO and Board Director"],["2026-08-17",["1.01"],null]] ext undefined
