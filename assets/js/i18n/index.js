@@ -71,6 +71,7 @@ export function fmt(v, kind, currency = "USD") {
     case "pp": return `${v > 0 ? "+" : ""}${num(v * 100, 1)} pp`;
     case "x": return `${num(v, 2)}×`;
     case "xyears": return `${num(v, 1)}×`;
+    case "years": return t("ui.yearsUnit", { n: num(v, 1) });
     case "mult": return `${num(v, 1)}×`;
     case "of9": return `${v}/9`;
     case "money": return money(v, currency);

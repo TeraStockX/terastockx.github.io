@@ -4,7 +4,9 @@
 // All human-readable text lives in assets/js/i18n/*; this module only returns keys and numbers.
 // The same file runs in the browser and in the Node data updater.
 
-export const ENGINE_VERSION = "2.0.0";
+export const ENGINE_VERSION = "2.1.0";
+// Scores of the same series (major.minor) are comparable; a new series changes the methodology.
+export const ENGINE_SERIES = ENGINE_VERSION.split(".").slice(0, 2).join(".");
 
 // ---------- Helpers ----------
 
@@ -117,8 +119,20 @@ export function yearMetrics(y, prev) {
     debtToAssets: div(debt, y.totalAssets),
     payoutRatio: isNum(y.dividendsPaid) && y.dividendsPaid !== 0 ? (isNum(fcf) && fcf > 0 ? Math.abs(y.dividendsPaid) / fcf : Infinity) : isNum(y.dividendsPaid) ? 0 : null,
     bookValuePerShare: isNum(y.equity) && isNum(shares) && shares > 0 ? y.equity / shares : null,
+    investedCapital,
+    cashRunway: cashRunway(y, fcf),
     shares,
   };
+}
+
+// Years the liquid assets would fund the current free-cash-flow burn (only for a negative FCF).
+// Liquid assets: cash, or current assets less inventory and receivables when that is larger (the cash
+// line excludes the short-term investments that cash-burning companies often hold).
+function cashRunway(y, fcf) {
+  if (!isNum(fcf) || fcf >= 0) return null;
+  const liquid = Math.max(isNum(y.cash) ? y.cash : -Infinity,
+    isNum(y.currentAssets) ? y.currentAssets - (isNum(y.inventory) ? y.inventory : 0) - (isNum(y.accountsReceivable) ? y.accountsReceivable : 0) : -Infinity);
+  return Number.isFinite(liquid) ? Math.max(0, liquid) / -fcf : null;
 }
 
 // Altman Z'' (non-manufacturer / emerging-market variant; needs no market price).
@@ -202,16 +216,16 @@ const GENERAL = {
     { key: "cashRatio", weight: 0.25, bad: 0.05, good: 0.8 },
   ],
   growth1y: [
-    { key: "revenueYoY", weight: 0.35, bad: -0.10, good: 0.20 },
+    { key: "revenueYoY", weight: 0.25, bad: -0.10, good: 0.20 },
     { key: "operatingIncomeYoY", weight: 0.20, bad: -0.25, good: 0.30 },
-    { key: "epsYoY", weight: 0.25, bad: -0.25, good: 0.30 },
+    { key: "epsYoY", weight: 0.35, bad: -0.25, good: 0.30 },
     { key: "fcfYoY", weight: 0.20, bad: -0.25, good: 0.30 },
   ],
   growthLong: [
-    { key: "revenueCagr", weight: 0.30, bad: -0.05, good: 0.15 },
-    { key: "epsCagr", weight: 0.25, bad: -0.10, good: 0.20 },
+    { key: "revenueCagr", weight: 0.25, bad: -0.05, good: 0.15 },
+    { key: "epsCagr", weight: 0.35, bad: -0.10, good: 0.20 },
     { key: "fcfCagr", weight: 0.15, bad: -0.10, good: 0.20 },
-    { key: "bookValuePerShareCagr", weight: 0.15, bad: -0.05, good: 0.15 },
+    { key: "bookValuePerShareCagr", weight: 0.10, bad: -0.05, good: 0.15 },
     { key: "revenueGrowthYearsRatio", weight: 0.15, bad: 0, good: 1 },
   ],
   consistency: [
@@ -305,15 +319,31 @@ export const DIMENSIONS = [
   "growthLong", "consistency", "capitalAllocation", "valuation", "risk",
 ];
 
+// Weights calibrated in engine 2.1 on a point-in-time backtest (scripts/backtest.mjs): the areas whose
+// scores best told apart later winners and losers, and later losses and dividend cuts, weigh more.
 export const OVERALL_WEIGHTS = {
-  profitability: 0.15, cashFlow: 0.12, balanceSheet: 0.13, liquidity: 0.05, growth1y: 0.08,
-  growthLong: 0.14, consistency: 0.13, capitalAllocation: 0.07, valuation: 0.13,
+  profitability: 0.15, cashFlow: 0.14, balanceSheet: 0.10, liquidity: 0.03, growth1y: 0.07,
+  growthLong: 0.10, consistency: 0.17, capitalAllocation: 0.08, valuation: 0.16,
 };
 
-export const RISK_WEIGHTS = { balanceSheet: 0.30, liquidity: 0.10, consistency: 0.25, profitability: 0.15, cashFlow: 0.20 };
+export const RISK_WEIGHTS = { balanceSheet: 0.30, liquidity: 0.05, consistency: 0.30, profitability: 0.15, cashFlow: 0.20 };
+export const MARKET_RISK_SHARE = 0.35;   // share of the price history (volatility, drawdown) in the safety score
 export const FLAG_PENALTY = { critical: 10, warning: 4 };
+export const PENALTY_SCALE = 30;         // flag points raise risk on a saturating curve (no pile-up at 100)
 export const MIN_DIMENSIONS = 5;
 export const MIN_DIMENSION_COVERAGE = 0.5;
+// An area that applies to the company but cannot be scored for lack of data counts as a neutral 50, or as
+// the average of the company's scored areas when that is lower: missing data never lifts the TeraScore
+// (in the backtest, companies with gaps did worse than complete ones of equal score).
+export const MISSING_DIMENSION_SCORE = 50;
+// Margins and returns are scored on 60% of the latest year and 40% of the two years before it,
+// so that one exceptional year does not swing the score.
+export const SMOOTHED_METRICS = ["grossMargin", "operatingMargin", "netMargin", "fcfMargin", "roe", "roa", "roic"];
+export const SMOOTH_PRIOR_WEIGHT = 0.4;
+// Cash runway (years) that caps the liquidity score of a company with negative free cash flow: 0 → 100 points.
+export const RUNWAY_BAD = 0.75, RUNWAY_GOOD = 3;
+// Net cash scores 100 on net debt / EBITDA only when earnings are positive; a loss-maker's cash is being used up.
+export const NET_CASH_LOSS_SCORE = 50;
 
 // ---------- Sector benchmarks ----------
 
@@ -369,30 +399,60 @@ export function computeBenchmarks(list) {
 // Without them whole parts of the analysis would be skipped, so they are estimated (the raw figures shown
 // to the user stay as reported; the estimates are listed in `estimated`):
 // - operating income (EBIT): many companies (e.g. ADP, Bristol-Myers) report no operating-income line;
-//   pretax income + interest expense is the standard EBIT approximation. Not for banks and insurers.
-// - total debt: a company that has never reported any borrowing or interest expense, and whose
-//   non-current liabilities are small (< 15% of assets), has no financial debt (e.g. Arm, Intuitive Surgical).
+//   pretax income + interest expense is the standard EBIT approximation. Without a pretax line either
+//   (many REITs), net income + income tax + interest expense. Not for banks and insurers.
+// - total debt: a company that has reported no borrowing and no interest expense in its last two fiscal
+//   years, and whose non-current liabilities are small (< 15% of assets; liabilities = assets − equity when
+//   not reported), has no financial debt (e.g. Arm, Intuitive Surgical, Palantir, Monster Beverage, Copart);
+//   years with reported debt or interest expense are left as they are.
+// - capital expenditure: some companies report it only under their own XBRL element, which the SEC's
+//   standard data does not carry (e.g. ConocoPhillips, Valero, Airbnb in later years), so free cash flow
+//   would be missing although operating cash flow is reported. It is estimated from the company's own
+//   capex-to-revenue ratio in the nearest years that report both (median of up to three), else from
+//   depreciation and amortisation (a common proxy for the capex needed to maintain the assets).
 export const DEBT_FREE_MAX_NONCURRENT = 0.15;
+const capexRatioYears = 3;
 export function fillGaps(company, profile) {
   const years = (company.annual || []).filter((y) => isNum(y.year));
   const periods = [...years, company.ttm, company.latestBalance].filter(Boolean);
   const estimated = new Set();
-  const ebit = profile !== "financial" && periods.some((y) => !isNum(y.operatingIncome) && isNum(y.pretaxIncome));
-  const L = [...years].sort((a, b) => a.year - b.year).at(-1);
+  const ebit = profile !== "financial" && periods.some((y) => !isNum(y.operatingIncome) && (isNum(y.pretaxIncome) || isNum(y.netIncome)));
+  const sorted = [...years].sort((a, b) => a.year - b.year);
+  const L = sorted.at(-1);
+  const paysInterest = (y) => isNum(y?.interestExpense) && y.interestExpense > 0;
+  const recent = [...sorted.slice(-2), company.ttm, company.latestBalance].filter(Boolean);
+  const liabL = L && (isNum(L.totalLiabilities) ? L.totalLiabilities : isNum(L.totalAssets) && isNum(L.equity) ? L.totalAssets - L.equity : null);
   const debtFree = profile === "general" && L
-    && !periods.some((y) => isNum(y.totalDebt))
-    && !periods.some((y) => isNum(y.interestExpense) && y.interestExpense > 0)
-    && [L.totalAssets, L.totalLiabilities, L.currentLiabilities].every(isNum) && L.totalAssets > 0
-    && (L.totalLiabilities - L.currentLiabilities) / L.totalAssets < DEBT_FREE_MAX_NONCURRENT;
-  if (!ebit && !debtFree) return { company, estimated: [] };
+    && !recent.some((y) => isNum(y.totalDebt)) && !recent.some(paysInterest)
+    && [L.totalAssets, liabL, L.currentLiabilities].every(isNum) && L.totalAssets > 0
+    && (liabL - L.currentLiabilities) / L.totalAssets < DEBT_FREE_MAX_NONCURRENT;
+  const capexYears = years.filter((y) => isNum(y.capex) && isNum(y.revenue) && y.revenue > 0);
+  const needsCapex = (y) => y && isNum(y.operatingCashFlow) && !isNum(y.capex) && !isNum(y.freeCashFlow);
+  const capexGap = profile !== "financial" && [...years, company.ttm].some(needsCapex);
+  if (!ebit && !debtFree && !capexGap) return { company, estimated: [] };
+  const capexFor = (y) => {
+    const year = isNum(y.year) ? y.year : L?.year;
+    const near = [...capexYears].sort((a, b) => Math.abs(a.year - year) - Math.abs(b.year - year)).slice(0, capexRatioYears);
+    if (near.length && isNum(y.revenue) && y.revenue > 0) {
+      const r = near.map((x) => Math.abs(x.capex) / x.revenue).sort((a, b) => a - b);
+      const mid = r.length >> 1;
+      return (r.length % 2 ? r[mid] : (r[mid - 1] + r[mid]) / 2) * y.revenue;
+    }
+    return isNum(y.depreciationAndAmortization) && y.depreciationAndAmortization > 0 ? y.depreciationAndAmortization : null;
+  };
   const fill = (y) => {
     if (!y) return y;
     const o = { ...y };
-    if (ebit && !isNum(o.operatingIncome) && isNum(o.pretaxIncome)) {
-      o.operatingIncome = o.pretaxIncome + (isNum(o.interestExpense) && o.interestExpense > 0 ? o.interestExpense : 0);
+    if (capexGap && needsCapex(o)) {
+      const cx = capexFor(o);
+      if (isNum(cx)) { o.capex = cx; o.freeCashFlow = o.operatingCashFlow - cx; estimated.add("capex"); }
+    }
+    if (ebit && !isNum(o.operatingIncome) && (isNum(o.pretaxIncome) || isNum(o.netIncome))) {
+      const pretax = isNum(o.pretaxIncome) ? o.pretaxIncome : o.netIncome + (isNum(o.incomeTaxExpense) ? o.incomeTaxExpense : 0);
+      o.operatingIncome = pretax + (paysInterest(o) ? o.interestExpense : 0);
       estimated.add("operatingIncome");
     }
-    if (debtFree && (isNum(o.totalAssets) || isNum(o.equity))) { o.totalDebt = 0; estimated.add("totalDebt"); }
+    if (debtFree && !isNum(o.totalDebt) && !paysInterest(o) && (isNum(o.totalAssets) || isNum(o.equity))) { o.totalDebt = 0; estimated.add("totalDebt"); }
     return o;
   };
   const out = { ...company, annual: (company.annual || []).map(fill), ttm: fill(company.ttm), latestBalance: fill(company.latestBalance) };
@@ -447,7 +507,7 @@ export function analyze(company, { now = new Date(), benchmarks = null } = {}) {
   const metrics = {
     ...pick(m, ["grossMargin", "operatingMargin", "netMargin", "fcfMargin", "roe", "roa", "roic", "fcfConversion", "accrualRatio",
       "sbcToRevenue", "capexToRevenue", "currentRatio", "quickRatio", "cashRatio", "debtToEquity", "equityRatio", "liabilitiesToAssets",
-      "netDebt", "netDebtToEbitda", "interestCoverage", "goodwillToAssets", "payoutRatio", "bookValuePerShare"]),
+      "netDebt", "netDebtToEbitda", "interestCoverage", "goodwillToAssets", "payoutRatio", "bookValuePerShare", "cashRunway"]),
     altmanZ: profile === "general" ? altmanZ(L) : null,
     piotroski: profile === "financial" ? null : piotroski(L, P),
     revenueYoY: P ? growth(L.revenue, P.revenue) : null,
@@ -486,14 +546,25 @@ export function analyze(company, { now = new Date(), benchmarks = null } = {}) {
 
   // ---- Part scores ----
   const negEquity = isNum(bal.equity) && bal.equity <= 0;
+  // Scoring basis: the latest value, smoothed with the two previous years for margins and returns.
+  const basisOf = {};
+  const prior = series.slice(-3, -1);
+  for (const k of SMOOTHED_METRICS) {
+    const pv = prior.map((x) => x[k]).filter(isNum);
+    if (isNum(metrics[k]) && pv.length) basisOf[k] = (1 - SMOOTH_PRIOR_WEIGHT) * metrics[k] + SMOOTH_PRIOR_WEIGHT * (pv.reduce((s, x) => s + x, 0) / pv.length);
+  }
+  const earnings = isNum(m.ebitda) ? m.ebitda : m.operatingIncome;
+  const netCashLoss = metrics.netDebtToEbitda === 0 && isNum(m.netDebt) && m.netDebt <= 0 && isNum(earnings) && earnings <= 0;
   const parts = {};
   for (const dim of Object.keys(OVERALL_WEIGHTS).concat("marketRisk")) {
     parts[dim] = (defs[dim] || []).map((d) => {
-      const part = { ...d, value: metrics[d.key], score: partScore(d, metrics[d.key], { negEquity, L, metrics }) };
+      const v = d.key in basisOf ? basisOf[d.key] : metrics[d.key];
+      const part = { ...d, value: metrics[d.key], score: partScore(d, v, { negEquity, L, metrics }) };
+      if (d.key in basisOf) part.basis = basisOf[d.key];
+      if (d.key === "netDebtToEbitda" && netCashLoss) { part.score = NET_CASH_LOSS_SCORE; part.netCashLoss = true; return part; }
       // Sector-relative scoring: half absolute thresholds, half position among sector peers (10th–90th percentile).
       const b = benchmarks?.[company.sector]?.[d.key];
       if (b && isNum(part.score) && RELATIVE_METRICS.has(d.key)) {
-        const v = metrics[d.key];
         const higherBetter = d.good > d.bad;
         const rel = v === Infinity ? (higherBetter ? 100 : 0) : scale(v, higherBetter ? b.p10 : b.p90, higherBetter ? b.p90 : b.p10);
         if (isNum(rel) && b.p90 !== b.p10) {
@@ -515,24 +586,55 @@ export function analyze(company, { now = new Date(), benchmarks = null } = {}) {
     }
   }
 
+  // Parts that do not apply, as opposed to missing data: growth from a zero or negative base (a company
+  // that has just turned profitable) and the payout ratio of a company that pays no dividend. They are
+  // left out of the area's coverage and of the data completeness.
+  // Likewise ROIC (and its change) when invested capital is not positive (more cash than equity and debt),
+  // ROE with negative equity, and the payout ratio and shareholder yield of a company that has never
+  // reported a dividend (or a buyback).
+  const nonPositive = (x) => isNum(x) && x <= 0;
+  const everPaid = years.some((y) => isNum(y.dividendsPaid) && y.dividendsPaid !== 0);
+  const everReturned = everPaid || years.some((y) => isNum(y.buybacks) && y.buybacks !== 0);
+  const notApplicable = {
+    revenueYoY: nonPositive(P?.revenue), operatingIncomeYoY: nonPositive(mp?.operatingIncome), epsYoY: nonPositive(mp?.eps), fcfYoY: nonPositive(mp?.freeCashFlow),
+    revenueCagr: span >= 2 && nonPositive(win[0].revenue), epsCagr: span >= 2 && nonPositive(first.eps), fcfCagr: span >= 2 && nonPositive(first.freeCashFlow),
+    bookValuePerShareCagr: span >= 2 && nonPositive(first.bookValuePerShare),
+    roic: nonPositive(m.investedCapital), roicChange: span >= 2 && (nonPositive(first.investedCapital) || nonPositive(m.investedCapital)),
+    roe: negEquity, payoutRatio: metrics.payoutRatio === 0 || !everPaid, shareholderYield: !everReturned,
+  };
+  for (const ps of Object.values(parts)) for (const p of ps) if (notApplicable[p.key] && !isNum(p.score)) p.na = true;
+
   const scores = {};
-  // A dimension is scored only when metrics carrying at least half of its weight are available.
+  // An area is scored only when metrics carrying at least half of its applicable weight are available.
   for (const dim of Object.keys(parts)) {
+    const applicable = parts[dim].reduce((sum, p) => sum + (p.na ? 0 : p.weight), 0);
     const covered = parts[dim].reduce((sum, p) => sum + (isNum(p.score) ? p.weight : 0), 0);
-    scores[dim] = covered >= MIN_DIMENSION_COVERAGE ? weighted(parts[dim]) : null;
+    scores[dim] = applicable > 0 && covered >= MIN_DIMENSION_COVERAGE * applicable ? weighted(parts[dim]) : null;
+  }
+  // Areas that apply to the company: defined for its profile and not made up of inapplicable parts only.
+  const applies = Object.keys(OVERALL_WEIGHTS).filter((k) => (defs[k] || []).length && parts[k].some((p) => !p.na));
+
+  // Cash runway caps the liquidity of a company that burns cash: ample current assets do not help
+  // if they run out within a year or two at the current burn rate.
+  if (profile === "general" && isNum(metrics.cashRunway)) {
+    const rs = scale(metrics.cashRunway, RUNWAY_BAD, RUNWAY_GOOD);
+    parts.liquidity.push({ key: "cashRunway", weight: 0, bad: RUNWAY_BAD, good: RUNWAY_GOOD, value: metrics.cashRunway, score: rs, cap: true });
+    scores.liquidity = isNum(scores.liquidity) ? Math.min(scores.liquidity, rs) : rs;
   }
 
   const flags = buildFlags({ L, P, m, metrics, negEquity, profile, company, now });
 
-  // ---- Risk: fundamental (75%) + market (25%), raised by warning flags ----
+  // ---- Risk: fundamental (65%) + market (35%) safety, raised by warning flags on a saturating curve ----
   const fundamental = weighted(Object.entries(RISK_WEIGHTS).map(([k, w]) => ({ score: scores[k], weight: w })));
-  const safety = isNum(scores.marketRisk) && isNum(fundamental) ? 0.75 * fundamental + 0.25 * scores.marketRisk : fundamental;
+  const safety = isNum(scores.marketRisk) && isNum(fundamental) ? (1 - MARKET_RISK_SHARE) * fundamental + MARKET_RISK_SHARE * scores.marketRisk : fundamental;
   const penalty = flags.reduce((s, f) => s + (FLAG_PENALTY[f.level] || 0), 0);
-  scores.risk = isNum(safety) ? Math.round(Math.max(0, Math.min(100, 100 - safety + penalty))) : null;
+  scores.risk = isNum(safety) ? riskFrom(safety, penalty) : null;
 
   // An overall score needs a broad basis: at least MIN_DIMENSIONS fundamental dimensions with data.
+  // Areas that apply but have no data count as MISSING_DIMENSION_SCORE at most (see overallBreakdown).
   const scoredDims = Object.keys(OVERALL_WEIGHTS).filter((k) => isNum(scores[k])).length;
-  scores.overall = scoredDims >= MIN_DIMENSIONS ? weighted(Object.entries(OVERALL_WEIGHTS).map(([k, w]) => ({ score: scores[k], weight: w }))) : null;
+  const breakdown = scoredDims >= MIN_DIMENSIONS ? overallBreakdown(applies, scores) : null;
+  scores.overall = breakdown ? breakdown.score : null;
   if (scoredDims < MIN_DIMENSIONS) scores.risk = null;
 
   const allParts = Object.values(parts).flat();
@@ -553,23 +655,52 @@ export function analyze(company, { now = new Date(), benchmarks = null } = {}) {
     outlook: outlookLevel(scores, metrics),
     styles: styleTags(scores, metrics, flags),
     coverage,
-    completeness: completenessOf(defs, parts, scores),
-    missing: Object.keys(OVERALL_WEIGHTS).filter((k) => (defs[k] || []).length && !isNum(scores[k])),
+    completeness: completenessOf(applies, parts, scores),
+    breakdown: breakdown ? breakdown.items : null,
+    missing: applies.filter((k) => !isNum(scores[k])),
     estimated: filled.estimated,
     series,
   };
 }
 
-// How much of the TeraScore rests on data (0–100). Every dimension that applies to the company counts with
-// its weight in the TeraScore, scaled by the share of its parts (by weight) that have data; a dimension
-// that could not be scored counts as 0. Parts without data are left out of the score, not counted as 0.
-function completenessOf(defs, parts, scores) {
+// Risk from the safety score (0–100) and the flag points: 100 − safety, raised towards 100 by the flags,
+// each point closing a share of the remaining gap (so the riskiest companies still differ from each other).
+export function riskFrom(safety, penalty) {
+  const base = Math.max(0, Math.min(100, 100 - safety));
+  return Math.round(base + (100 - base) * (1 - Math.exp(-Math.max(0, penalty) / PENALTY_SCALE)));
+}
+
+// TeraScore = weighted mean of the areas that apply to the company (unscored ones at MISSING_DIMENSION_SCORE,
+// or at the average of the scored ones when that is lower).
+// Each area's contribution is its weight × (score − 50), so the TeraScore = 50 + the sum of contributions.
+// `areas`: the keys of the areas that apply (or a profile's definitions, for all of its areas).
+export function overallBreakdown(areas, scores) {
+  const keys = Array.isArray(areas) ? areas : Object.keys(OVERALL_WEIGHTS).filter((k) => (areas[k] || []).length);
+  const applies = Object.entries(OVERALL_WEIGHTS).filter(([k]) => keys.includes(k));
+  const total = applies.reduce((s, [, w]) => s + w, 0);
+  if (!total) return null;
+  let sum = 0, ws = 0;
+  for (const [k, w] of applies) if (isNum(scores[k])) { sum += w * scores[k]; ws += w; }
+  const prior = Math.min(MISSING_DIMENSION_SCORE, ws ? sum / ws : MISSING_DIMENSION_SCORE);
+  const items = applies.map(([k, w]) => {
+    const missing = !isNum(scores[k]);
+    const sc = missing ? prior : scores[k];
+    return { key: k, weight: w / total, score: sc, missing, contribution: (w / total) * (sc - 50) };
+  });
+  const exact = 50 + items.reduce((s, x) => s + x.contribution, 0);
+  return { score: Math.round(exact), exact, items };
+}
+
+// How much of the TeraScore rests on data (0–100). Every area that applies to the company counts with
+// its weight in the TeraScore, scaled by the share of its applicable parts (by weight) that have data; an
+// area that could not be scored counts as 0. Parts that do not apply (see `na`) are left out.
+function completenessOf(applies, parts, scores) {
   let num = 0, den = 0;
   for (const [k, w] of Object.entries(OVERALL_WEIGHTS)) {
-    if (!(defs[k] || []).length) continue;
+    if (!applies.includes(k)) continue;
     den += w;
     if (!isNum(scores[k])) continue;
-    const ps = parts[k] || [];
+    const ps = (parts[k] || []).filter((p) => !p.na);
     const tot = ps.reduce((s, p) => s + p.weight, 0);
     num += w * (tot ? ps.reduce((s, p) => s + (isNum(p.score) ? p.weight : 0), 0) / tot : 0);
   }
@@ -777,7 +908,7 @@ export const METRIC_FORMAT = {
   grossMargin: "pct", operatingMargin: "pct", netMargin: "pct", fcfMargin: "pct", roe: "pct", roa: "pct", roic: "pct",
   fcfConversion: "pct0", accrualRatio: "pct", sbcToRevenue: "pct", capexToRevenue: "pct",
   currentRatio: "x", quickRatio: "x", cashRatio: "x", debtToEquity: "x", equityRatio: "pct", liabilitiesToAssets: "pct",
-  netDebt: "money", netDebtToEbitda: "xyears", interestCoverage: "x", goodwillToAssets: "pct", payoutRatio: "pct0",
+  netDebt: "money", netDebtToEbitda: "xyears", cashRunway: "years", interestCoverage: "x", goodwillToAssets: "pct", payoutRatio: "pct0",
   bookValuePerShare: "usd", altmanZ: "num", piotroski: "of9",
   revenueYoY: "spct", operatingIncomeYoY: "spct", netIncomeYoY: "spct", epsYoY: "spct", fcfYoY: "spct",
   revenueCagr: "spct", epsCagr: "spct", fcfCagr: "spct", bookValuePerShareCagr: "spct", revenueGrowthYearsRatio: "pct0",
@@ -795,9 +926,12 @@ export const METRIC_FORMAT = {
 const DIV_GROWTH_MIN = 0.005; // a rise of at least 0.5% counts as an increase
 const DIV_CUT = -0.10;        // a fall of more than 10% counts as a cut
 
-export const DIVIDEND_WEIGHTS = { fcfPayout: 0.30, earningsPayout: 0.20, leverage: 0.20, trackRecord: 0.20, stability: 0.10 };
+// Calibrated in engine 2.1 on later dividend cuts: earnings cover and the share price's stability
+// (large falls often come before a cut) weigh more, leverage less.
+export const DIVIDEND_WEIGHTS = { fcfPayout: 0.20, earningsPayout: 0.25, leverage: 0.10, trackRecord: 0.20, stability: 0.10, priceStability: 0.15 };
 
 export function dividendProfile(company, a = null) {
+  company = fillGaps(company, PROFILES[company.profile] ? company.profile : "general").company;
   const years = [...(company.annual || [])].filter((y) => isNum(y.year)).sort((x, y) => x.year - y.year);
   if (!years.length) return { payer: false, reason: "noData" };
   const series = a?.series || years.map((y, i) => yearMetrics(y, years[i - 1] || null));
@@ -843,6 +977,7 @@ export function dividendProfile(company, a = null) {
     leverage: profile === "general" ? (netDebtToEbitda === Infinity ? 0 : scale(netDebtToEbitda, 5, 1)) : null,
     trackRecord: Math.max(0, Math.min(100, Math.round(scale(paidYears, 1, 10) * 0.6 + scale(growthYears, 0, 10) * 0.4) - cuts * 35)),
     stability: isNum(profitableRatio) ? Math.round(profitableRatio * 100) : null,
+    priceStability: isNum(a?.scores?.marketRisk) ? a.scores.marketRisk : null,
   };
   const used = Object.entries(DIVIDEND_WEIGHTS).filter(([k]) => isNum(parts[k]));
   const wsum = used.reduce((s, [, x]) => s + x, 0);

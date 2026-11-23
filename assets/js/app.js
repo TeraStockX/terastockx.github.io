@@ -1,4 +1,4 @@
-import { analyze, scoreHistory, gradeKey, GRADE_TONE, DIMENSIONS, METRIC_FORMAT, ENGINE_VERSION, PROFILES, OVERALL_WEIGHTS, FLAG_PENALTY, dividendProfile, DIVIDEND_TONE, DIVIDEND_WEIGHTS, findPeers } from "./scoring.js";
+import { analyze, scoreHistory, gradeKey, GRADE_TONE, DIMENSIONS, METRIC_FORMAT, ENGINE_VERSION, ENGINE_SERIES, PROFILES, OVERALL_WEIGHTS, RISK_WEIGHTS, MARKET_RISK_SHARE, FLAG_PENALTY, MISSING_DIMENSION_SCORE, SMOOTH_PRIOR_WEIGHT, RUNWAY_BAD, RUNWAY_GOOD, NET_CASH_LOSS_SCORE, dividendProfile, DIVIDEND_TONE, DIVIDEND_WEIGHTS, findPeers } from "./scoring.js";
 import { portfolioSummary, PORTFOLIO_LIMITS } from "./portfolio.js";
 import { SCREENS, screenById } from "./screens.js";
 import { LANGS, lang, setLang, t, fill, fmt, money, date, num, dict } from "./i18n/index.js";
@@ -183,7 +183,7 @@ function overallCell(row) {
   const isNew = isNewListing(row);
   return `<span class="dq ${isNew ? "dq-new" : "dq-none"}" title="${esc(t(isNew ? "dq.newTitle" : "dq.noneTitle"))}">${esc(t(isNew ? "dq.newListing" : "dq.none"))}</span>`;
 }
-const dqLegend = (rows) => (rows.some(isPartial) ? `<p class="small muted dq-legend">${esc(t("dq.legend"))}</p>` : "");
+const dqLegend = (rows) => (rows.some(isPartial) ? `<p class="small muted dq-legend">${esc(t("dq.legend", { s: MISSING_DIMENSION_SCORE }))}</p>` : "");
 // A small coloured chip for search suggestions and headers: partial analysis (under 80% of the TeraScore backed
 // by data), little data, no analysis yet; nothing for a fully analysed company or a fund.
 function dqChip(row) {
@@ -775,10 +775,13 @@ async function renderTrend() {
   draw();
 }
 
+// Weekly TeraScore snapshots of the current methodology (older engine versions are not comparable).
+const weeklyOf = (c) => (c.scoreHistory?.weekly || []).filter((w) => (w[3] || "2.0") === ENGINE_SERIES);
+
 // Company page section: point-in-time score per fiscal year plus weekly snapshots.
 function trendView(c, history, row) {
-  if (!history.length && !(c.scoreHistory?.weekly || []).length) return `<div class="glass empty small">${esc(t("ui.notEnough"))}</div>`;
-  const weekly = (c.scoreHistory?.weekly || []).map(([d, v]) => [d, v]);
+  const weekly = weeklyOf(c).map(([d, v]) => [d, v]);
+  if (!history.length && !weekly.length) return `<div class="glass empty small">${esc(t("ui.notEnough"))}</div>`;
   const chips = [["ui.trendPeriodFy", row?.ch], ["ui.trendPeriod4w", row?.c4], ["ui.trendPeriod13w", row?.c13]]
     .filter(([, v]) => isNum(v)).map(([l, v]) => `<div class="fact"><div class="k">${esc(t(l))}</div><div class="v">${changePill(v)}</div></div>`).join("");
   return `${chips ? `<div class="facts" style="margin:0 0 12px">${chips}</div>` : ""}
@@ -1028,7 +1031,7 @@ async function renderCompany(ticker) {
           ${c.industry ? `<span>· ${esc(c.industry)}</span>` : ""}
           ${a.ok ? `<span>· ${esc(t("ui.lastFy", { y: a.latestYear }))}</span>` : ""}
         </div>
-        ${a.ok && isNum(a.scores.overall) && isNum(a.completeness) && a.completeness < 100 ? `<div class="coverage-badge ${a.completeness < PARTIAL_BELOW ? "low" : ""}" title="${esc(t("dq.legend"))}">${DQ_HALF}<span>${esc(t("dq.coverageBadge", { p: a.completeness }))}</span></div>` : ""}
+        ${a.ok && isNum(a.scores.overall) && isNum(a.completeness) && a.completeness < 100 ? `<div class="coverage-badge ${a.completeness < PARTIAL_BELOW ? "low" : ""}" title="${esc(t("dq.legend", { s: MISSING_DIMENSION_SCORE }))}">${DQ_HALF}<span>${esc(t("dq.coverageBadge", { p: a.completeness }))}</span></div>` : ""}
         </div>
       </div>
       <div class="head-actions">
@@ -1062,6 +1065,44 @@ async function renderCompany(ticker) {
   wireRaw(app, c);
 }
 
+const riskExplain = () => t("ui.riskExplain", {
+  c: FLAG_PENALTY.critical, w: FLAG_PENALTY.warning, m: Math.round(MARKET_RISK_SHARE * 100), f: Math.round((1 - MARKET_RISK_SHARE) * 100),
+  bs: Math.round(RISK_WEIGHTS.balanceSheet * 100), co: Math.round(RISK_WEIGHTS.consistency * 100), cf: Math.round(RISK_WEIGHTS.cashFlow * 100),
+  pr: Math.round(RISK_WEIGHTS.profitability * 100), li: Math.round(RISK_WEIGHTS.liquidity * 100),
+});
+
+// Extra line under a metric's value: the 3-year scoring basis, or why a special rule applied.
+function partNote(p, cur) {
+  if (p.netCashLoss) return `<br><span class="median">${esc(t("ui.netCashLoss", { s: NET_CASH_LOSS_SCORE }))}</span>`;
+  if (p.cap) return `<br><span class="median">${esc(t("ui.runwayCap"))}</span>`;
+  if (isNum(p.basis) && isNum(p.value) && Math.abs(p.basis - p.value) > Math.max(0.001, Math.abs(p.value) * 0.01)) return `<br><span class="median nowrap">${esc(t("ui.basis3y"))}: ${fmt(p.basis, METRIC_FORMAT[p.key], cur)}</span>`;
+  return "";
+}
+
+// What lifts and what lowers the TeraScore: each area's weight × (score − 50), from a neutral 50.
+const signed = (v) => `${v >= 0 ? "+" : "−"}${num(Math.abs(v), 1)}`;
+function breakdownView(a) {
+  const items = a.breakdown;
+  if (!items?.length || !isNum(a.scores.overall)) return "";
+  const rows = [...items].sort((x, y) => y.contribution - x.contribution);
+  const max = Math.max(4, ...rows.map((x) => Math.abs(x.contribution)));
+  const top = rows.filter((x) => x.contribution >= 0.5).slice(0, 2).map((x) => t(`dims.${x.key}.name`));
+  const low = rows.filter((x) => x.contribution <= -0.5).slice(-2).reverse().map((x) => t(`dims.${x.key}.name`));
+  const line = [top.length ? `${t("ui.bdLifts")}: ${top.join(", ")}` : "", low.length ? `${t("ui.bdLowers")}: ${low.join(", ")}` : ""].filter(Boolean).join(" · ");
+  return `<div class="glass pad breakdown">
+    <div class="bd-head"><h3>${esc(t("ui.bdTitle"))}</h3>${line ? `<span class="small muted">${esc(line)}</span>` : ""}</div>
+    <div class="bd-rows">${rows.map((x) => {
+      const w = (Math.abs(x.contribution) / max) * 50;
+      const tone = x.contribution >= 0 ? "pos" : "neg";
+      return `<div class="bd-row${x.missing ? " bd-missing" : ""}">
+        <span class="bd-name">${x.missing ? `${DQ_HALF} ` : ""}${esc(t(`dims.${x.key}.name`))} <span class="muted">${x.missing ? esc(t("ui.bdMissingShort", { s: Math.round(x.score) })) : x.score} · ${Math.round(x.weight * 100)}%</span></span>
+        <span class="bd-bar" aria-hidden="true"><span class="bd-fill ${tone}" style="${tone === "pos" ? "left" : "right"}:50%;width:${w.toFixed(1)}%"></span></span>
+        <span class="bd-val ${tone}">${signed(x.contribution)}</span></div>`;
+    }).join("")}</div>
+    <p class="small muted bd-note">${esc(t("ui.bdNote", { s: a.scores.overall }))}${items.some((x) => x.missing) ? ` ${esc(t("ui.bdMissing", { s: MISSING_DIMENSION_SCORE })).replace("◐", DQ_HALF)}` : ""}</p>
+  </div>`;
+}
+
 // Why a TeraScore is partial or missing, and which figures were estimated.
 const isPartialAnalysis = (a) => isNum(a.scores.overall) && a.completeness < PARTIAL_BELOW;
 function dataQualityNotice(a) {
@@ -1071,7 +1112,7 @@ function dataQualityNotice(a) {
     const scored = Object.keys(OVERALL_WEIGHTS).filter((k) => isNum(a.scores[k])).length;
     out.push(`<div class="notice dq-notice"><span>${DQ_QUARTER}</span><span><b>${esc(t("dq.little"))}:</b> ${esc(t("dq.noticeLittle", { n: scored }))}</span></div>`);
   } else if (isPartialAnalysis(a)) {
-    out.push(`<div class="notice dq-notice"><span>${DQ_HALF}</span><span><b>${esc(t("dq.noticePartialTitle", { p: a.completeness }))}</b> ${esc(dims ? t("dq.noticePartial", { d: dims }) : t("dq.noticePartialParts"))}</span></div>`);
+    out.push(`<div class="notice dq-notice"><span>${DQ_HALF}</span><span><b>${esc(t("dq.noticePartialTitle", { p: a.completeness }))}</b> ${esc(dims ? t("dq.noticePartial", { d: dims, s: MISSING_DIMENSION_SCORE }) : t("dq.noticePartialParts"))}</span></div>`);
   }
   if (a.estimated?.length) out.push(`<div class="notice"><span aria-hidden="true">≈</span><span>${esc(t("dq.estimated", { list: a.estimated.map((k) => t(`dq.est.${k}`)).join("; ") }))}</span></div>`);
   return out.length ? `<div style="margin-top:14px">${out.join("")}</div>` : "";
@@ -1119,7 +1160,8 @@ function analysisView(c, a, idx, history = []) {
       </div>
     </div>
     ${dataQualityNotice(a)}
-    ${profileNote ? `<div class="notice" style="margin-top:14px"><span>ℹ️</span><span>${esc(profileNote)}</span></div>` : ""}`;
+    ${profileNote ? `<div class="notice" style="margin-top:14px"><span>ℹ️</span><span>${esc(profileNote)}</span></div>` : ""}
+    ${breakdownView(a)}`;
 
   const cards = DIMENSIONS.map((d) => {
     const inverse = d === "risk";
@@ -1131,10 +1173,10 @@ function analysisView(c, a, idx, history = []) {
     const detail = parts
       ? `<table class="parts-table">${parts.map((p) => `<tr>
           <td><span class="info" title="${esc(metricDesc(p.key))}">${esc(metricLabel(p.key))}</span></td>
-          <td>${fmt(p.value, METRIC_FORMAT[p.key], cur)}${isNum(p.median) ? `<br><span class="median">${esc(t("ui.sectorMedian"))}: ${fmt(p.median, METRIC_FORMAT[p.key], cur)}</span>` : ""}</td>
-          <td class="pts">${isNum(p.score) ? `${p.score} ${esc(t("ui.points"))}` : esc(t("ui.notScored"))} · ${Math.round(p.weight * 100)}%</td>
+          <td>${fmt(p.value, METRIC_FORMAT[p.key], cur)}${partNote(p, cur)}${isNum(p.median) ? `<br><span class="median">${esc(t("ui.sectorMedian"))}: ${fmt(p.median, METRIC_FORMAT[p.key], cur)}</span>` : ""}</td>
+          <td class="pts">${isNum(p.score) ? `${p.score} ${esc(t("ui.points"))}` : esc(t(p.na ? "ui.notApplicable" : "ui.notScored"))} · ${p.cap ? esc(t("ui.capLabel")) : `${Math.round(p.weight * 100)}%`}</td>
         </tr>`).join("")}</table>`
-      : `<p class="small muted">${esc(t("ui.riskExplain", { c: FLAG_PENALTY.critical, w: FLAG_PENALTY.warning }))}</p>
+      : `<p class="small muted">${esc(riskExplain())}</p>
          ${a.parts.marketRisk?.length ? `<table class="parts-table">${a.parts.marketRisk.map((p) => `<tr><td>${esc(metricLabel(p.key))}</td><td>${fmt(p.value, METRIC_FORMAT[p.key])}</td><td class="pts">${isNum(p.score) ? `${p.score} ${esc(t("ui.points"))}` : esc(t("ui.notScored"))}</td></tr>`).join("")}</table>` : ""}`;
     return `
       <div class="glass score-card">
@@ -1445,7 +1487,7 @@ async function renderCompare(tickers) {
     const rowsOf = comps.map((c) => indexCache?.byT?.get(c.ticker) || { t: c.ticker, n: c.name });
     const head = `<tr><th></th>${comps.map((c, i) => `<th><a class="cmp-co" href="#/c/${encodeURIComponent(c.ticker)}">${logo(rowsOf[i])}<span>${esc(c.ticker)}</span></a><span class="small muted">${esc(coName({ t: c.ticker, n: c.name }))}</span>${dqChip(rowsOf[i])}</th>`).join("")}</tr>`;
     // A dimension the company's filings do not allow to score: "no data", not a dash that looks like zero.
-    const noData = `<span class="small cmp-nodata" title="${esc(t("dq.legend"))}">${esc(t("ui.noData"))}</span>`;
+    const noData = `<span class="small cmp-nodata" title="${esc(t("dq.legend", { s: MISSING_DIMENSION_SCORE }))}">${esc(t("ui.noData"))}</span>`;
     const dimRows = ["overall", ...DIMENSIONS].map((d) => {
       const vals = as.map((a) => (a.ok ? a.scores[d] : null));
       return row(esc(d === "overall" ? t("ui.overallScore") : t(`dims.${d}.name`)), vals, vals.map((v, i) => (isNum(v) || !as[i].ok ? scorePill(v, d === "risk") : noData)), d === "risk");
@@ -1662,10 +1704,10 @@ async function portfolioHistoryView(p, fx, cur, rate) {
   const valueChart = lineChart(t("ui.pfHistValue"), valueSub, valuePts, (v) => fullMoney(v, cur), t("ui.notEnough"));
   // TeraScore: weekly snapshots weighted by today's value.
   const scored = stocks.map((h, i) => ({ h, c: comps[i] })).filter((x) => x.c && isNum(x.h.value));
-  const weekly = [...new Set(scored.flatMap((x) => (x.c.scoreHistory?.weekly || []).map((w) => w[0])))].sort();
+  const weekly = [...new Set(scored.flatMap((x) => weeklyOf(x.c).map((w) => w[0])))].sort();
   let scorePts = weekly.map((d) => {
     let s = 0, w = 0;
-    for (const x of scored) { const snap = (x.c.scoreHistory?.weekly || []).filter((q) => q[0] <= d && isNum(q[1])).pop(); if (snap) { s += snap[1] * x.h.value; w += x.h.value; } }
+    for (const x of scored) { const snap = weeklyOf(x.c).filter((q) => q[0] <= d && isNum(q[1])).pop(); if (snap) { s += snap[1] * x.h.value; w += x.h.value; } }
     return [d, w ? +(s / w).toFixed(1) : null];
   });
   if (isNum(p.score)) scorePts.push([now.toISOString().slice(0, 10), p.score]);
@@ -1940,7 +1982,9 @@ function renderMethod() {
   const dims = Object.keys(OVERALL_WEIGHTS).concat("marketRisk").map((d) => {
     const gen = PROFILES.general[d];
     const variants = ["financial", "realEstate"].filter((p) => PROFILES[p][d] !== gen);
-    return `<h2>${esc(t(`dims.${d}.name`))}</h2><p>${esc(t(`dims.${d}.q`))}</p>${table(gen)}
+    const note = d === "profitability" ? t("method.smoothText", { a: Math.round((1 - SMOOTH_PRIOR_WEIGHT) * 100), b: Math.round(SMOOTH_PRIOR_WEIGHT * 100) })
+      : d === "liquidity" ? t("method.runwayText", { bad: num(RUNWAY_BAD, 2), good: num(RUNWAY_GOOD, 0) }) : "";
+    return `<h2>${esc(t(`dims.${d}.name`))}</h2><p>${esc(t(`dims.${d}.q`))}</p>${table(gen)}${note ? `<p class="small">${esc(note)}</p>` : ""}
       ${variants.map((p) => `<p class="small"><b>${esc(t(`method.profile${p[0].toUpperCase()}${p.slice(1)}`))}</b></p>${PROFILES[p][d].length ? table(PROFILES[p][d]) : `<p class="small muted">${esc(t("ui.notScored"))}</p>`}`).join("")}`;
   }).join("");
   const bands = ["excellent", "strong", "moderate", "weak", "poor"].map((k) => `<span class="pill tone-${GRADE_TONE[k]}"><span class="dot"></span>${esc(t(`grades.${k}`))}</span>`).join(" ");
@@ -1948,14 +1992,15 @@ function renderMethod() {
     <h1>${esc(t("method.title"))}</h1>
     <p>${esc(t("method.intro"))}</p>
     <p>${esc(t("method.scaling"))}</p>
-    <p>${esc(t("method.partial")).replace("◐", DQ_HALF)}</p>
+    <p>${esc(t("method.partial", { s: MISSING_DIMENSION_SCORE })).replace("◐", DQ_HALF)}</p>
     <p>${esc(t("method.estimates"))}</p>
     <p>${esc(t("method.bands"))} ${bands} <span class="small">(80–100 · 65–79 · 45–64 · 25–44 · 0–24)</span></p>
     <p>${esc(t("method.profiles"))}</p>
     <h2>${esc(t("method.overall"))}</h2><p>${esc(t("method.overallText"))}</p>
     <div class="glass method-card"><table class="method-table"><tbody>${Object.entries(OVERALL_WEIGHTS).map(([k, w]) => `<tr><td>${esc(t(`dims.${k}.name`))}</td><td class="n">${Math.round(w * 100)}%</td></tr>`).join("")}</tbody></table></div>
+    <h2 id="backtest">${esc(t("method.btTitle"))}</h2><div id="bt"><p class="small muted">…</p></div>
     ${dims}
-    <h2>${esc(t("method.riskTitle"))}</h2><p>${esc(t("ui.riskExplain", { c: FLAG_PENALTY.critical, w: FLAG_PENALTY.warning }))}</p>
+    <h2>${esc(t("method.riskTitle"))}</h2><p>${esc(riskExplain())}</p>
     <h2>${esc(t("method.distressTitle"))}</h2><p>${esc(t("method.distressText"))}</p>
     <h2>${esc(t("method.trendTitle"))}</h2><p>${esc(t("method.trendText"))}</p>
     <h2>${esc(t("method.stylesTitle"))}</h2><p>${esc(t("method.stylesText"))}</p>
@@ -1974,6 +2019,35 @@ function renderMethod() {
     <h2>${esc(t("method.sectorTitle"))}</h2><p>${esc(t("method.sectorText"))}</p>
     <h2>${esc(t("method.limitsTitle"))}</h2><p>${esc(t("method.limitsText"))}</p><p class="small muted">${esc(t("method.logosText"))}</p>
   </div>`;
+  loadBacktest().then((b) => { const el = document.getElementById("bt"); if (el) el.innerHTML = backtestView(b); });
+}
+
+let backtestCache;
+async function loadBacktest() {
+  if (backtestCache === undefined) {
+    try { const r = await fetch("data/backtest.json", { cache: "no-cache" }); backtestCache = r.ok ? await r.json() : null; } catch { backtestCache = null; }
+  }
+  return backtestCache;
+}
+
+// Methodology page: how the TeraScore of the time compared with the next 12 months (scripts/backtest.mjs).
+function backtestView(b) {
+  if (!b || b.engineVersion !== ENGINE_VERSION || !b.quintiles?.length) return `<p class="small muted">${esc(t("method.btPending"))}</p>`;
+  const month = (ym) => (ym ? new Date(`${ym}-15T00:00:00Z`).toLocaleDateString(dict().meta?.locale, { year: "numeric", month: "short" }) : "–");
+  const p0 = (v) => fmt(v, "pct0");
+  const rows = [...b.quintiles].reverse().map((q, i, arr) => `<tr><td>${q.q}${i === 0 ? ` <span class="small muted">(${esc(t("method.btBest"))})</span>` : i === arr.length - 1 ? ` <span class="small muted">(${esc(t("method.btWorst"))})</span>` : ""}</td>
+      <td class="n">${q.avgScore}</td><td class="n ${q.excess >= 0 ? "pos" : "neg"}">${fmt(q.excess, "spct")}</td><td class="n">${p0(q.bigLoss)}</td><td class="n">${p0(q.drawdown)}</td></tr>`).join("");
+  const rq = b.riskQuintiles || [], lo = rq[0], hi = rq[rq.length - 1];
+  const dl = Object.fromEntries((b.fundamental?.dividendLevels || []).map((x) => [x.level, p0(x.cutRate)]));
+  return `<p>${esc(t("method.btIntro", { from: month(b.period?.first), to: month(b.period?.last), n: num(b.observations, 0), c: num(b.companies, 0), mc: money(b.minMarketCap) }))}</p>
+    <div class="glass method-card bt-card"><table class="method-table bt-table">
+      <thead><tr><th>${esc(t("method.btQuintile"))}</th><th class="n">${esc(t("method.btAvg"))}</th><th class="n">${esc(t("method.btExcess"))}</th><th class="n">${esc(t("method.btBigLoss"))}</th><th class="n">${esc(t("method.btDrawdown"))}</th></tr></thead>
+      <tbody>${rows}</tbody></table></div>
+    <p>${esc(t("method.btIc", { share: p0(b.positiveShare), k: b.formationDates, ic: num(b.rankIC, 2) }))}</p>
+    ${isNum(b.fundamental?.aucLossOverall) ? `<p>${esc(t("method.btLoss", { p: p0(b.fundamental.aucLossOverall), y: num(b.fundamental.years, 0) }))}</p>` : ""}
+    ${lo && hi ? `<p>${esc(t("method.btRisk", { lo: p0(lo.drawdown), hi: p0(hi.drawdown), blo: p0(lo.bigLoss), bhi: p0(hi.bigLoss) }))}</p>` : ""}
+    ${dl.safe ? `<p>${esc(t("method.btDividend", dl))}</p>` : ""}
+    <p class="small muted">${esc(t("method.btCaveats"))}</p>`;
 }
 
 renderChrome();

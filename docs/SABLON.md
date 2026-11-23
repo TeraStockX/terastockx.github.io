@@ -1,4 +1,4 @@
-# TeraStockX adatsablon és elemzési módszertan (v2.0.0)
+# TeraStockX adatsablon és elemzési módszertan (v2.1.0)
 
 > Ez a fájl automatikusan készül a kódból (`npm run docs`), ezért mindig pontosan az elemzőmotor aktuális működését írja le.
 
@@ -49,7 +49,7 @@ Minden összeg a **beszámolási pénznemben** (`currency`, többnyire USD), eg�
 | `depreciationAndAmortization` | Értékcsökkenés és amortizáció | DepreciationDepletionAndAmortization, DepreciationAmortizationAndAccretionNet, DepreciationAndAmortization, Depreciation, DepreciationAndAmortisationExpense, AdjustmentsForDepreciationAndAmortisationExpense, DepreciationAmortisationAndImpairmentLossReversalOfImpairmentLossRecognisedInProfitOrLoss, AdjustmentsForDepreciationAndAmortisationExpenseAndImpairmentLossReversalOfImpairmentLossRecognisedInProfitOrLoss |
 | `shareBasedCompensation` | Részvényalapú juttatás | ShareBasedCompensation, AllocatedShareBasedCompensationExpense, AdjustmentsForSharebasedPayments |
 | `operatingCashFlow` | Működési cash flow | NetCashProvidedByUsedInOperatingActivities, NetCashProvidedByUsedInOperatingActivitiesContinuingOperations, CashFlowsFromUsedInOperatingActivities |
-| `capex` | Beruházások (CapEx) | PaymentsToAcquirePropertyPlantAndEquipment, PaymentsToAcquireProductiveAssets, PaymentsForCapitalImprovements, PurchaseOfPropertyPlantAndEquipmentClassifiedAsInvestingActivities, PurchaseOfPropertyPlantAndEquipment, PurchaseOfPropertyPlantAndEquipmentIntangibleAssetsOtherThanGoodwillInvestmentPropertyAndOtherNoncurrentAssets |
+| `capex` | Beruházások (CapEx) | PaymentsToAcquirePropertyPlantAndEquipment, PaymentsToAcquireProductiveAssets, PaymentsForCapitalImprovements, PurchaseOfPropertyPlantAndEquipmentClassifiedAsInvestingActivities, PurchaseOfPropertyPlantAndEquipment, PurchaseOfPropertyPlantAndEquipmentIntangibleAssetsOtherThanGoodwillInvestmentPropertyAndOtherNoncurrentAssets, PaymentsToAcquireOtherPropertyPlantAndEquipment, PaymentsToAcquireOtherProductiveAssets, PaymentsToAcquireOilAndGasPropertyAndEquipment, PaymentsToExploreAndDevelopOilAndGasProperties, PaymentsToAcquireOilAndGasProperty, PaymentsForConstructionInProcess, PaymentsToAcquireMachineryAndEquipment, PaymentsToDevelopRealEstateAssets, PaymentsToDevelopSoftware, PaymentsForSoftware |
 | `dividendsPaid` | Kifizetett osztalék | PaymentsOfDividends, PaymentsOfDividendsCommonStock, DividendsPaidClassifiedAsFinancingActivities, DividendsPaidToEquityHoldersOfParentClassifiedAsFinancingActivities |
 | `buybacks` | Részvény-visszavásárlás | PaymentsForRepurchaseOfCommonStock, PaymentsForRepurchaseOfEquity, PaymentsToAcquireOrRedeemEntitysShares |
 | `epsDiluted` | EPS, hígított ($) | EarningsPerShareDiluted, EarningsPerShareBasicAndDiluted, EarningsPerShareBasic |
@@ -87,6 +87,10 @@ Minden összeg a **beszámolási pénznemben** (`currency`, többnyire USD), eg�
 ## 2. Pontozás
 
 Minden mutatót lineárisan váltunk 0–100 pontra a „0 pont” és „100 pont” érték között, azon kívül vágva. Egy szempont pontszáma a mutatók súlyozott átlaga; hiányzó mutató kimarad, a többi súlya arányosan nő. Egy szempont csak akkor kap pontszámot, ha a mutatói legalább felének (súly szerint) van adata. Az értékeltség a TTM-adatokon alapul (ha elérhető), a többi szempont az auditált éves adatokon. A hosszú távú mutatók legfeljebb az utolsó 6 üzleti évet (5 év változást) veszik figyelembe.
+
+**3 éves alap.** A Bruttó árrés, Üzemi árrés, Nettó árrés, FCF-árrés, Sajáttőke-arányos megtérülés (ROE), Eszközarányos megtérülés (ROA), Befektetett tőke megtérülése (ROIC) pontozása 60%-ban a legutóbbi év, 40%-ban az azt megelőző két év átlaga alapján történik (a megjelenített érték a legutóbbi év; a pontozás alapja a `parts[].basis` mezőben).
+
+**Készpénz-kifutás.** Negatív szabad cash flow esetén a likviditás pontszáma legfeljebb a készpénz-kifutás pontszáma: likvid eszközök (készpénz, vagy forgóeszközök − készletek − vevőkövetelések, ha ez nagyobb) / pénzégetés; 0.75 év = 0 pont, 3 év = 100 pont (`metrics.cashRunway`, a likviditás részei között `cap: true` jelöléssel).
 
 ### Jövedelmezőség
 
@@ -129,7 +133,7 @@ Mekkora az eladósodottság az eredménytermelő képességhez és a saját tők
 | Mutató | Képlet | 0 pont | 100 pont | Súly |
 |---|---|---|---|---|
 | Adósság / saját tőke | Pénzügyi adósság / saját tőke. Negatív saját tőke 0 pont. | 2,5× | 0,3× | 20% |
-| Nettó adósság / EBITDA | Hány évnyi EBITDA szükséges a nettó adósság visszafizetéséhez. Nettó készpénz 100 pont; negatív EBITDA melletti nettó adósság 0 pont. | 4× | 0× | 25% |
+| Nettó adósság / EBITDA | Hány évnyi EBITDA kell a nettó adósság visszafizetéséhez. Nettó készpénz esetén 100 pont, ha az EBITDA pozitív, és 50 pont, ha nem (mert a készpénz fogy); nettó adósság negatív EBITDA mellett 0 pont. | 4× | 0× | 25% |
 | Kamatfedezet | EBIT / kamatráfordítás. Kamatráfordítás nélkül 100 pont. | 1,5× | 15× | 20% |
 | Altman Z''-pontszám | 6,56·(forgótőke/eszközök) + 3,26·(eredménytartalék/eszközök) + 6,72·(EBIT/eszközök) + 1,05·(saját tőke/kötelezettségek). < 1,1 veszélyzóna, > 2,6 biztonságos. | 1,1 | 4 | 20% |
 | Sajáttőke-arány | Saját tőke / mérlegfőösszeg. | 10% | 60% | 15% |
@@ -146,7 +150,7 @@ Mekkora az eladósodottság az eredménytermelő képességhez és a saját tők
 | Mutató | Képlet | 0 pont | 100 pont | Súly |
 |---|---|---|---|---|
 | Adósság / saját tőke | Pénzügyi adósság / saját tőke. Negatív saját tőke 0 pont. | 4× | 0,8× | 25% |
-| Nettó adósság / EBITDA | Hány évnyi EBITDA szükséges a nettó adósság visszafizetéséhez. Nettó készpénz 100 pont; negatív EBITDA melletti nettó adósság 0 pont. | 10× | 4× | 35% |
+| Nettó adósság / EBITDA | Hány évnyi EBITDA kell a nettó adósság visszafizetéséhez. Nettó készpénz esetén 100 pont, ha az EBITDA pozitív, és 50 pont, ha nem (mert a készpénz fogy); nettó adósság negatív EBITDA mellett 0 pont. | 10× | 4× | 35% |
 | Kamatfedezet | EBIT / kamatráfordítás. Kamatráfordítás nélkül 100 pont. | 1,2× | 6× | 25% |
 | Sajáttőke-arány | Saját tőke / mérlegfőösszeg. | 15% | 55,0% | 15% |
 
@@ -170,9 +174,9 @@ Fedezik-e a rövid lejáratú eszközök a rövid lejáratú kötelezettségeket
 
 | Mutató | Képlet | 0 pont | 100 pont | Súly |
 |---|---|---|---|---|
-| Árbevétel-növekedés (éves) | Változás az előző üzleti évhez képest. | -10% | +20% | 35% |
+| Árbevétel-növekedés (éves) | Változás az előző üzleti évhez képest. | -10% | +20% | 25% |
 | Üzemi eredmény növekedése (éves) | Változás az előző üzleti évhez képest; negatív bázisról nem értelmezhető. | -25% | +30% | 20% |
-| EPS-növekedés (éves) | Hígított egy részvényre jutó eredmény az előző évhez képest. Veszteséges utolsó év esetén 0 pont. | -25% | +30% | 25% |
+| EPS-növekedés (éves) | Hígított egy részvényre jutó eredmény az előző évhez képest. Veszteséges utolsó év esetén 0 pont. | -25% | +30% | 35% |
 | FCF-növekedés (éves) | Szabad cash flow az előző évhez képest. | -25% | +30% | 20% |
 
 **Pénzügyi profil (bankok, biztosítók):** 
@@ -188,10 +192,10 @@ Fedezik-e a rövid lejáratú eszközök a rövid lejáratú kötelezettségeket
 
 | Mutató | Képlet | 0 pont | 100 pont | Súly |
 |---|---|---|---|---|
-| Árbevétel CAGR | Átlagos éves növekedési ütem legfeljebb öt év alatt. | -5% | +15% | 30% |
-| EPS CAGR | A hígított EPS átlagos éves növekedése legfeljebb öt év alatt. | -10% | +20% | 25% |
+| Árbevétel CAGR | Átlagos éves növekedési ütem legfeljebb öt év alatt. | -5% | +15% | 25% |
+| EPS CAGR | A hígított EPS átlagos éves növekedése legfeljebb öt év alatt. | -10% | +20% | 35% |
 | FCF CAGR | A szabad cash flow átlagos éves növekedése legfeljebb öt év alatt. | -10% | +20% | 15% |
-| Egy részvényre jutó saját tőke CAGR | Az egy részvényre jutó saját tőke átlagos éves növekedése. | -5% | +15% | 15% |
+| Egy részvényre jutó saját tőke CAGR | Az egy részvényre jutó saját tőke átlagos éves növekedése. | -5% | +15% | 10% |
 | Árbevétel-növekedéses évek aránya | Az időszak azon éveinek aránya, amikor az árbevétel nőtt. | 0% | 100% | 15% |
 
 **Pénzügyi profil (bankok, biztosítók):** 
@@ -282,7 +286,7 @@ Mennyire drága a részvény a fundamentumokhoz képest?
 ### Különleges esetek
 
 - Negatív saját tőkénél a ROE nem pontozott, az adósság/saját tőke 0 pont.
-- Kamatráfordítás nélkül a kamatfedezet 100 pont; nettó készpénz esetén a nettó adósság/EBITDA 100 pont.
+- Kamatráfordítás nélkül a kamatfedezet 100 pont; nettó készpénz esetén a nettó adósság/EBITDA 100 pont, ha az EBITDA (ennek hiányában az EBIT) pozitív, különben 50 pont (szektor-viszonyítás nélkül).
 - Veszteséges utolsó év esetén az EPS-növekedés és az EPS CAGR 0 pont (negatív bázisról a növekedés nem értelmezhető).
 - Osztalék nélkül a kifizetési arány nem pontozott; az FCF-et meghaladó osztalék 0 pont.
 - Veszteség esetén a P/E és a PEG 0 pont.
@@ -297,26 +301,28 @@ Képlet: pontszám = 0,5 × abszolút pontszám + 0,5 × relatív pontszám, aho
 
 ## 3. Összesítés
 
-**TeraScore** – a kilenc fundamentális szempont súlyozott átlaga. Csak akkor számolódik (a kockázattal együtt), ha legalább 5 szempontra van adat; különben a vállalat „nincs minősítve”.
+**TeraScore** – a kilenc fundamentális szempont súlyozott átlaga (a cégre vonatkozó szempontok súlya 100%-ra normálva). Az adat híján nem pontozható szempont semleges 50 ponttal számít, de legfeljebb a cég többi szempontjának átlagával – így a hiányzó adat sosem javíthat a pontszámon. A nem értelmezhető részek (negatív bázisról számolt növekedés, nem pozitív befektetett tőke melletti ROIC, osztalékot sosem fizető cég kifizetési aránya) nem hiányzó adatnak, hanem „nem alkalmazható”-nak számítanak (`parts[].na`), és kimaradnak a lefedettségből. Csak akkor számolódik (a kockázattal együtt), ha legalább 5 szempontra van adat; különben a vállalat „nincs minősítve”. Felbontás: TeraScore = 50 + Σ súly × (pontszám − 50) – ez az elemzés `breakdown` mezője és a cégoldal „Mi emeli és mi húzza le a TeraScore-t?” része. A súlyokat a pontidőhelyes visszamérés (`scripts/backtest.mjs`, eredmény: `data/backtest.json`) alapján finomítottuk.
 
 | Szempont | Súly |
 |---|---|
 | Jövedelmezőség | 15% |
-| Cash flow minősége | 12% |
-| Mérlegerő | 13% |
-| Likviditás | 5% |
-| Növekedés (utolsó üzleti év) | 8% |
-| Hosszú távú növekedés | 14% |
-| Kiszámíthatóság | 13% |
-| Tőkeallokáció | 7% |
-| Értékeltség | 13% |
+| Cash flow minősége | 14% |
+| Mérlegerő | 10% |
+| Likviditás | 3% |
+| Növekedés (utolsó üzleti év) | 7% |
+| Hosszú távú növekedés | 10% |
+| Kiszámíthatóság | 17% |
+| Tőkeallokáció | 8% |
+| Értékeltség | 16% |
 
 **Kockázat** (alacsonyabb = jobb):
 
 ```
-biztonság   = súlyozott átlag(Mérlegerő 30%, Likviditás 10%, Kiszámíthatóság 25%, Jövedelmezőség 15%, Cash flow minősége 20%)
-              árfolyam-előzmény esetén: 75% × biztonság + 25% × piaci kockázati pontszám
-Kockázat    = 100 − biztonság + 10 × kritikus jelzések + 4 × figyelmeztetések   (0–100 közé vágva)
+biztonság   = súlyozott átlag(Mérlegerő 30%, Likviditás 5%, Kiszámíthatóság 30%, Jövedelmezőség 15%, Cash flow minősége 20%)
+              árfolyam-előzmény esetén: 65% × biztonság + 35% × piaci kockázati pontszám
+alap        = 100 − biztonság
+P           = 10 × kritikus jelzések + 4 × figyelmeztetések
+Kockázat    = alap + (100 − alap) × (1 − e^(−P / 30))   (telítődő: sosem ragad 100-on)
 ```
 
 **Minősítési sávok:** 80–100 Kiváló · 65–79 Erős · 45–64 Mérsékelt · 25–44 Gyenge · 0–24 Kritikus (kockázatnál fordítva: 0–20 nagyon alacsony … 76–100 nagyon magas). A szín mellett mindig szöveges minősítés is megjelenik.
@@ -420,11 +426,12 @@ Az osztalékbiztonság 0–100 között azt méri, mennyire valószínű a jelen
 
 | Összetevő | Súly | Számítás |
 |---|---|---|
-| Szabad cash flow fedezet | 30% | Kifizetett osztalék / szabad cash flow: 40% vagy kevesebb (REIT: 80%) 100 pont, 120% vagy több (REIT: 130%) vagy negatív szabad cash flow 0 pont. |
-| Eredményfedezet | 20% | Kifizetett osztalék / nettó eredmény: 50% vagy kevesebb 100 pont, 150% vagy több vagy veszteség 0 pont. REIT-eknél nem pontozzuk. |
-| Eladósodottság | 20% | Nettó adósság / EBITDA: 1× vagy kevesebb 100 pont, 5× vagy több 0 pont. Bankoknál, biztosítóknál és REIT-eknél nem pontozzuk. |
+| Szabad cash flow fedezet | 20% | Kifizetett osztalék / szabad cash flow: 40% vagy kevesebb (REIT: 80%) 100 pont, 120% vagy több (REIT: 130%) vagy negatív szabad cash flow 0 pont. |
+| Eredményfedezet | 25% | Kifizetett osztalék / nettó eredmény: 50% vagy kevesebb 100 pont, 150% vagy több vagy veszteség 0 pont. REIT-eknél nem pontozzuk. |
+| Eladósodottság | 10% | Nettó adósság / EBITDA: 1× vagy kevesebb 100 pont, 5× vagy több 0 pont. Bankoknál, biztosítóknál és REIT-eknél nem pontozzuk. |
 | Kifizetési múlt | 20% | Megszakítás nélkül fizetett évek (60%) és egymást követő emelések (40%), legfeljebb 10 évig; az elmúlt 10 év minden 10%-nál nagyobb csökkentése −35 pont. |
 | Eredménystabilitás | 10% | A nyereséges évek aránya az elmúlt ötben. |
+| Árfolyam-stabilitás | 15% | A piaci kockázati pontszám (az árfolyam ingadozása és legnagyobb esése): egy nagy esés gyakran megelőzi az osztalékcsökkentést. |
 
 ## 12. Portfólió
 

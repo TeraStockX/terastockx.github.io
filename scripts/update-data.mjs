@@ -32,7 +32,8 @@ import { parseNasdaqListed, parseOtherListed, parseEtfs } from "./listings.mjs";
 import { insiderActivity } from "./insider.mjs";
 import { updateLogos, logoSet } from "./logos.mjs";
 import { currentFilings, FINANCIAL_FORMS } from "./current-filings.mjs";
-import { analyze, computeBenchmarks, scoreHistory, ENGINE_VERSION, DIMENSIONS, dividendProfile } from "../assets/js/scoring.js";
+import { analyze, computeBenchmarks, scoreHistory, ENGINE_VERSION, ENGINE_SERIES, DIMENSIONS, dividendProfile } from "../assets/js/scoring.js";
+import { backtest } from "./backtest.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const DATA = join(ROOT, "data");
@@ -642,10 +643,30 @@ function writeCompany(c) {
 // Weekly TeraScore snapshots kept per company (about two years).
 const MAX_WEEKLY = 110;
 const DAY = 86400000;
+// Snapshots of the current methodology only (a snapshot without a series tag is from engine 2.0):
+// scores of different engine versions are not compared.
+const sameSeries = (w) => (w[3] || "2.0") === ENGINE_SERIES;
 // Score change against the latest snapshot that is at least `days` old.
 function changeSince(weekly, current, days, now) {
-  const old = [...weekly].reverse().find(([d]) => (now - new Date(d)) / DAY >= days);
+  const old = [...weekly].filter(sameSeries).reverse().find(([d]) => (now - new Date(d)) / DAY >= days);
   return old && Number.isFinite(current) ? current - old[1] : null;
+}
+
+// Backtest for the methodology page: recomputed by full and index runs; intraday runs reuse the last one
+// (from the data folder or the intraday cache) and compute it only once after an engine change.
+function ensureBacktest(all, benchmarks) {
+  const file = join(DATA, "backtest.json");
+  const kept = OVERLAY && join(OVERLAY, "backtest.json");
+  const valid = (f) => { try { return existsSync(f) && readJson(f).engineVersion === ENGINE_VERSION; } catch { return false; } };
+  if (quotesOnly && valid(file)) return;
+  if (quotesOnly && kept && valid(kept)) { writeFileSync(file, readFileSync(kept)); return; }
+  const t0 = Date.now();
+  try {
+    const out = JSON.stringify(backtest(all, benchmarks)) + "\n";
+    writeFileSync(file, out);
+    if (kept) { mkdirSync(OVERLAY, { recursive: true }); writeFileSync(kept, out); }
+    console.log(`Backtest: ${((Date.now() - t0) / 1000).toFixed(1)} s`);
+  } catch (e) { console.warn(`Backtest failed: ${e.message}`); }
 }
 
 function buildIndex({ snapshot = false } = {}) {
@@ -656,9 +677,12 @@ function buildIndex({ snapshot = false } = {}) {
   // that as the day's baseline (p1); intraday and code-change rebuilds keep the baseline of the daily run.
   const prevIndexFile = join(DATA, "index.json");
   const prevRows = new Map();
+  // After a methodology change the previous scores are not comparable: today's scores become the baseline.
+  let sameEngine = true;
   if (existsSync(prevIndexFile)) {
     const pi = readJson(prevIndexFile);
-    for (const r of pi.companies || []) prevRows.set(r.t, { o: Array.isArray(r.sc) ? r.sc[0] : r.sc?.overall, p1: r.p1 });
+    sameEngine = pi.engineVersion === ENGINE_VERSION;
+    if (sameEngine) for (const r of pi.companies || []) prevRows.set(r.t, { o: Array.isArray(r.sc) ? r.sc[0] : r.sc?.overall, p1: r.p1 });
   }
   const keepBaseline = indexOnly || quotesOnly;
   const today = now.toISOString().slice(0, 10);
@@ -666,6 +690,7 @@ function buildIndex({ snapshot = false } = {}) {
   // Pass 1: absolute metrics -> sector benchmarks (percentiles). Pass 2: scores relative to the sector.
   const benchmarks = computeBenchmarks(all.map((c) => ({ sector: c.sector, a: analyze(c) })));
   writeFileSync(join(DATA, "benchmarks.json"), JSON.stringify({ generated: new Date().toISOString(), engineVersion: ENGINE_VERSION, sectors: benchmarks }) + "\n");
+  ensureBacktest(all, benchmarks);
 
   const news = [];
   const recentNews = []; // headlines of large companies for the top stories
@@ -704,7 +729,7 @@ function buildIndex({ snapshot = false } = {}) {
     if (c.market?.ipoYear) row.ipo = c.market.ipoYear;
     if (c.lastReport?.date) row.lr = `${c.lastReport.date}|${c.lastReport.form}`;
     const prev = prevRows.get(c.ticker);
-    const baseline = keepBaseline ? prev?.p1 : prev?.o;
+    const baseline = !sameEngine ? (a.ok ? a.scores.overall : null) : keepBaseline ? prev?.p1 : prev?.o;
     if (Number.isFinite(baseline)) row.p1 = baseline;
     if (Number.isFinite(baseline) && a.ok && Number.isFinite(a.scores.overall)) row.d1 = a.scores.overall - baseline;
     // Price against its 12-month high (monthly closes and the latest price) and the one-year change.
@@ -723,11 +748,12 @@ function buildIndex({ snapshot = false } = {}) {
     }
     const weekly = c.scoreHistory?.weekly || [];
     const cur = a.ok ? a.scores.overall : null;
-    // Data is refreshed twice a week, but the trend keeps one snapshot per week (at least 6 days apart).
-    const last = weekly.at(-1)?.[0];
+    // The trend keeps one snapshot per week (at least 6 days apart), of the current methodology only.
+    const last = weekly.filter(sameSeries).at(-1)?.[0];
     if (snapshot && Number.isFinite(cur) && (!last || (Date.parse(today) - Date.parse(last)) / 86400000 >= 6)) {
-      weekly.push([today, cur, a.scores.risk ?? null]);
-      c.scoreHistory = { weekly: weekly.slice(-MAX_WEEKLY) };
+      const kept = weekly.filter(sameSeries);
+      kept.push([today, cur, a.scores.risk ?? null, ENGINE_SERIES]);
+      c.scoreHistory = { weekly: kept.slice(-MAX_WEEKLY) };
       writeFileSync(join(COMPANIES, `${c.ticker}.json`), JSON.stringify(c) + "\n");
     }
     const c4 = changeSince(weekly, cur, 28, now), c13 = changeSince(weekly, cur, 91, now);

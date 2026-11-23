@@ -17,6 +17,8 @@ Az amerikai tőzsdék (Nasdaq, NYSE, NYSE American, Cboe) összes vállalatának
 | Értékeltség | P/E, EV/EBIT, FCF-hozam, P/S, PEG (TTM-adatokon) |
 | Kockázat | fundamentális + piaci (volatilitás, max. visszaesés) + jelzések |
 
+A TeraScore (2.1-es motor) a kilenc fundamentális terület súlyozott átlaga; a súlyokat pontidőhelyes visszaméréssel (`scripts/backtest.mjs`) finomítottuk: 2021–2025 között negyedévente minden cégre kiszámoltuk, amit akkor lehetett tudni, és összevetettük a következő 12 hónappal, illetve a következő évi veszteséggel és osztalékcsökkentéssel. Az eredmény a módszertani oldalon látható (`data/backtest.json`). A cégoldal megmutatja, melyik terület mennyivel emeli vagy húzza le a pontszámot (50 + Σ súly × (pont − 50)). Az árréseket és megtérüléseket 3 éves súlyozott alapon pontozzuk; a pénzt égető cégek likviditását a készpénz-kifutás korlátozza; az adat híján nem értékelhető terület legfeljebb semleges 50 ponttal számít, így a hiányzó adat sosem javíthat a pontszámon.
+
 Emellett: hasonló vállalatok összevetése a cégoldalon, osztalékbiztonság, portfólió-elemzés, negyedéves adatok, nyomtatható PDF-jelentés, appként telepíthető (telefon, tablet, számítógép), szektorhoz viszonyított pontozás (szektormediánnal), szűrő és rangsor, TeraScore-változások (a pontszám változása üzleti évenként és hetente), figyelőlista-riasztások, bennfentes ügyletek (SEC Form 4), külföldi cégek saját pénznemben (20-F / IFRS), csődkockázat, hosszú távú trend, befektetési profil (minőségi, növekedési, érték, osztalék, spekulatív), szektoron belüli rangsor, 34-féle figyelmeztetés és erősség, vállalat-összehasonlítás, figyelőlista, nyers pénzügyi kimutatások CSV/JSON letöltéssel. Bankokra, biztosítókra és REIT-ekre külön mérce vonatkozik.
 
 A teljes adatsablon és a pontozás minden küszöbértéke: **[`docs/SABLON.md`](docs/SABLON.md)** (a kódból generálva).
@@ -35,7 +37,7 @@ assets/js/portfolio.js        portfólió-elemzés
 assets/js/charts.js           grafikonok
 assets/js/i18n/               nyelvi fájlok: en (alapértelmezett), hu, de, fr, es, zh (egyszerűsített kínai)
 data/                         adatok – a data ágon tárolva (mindig csak a legfrissebb állapot):
-                              index.json, news.json, benchmarks.json, companies/*.json
+                              index.json, news.json, benchmarks.json, backtest.json, companies/*.json
 scripts/update-data.mjs       adatletöltő (SEC EDGAR + Nasdaq + árfolyam-előzmények)
 scripts/sec-parse.mjs         SEC XBRL → sablon (éves, TTM, legfrissebb mérleg)
 scripts/sectors.mjs           SIC-kód → szektor és elemzési profil
@@ -46,6 +48,7 @@ scripts/events.mjs            jelentős 8-K események, a nagy cégek friss 8-K 
 scripts/news-headline.mjs     hírcímek: a 8-K-hoz csatolt sajtóközlemény (Exhibit 99) címe, ennek hiányában a bejelentett pont első mondata
 scripts/pulse.mjs             „Fő hírek” (nagy cégek vezetőváltásai, felvásárlásai, gyorsjelentései, nagy árfolyammozgásai, nyitás előtt és zárás után is) és „Piac ma”: indexek, témák (pl. AI-részvények), szektorok, legnagyobb mozgások, új jelentések, TeraScore-változások, új tőzsdei cégek
 scripts/xbrl-instance.mjs     a companyfactsből hiányzó jelentések kiolvasása az XBRL-fájlból
+scripts/backtest.mjs          a TeraScore pontidőhelyes visszamérése (rangkorreláció, ötödök, veszteség- és osztalékcsökkentés-előrejelzés) → data/backtest.json
 scripts/gen-docs.mjs          docs/SABLON.md generálása
 tests/                        tesztek (npm test)
 ```

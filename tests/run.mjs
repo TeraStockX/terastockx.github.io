@@ -724,3 +724,127 @@ test("Donut chart: one slice per part, shares in the legend", async () => {
   assert.equal(donutChart("Empty", [], String), "");
   assert.equal((donutChart("One", [{ label: "VOO", value: 1 }], String).match(/<path /g) || []).length, 1, "a single part is a full ring");
 });
+
+// ---------- Engine 2.1: calibrated TeraScore ----------
+
+const yr21 = (year, extra = {}) => ({ year, periodEnd: `${year}-12-31`, revenue: 1000, costOfRevenue: 500, grossProfit: 500, operatingIncome: 200, pretaxIncome: 190,
+  incomeTaxExpense: 40, interestExpense: 10, netIncome: 150, depreciationAndAmortization: 50, operatingCashFlow: 230, capex: 60, shareBasedCompensation: 20,
+  dividendsPaid: 40, buybacks: 30, totalAssets: 2000, currentAssets: 800, cash: 300, inventory: 100, accountsReceivable: 150, totalLiabilities: 900,
+  currentLiabilities: 400, totalDebt: 400, equity: 1100, retainedEarnings: 700, goodwill: 100, sharesDiluted: 100, epsDiluted: 1.5, ...extra });
+
+test("Engine 2.1: TeraScore = 50 + Σ weight × (score − 50); an unscored area counts as 50 at most", async () => {
+  const { overallBreakdown, OVERALL_WEIGHTS, MISSING_DIMENSION_SCORE } = await import("../assets/js/scoring.js");
+  const a = analyze({ sector: "industrials", annual: [2020, 2021, 2022, 2023, 2024, 2025].map((y) => yr21(y, { revenue: 1000 + (y - 2020) * 60 })) });
+  assert.ok(a.ok && Number.isFinite(a.scores.overall));
+  const sum = 50 + a.breakdown.reduce((s, x) => s + x.contribution, 0);
+  assert.equal(Math.round(sum), a.scores.overall, "contributions add up to the TeraScore");
+  assert.ok(Math.abs(a.breakdown.reduce((s, x) => s + x.weight, 0) - 1) < 1e-9, "weights renormalised over the areas that apply");
+  // A missing area: counted at MISSING_DIMENSION_SCORE, not at the company's own average.
+  const defs = PROFILES.general;
+  const scores = Object.fromEntries(Object.keys(OVERALL_WEIGHTS).map((k) => [k, 80]));
+  const full = overallBreakdown(defs, scores);
+  assert.equal(full.score, 80);
+  const gap = overallBreakdown(defs, { ...scores, cashFlow: null });
+  assert.equal(MISSING_DIMENSION_SCORE, 50);
+  assert.equal(gap.score, Math.round(80 - OVERALL_WEIGHTS.cashFlow * (80 - MISSING_DIMENSION_SCORE)), "a strong company with a gap moves towards neutral");
+  assert.ok(gap.items.find((x) => x.key === "cashFlow").missing);
+  const weak = overallBreakdown(defs, { ...Object.fromEntries(Object.keys(OVERALL_WEIGHTS).map((k) => [k, 30])), cashFlow: null });
+  assert.equal(weak.score, 30, "a gap never lifts a weak company");
+  // Banks: areas that do not apply (no cash-flow or liquidity scoring) are not counted as missing.
+  const bank = overallBreakdown(PROFILES.financial, { ...scores, cashFlow: null, liquidity: null });
+  assert.equal(bank.score, 80);
+  assert.ok(!bank.items.some((x) => x.key === "cashFlow" || x.key === "liquidity"));
+});
+
+test("Engine 2.1: risk rises with warning flags on a saturating curve, never above 100", async () => {
+  const { riskFrom } = await import("../assets/js/scoring.js");
+  assert.equal(riskFrom(70, 0), 30);
+  assert.ok(riskFrom(70, 10) > riskFrom(70, 4) && riskFrom(70, 4) > 30);
+  assert.ok(riskFrom(10, 60) < 100 && riskFrom(10, 60) > riskFrom(10, 40), "the riskiest still differ");
+  assert.ok(riskFrom(40, 40) < riskFrom(20, 40), "safer fundamentals keep lower risk at equal flags");
+  assert.equal(riskFrom(0, 0), 100);
+  assert.equal(riskFrom(100, 0), 0);
+});
+
+test("Engine 2.1: margins scored on a 3-year basis; cash runway caps liquidity; net cash of a loss-maker scores 50", async () => {
+  const { SMOOTH_PRIOR_WEIGHT, NET_CASH_LOSS_SCORE } = await import("../assets/js/scoring.js");
+  const steady = [2021, 2022, 2023].map((y) => yr21(y, { operatingIncome: 100 }));
+  const jump = analyze({ sector: "industrials", annual: [...steady, yr21(2024, { operatingIncome: 300 })] });
+  const om = jump.parts.profitability.find((p) => p.key === "operatingMargin");
+  assert.equal(om.value, 0.3);
+  assert.ok(Math.abs(om.basis - ((1 - SMOOTH_PRIOR_WEIGHT) * 0.3 + SMOOTH_PRIOR_WEIGHT * 0.1)) < 1e-9, "60% latest + 40% two prior years");
+  // A cash burner with a big current ratio but little runway: liquidity is capped by the runway.
+  const burn = (y) => yr21(y, { operatingIncome: -300, pretaxIncome: -300, netIncome: -300, operatingCashFlow: -250, capex: 50, cash: 400, currentAssets: 500,
+    inventory: 0, accountsReceivable: 50, currentLiabilities: 100, totalDebt: 0, interestExpense: 0, dividendsPaid: 0, buybacks: 0, epsDiluted: -3 });
+  const b = analyze({ sector: "healthcare", annual: [2021, 2022, 2023, 2024].map(burn) });
+  assert.ok(Math.abs(b.metrics.cashRunway - 450 / 300) < 1e-9, "(current assets − receivables) / burn");
+  const cap = b.parts.liquidity.find((p) => p.key === "cashRunway");
+  assert.ok(cap && cap.cap && cap.weight === 0);
+  assert.equal(b.scores.liquidity, cap.score);
+  assert.ok(b.scores.liquidity < 50, `liquidity ${b.scores.liquidity}`);
+  const nde = b.parts.balanceSheet.find((p) => p.key === "netDebtToEbitda");
+  assert.equal(nde.score, NET_CASH_LOSS_SCORE);
+  assert.ok(nde.netCashLoss);
+  // A profitable company with net cash keeps the full score and has no runway cap.
+  const rich = analyze({ sector: "industrials", annual: [2021, 2022, 2023, 2024].map((y) => yr21(y, { totalDebt: 0, cash: 900 })) });
+  assert.equal(rich.parts.balanceSheet.find((p) => p.key === "netDebtToEbitda").score, 100);
+  assert.ok(!rich.parts.liquidity.some((p) => p.key === "cashRunway"));
+});
+
+test("Engine 2.1: capex reported under a company's own element is estimated (own ratio, else depreciation)", async () => {
+  const { fillGaps, dividendProfile } = await import("../assets/js/scoring.js");
+  const years = [yr21(2021, { capex: 50 }), yr21(2022, { capex: 70 }), yr21(2023, { capex: null, freeCashFlow: null }), yr21(2024, { capex: null, freeCashFlow: null })];
+  const f = fillGaps({ annual: years }, "general");
+  assert.ok(f.estimated.includes("capex"));
+  assert.ok(Math.abs(f.company.annual[3].capex - 60) < 1e-9, "median capex/revenue of the nearest reporting years × revenue");
+  assert.ok(Math.abs(f.company.annual[3].freeCashFlow - 170) < 1e-9);
+  const none = fillGaps({ annual: years.map((y) => ({ ...y, capex: null, freeCashFlow: null })) }, "general");
+  assert.equal(none.company.annual[3].capex, 50, "no year with capex: depreciation and amortisation");
+  assert.deepEqual(fillGaps({ annual: years }, "financial").estimated, [], "not for banks and insurers");
+  const a = analyze({ sector: "industrials", annual: years });
+  assert.ok(Number.isFinite(a.scores.cashFlow), "cash-flow quality is scored with the estimate");
+  assert.ok(a.estimated.includes("capex"));
+  const d = dividendProfile({ annual: years }, a);
+  assert.ok(Number.isFinite(d.parts.fcfPayout));
+});
+
+test("Engine 2.1: dividend safety includes share-price stability; languages cover the new parts", async () => {
+  const { dividendProfile, DIVIDEND_WEIGHTS } = await import("../assets/js/scoring.js");
+  assert.ok(Math.abs(Object.values(DIVIDEND_WEIGHTS).reduce((s, x) => s + x, 0) - 1) < 1e-9);
+  const prices = { data: Array.from({ length: 40 }, (_, i) => [`${2023 + Math.floor(i / 12)}-${String((i % 12) + 1).padStart(2, "0")}`, 100 + i]) };
+  const c = { sector: "industrials", prices, annual: [2020, 2021, 2022, 2023, 2024, 2025].map((y) => yr21(y, { dividendsPaid: 40 + (y - 2020) * 2 })) };
+  const a = analyze(c);
+  const d = dividendProfile(c, a);
+  assert.equal(d.parts.priceStability, a.scores.marketRisk);
+  for (const [code, dict] of Object.entries(LANGS)) {
+    for (const k of Object.keys(DIVIDEND_WEIGHTS)) assert.ok(dict.dividend.parts[k] && dict.dividend.partsText[k], `${code}: dividend.${k}`);
+    assert.ok(dict.dq.est.capex, `${code}: dq.est.capex`);
+    for (const k of ["bdTitle", "bdNote", "bdMissing", "riskExplain", "capLabel", "basis3y", "netCashLoss", "yearsUnit"]) assert.ok(dict.ui[k], `${code}: ui.${k}`);
+    for (const k of ["{f}", "{m}", "{c}", "{w}"]) assert.ok(dict.ui.riskExplain.includes(k), `${code}: riskExplain ${k}`);
+  }
+});
+
+test("Backtest: rank correlation, AUC and a point-in-time panel", async () => {
+  const { spearman, auc, backtest } = await import("../scripts/backtest.mjs");
+  assert.equal(spearman([1, 2, 3, 4], [10, 20, 30, 40]), 1);
+  assert.equal(spearman([1, 2, 3, 4], [4, 3, 2, 1]), -1);
+  const s = Array.from({ length: 100 }, (_, i) => i);
+  assert.equal(auc(s, s.map((x) => x >= 50)), 1);
+  assert.equal(auc(s, s.map((x) => x < 50)), 0);
+  assert.equal(auc([1, 2], [true, false]), null, "too few cases");
+  // Ten companies, 2018–2025 reports, monthly prices: better fundamentals, better path.
+  const months = []; for (let y = 2020; y <= 2026; y++) for (let m = 1; m <= 12; m++) months.push(`${y}-${String(m).padStart(2, "0")}`);
+  const companies = Array.from({ length: 60 }, (_, k) => {
+    const q = k / 59; // quality 0…1
+    const annual = [2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025].map((y) => yr21(y, { operatingIncome: -100 + 400 * q, netIncome: -120 + 360 * q, pretaxIncome: -110 + 380 * q,
+      operatingCashFlow: -80 + 400 * q, epsDiluted: (-120 + 360 * q) / 100 }));
+    const data = months.map((m, i) => [m, 50 * Math.exp(i * (q - 0.5) * 0.02)]);
+    return { ticker: `T${k}`, name: `T${k}`, sector: "industrials", annual, prices: { data }, market: { marketCap: 5e9 * data.at(-1)[1] / 50 } };
+  });
+  const out = backtest(companies, null);
+  assert.ok(out.observations > 0 && out.formationDates > 0);
+  assert.ok(out.rankIC > 0.5, `IC ${out.rankIC}`);
+  assert.equal(out.quintiles.length, 5);
+  assert.ok(out.quintiles[4].excess > out.quintiles[0].excess);
+  assert.ok(out.fundamental.years > 0);
+});

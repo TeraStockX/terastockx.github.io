@@ -2,7 +2,8 @@
 // Generates docs/SABLON.md from the engine definitions, so the documentation always
 // matches the code exactly. Run: npm run docs
 import { writeFileSync } from "node:fs";
-import { MIN_DIMENSIONS, RELATIVE_METRICS, MIN_SECTOR_PEERS, PROFILES, OVERALL_WEIGHTS, RISK_WEIGHTS, FLAG_PENALTY, METRIC_FORMAT, ENGINE_VERSION, FLAG_IDS, DIVIDEND_WEIGHTS } from "../assets/js/scoring.js";
+import { MIN_DIMENSIONS, RELATIVE_METRICS, MIN_SECTOR_PEERS, PROFILES, OVERALL_WEIGHTS, RISK_WEIGHTS, FLAG_PENALTY, METRIC_FORMAT, ENGINE_VERSION, FLAG_IDS, DIVIDEND_WEIGHTS,
+  MARKET_RISK_SHARE, PENALTY_SCALE, MISSING_DIMENSION_SCORE, SMOOTH_PRIOR_WEIGHT, SMOOTHED_METRICS, RUNWAY_BAD, RUNWAY_GOOD, NET_CASH_LOSS_SCORE } from "../assets/js/scoring.js";
 import { FLOW, INSTANT } from "./sec-parse.mjs";
 import hu from "../assets/js/i18n/hu.js";
 const fill = (s, v) => s.replace(/\{(\w+)\}/g, (m, k) => (k in v ? v[k] : m));
@@ -103,12 +104,16 @@ ${fieldRows(INSTANT)}
 
 Minden mutatót lineárisan váltunk 0–100 pontra a „0 pont” és „100 pont” érték között, azon kívül vágva. Egy szempont pontszáma a mutatók súlyozott átlaga; hiányzó mutató kimarad, a többi súlya arányosan nő. Egy szempont csak akkor kap pontszámot, ha a mutatói legalább felének (súly szerint) van adata. Az értékeltség a TTM-adatokon alapul (ha elérhető), a többi szempont az auditált éves adatokon. A hosszú távú mutatók legfeljebb az utolsó 6 üzleti évet (5 év változást) veszik figyelembe.
 
+**3 éves alap.** A ${SMOOTHED_METRICS.map((k) => hu.metrics[k][0]).join(", ")} pontozása ${Math.round((1 - SMOOTH_PRIOR_WEIGHT) * 100)}%-ban a legutóbbi év, ${Math.round(SMOOTH_PRIOR_WEIGHT * 100)}%-ban az azt megelőző két év átlaga alapján történik (a megjelenített érték a legutóbbi év; a pontozás alapja a \`parts[].basis\` mezőben).
+
+**Készpénz-kifutás.** Negatív szabad cash flow esetén a likviditás pontszáma legfeljebb a készpénz-kifutás pontszáma: likvid eszközök (készpénz, vagy forgóeszközök − készletek − vevőkövetelések, ha ez nagyobb) / pénzégetés; ${RUNWAY_BAD} év = 0 pont, ${RUNWAY_GOOD} év = 100 pont (\`metrics.cashRunway\`, a likviditás részei között \`cap: true\` jelöléssel).
+
 ${dims}
 
 ### Különleges esetek
 
 - Negatív saját tőkénél a ROE nem pontozott, az adósság/saját tőke 0 pont.
-- Kamatráfordítás nélkül a kamatfedezet 100 pont; nettó készpénz esetén a nettó adósság/EBITDA 100 pont.
+- Kamatráfordítás nélkül a kamatfedezet 100 pont; nettó készpénz esetén a nettó adósság/EBITDA 100 pont, ha az EBITDA (ennek hiányában az EBIT) pozitív, különben ${NET_CASH_LOSS_SCORE} pont (szektor-viszonyítás nélkül).
 - Veszteséges utolsó év esetén az EPS-növekedés és az EPS CAGR 0 pont (negatív bázisról a növekedés nem értelmezhető).
 - Osztalék nélkül a kifizetési arány nem pontozott; az FCF-et meghaladó osztalék 0 pont.
 - Veszteség esetén a P/E és a PEG 0 pont.
@@ -123,7 +128,7 @@ Képlet: pontszám = 0,5 × abszolút pontszám + 0,5 × relatív pontszám, aho
 
 ## 3. Összesítés
 
-**TeraScore** – a kilenc fundamentális szempont súlyozott átlaga. Csak akkor számolódik (a kockázattal együtt), ha legalább ${MIN_DIMENSIONS} szempontra van adat; különben a vállalat „nincs minősítve”.
+**TeraScore** – a kilenc fundamentális szempont súlyozott átlaga (a cégre vonatkozó szempontok súlya 100%-ra normálva). Az adat híján nem pontozható szempont semleges ${MISSING_DIMENSION_SCORE} ponttal számít, de legfeljebb a cég többi szempontjának átlagával – így a hiányzó adat sosem javíthat a pontszámon. A nem értelmezhető részek (negatív bázisról számolt növekedés, nem pozitív befektetett tőke melletti ROIC, osztalékot sosem fizető cég kifizetési aránya) nem hiányzó adatnak, hanem „nem alkalmazható”-nak számítanak (\`parts[].na\`), és kimaradnak a lefedettségből. Csak akkor számolódik (a kockázattal együtt), ha legalább ${MIN_DIMENSIONS} szempontra van adat; különben a vállalat „nincs minősítve”. Felbontás: TeraScore = 50 + Σ súly × (pontszám − 50) – ez az elemzés \`breakdown\` mezője és a cégoldal „Mi emeli és mi húzza le a TeraScore-t?” része. A súlyokat a pontidőhelyes visszamérés (\`scripts/backtest.mjs\`, eredmény: \`data/backtest.json\`) alapján finomítottuk.
 
 | Szempont | Súly |
 |---|---|
@@ -133,8 +138,10 @@ ${Object.entries(OVERALL_WEIGHTS).map(([k, w]) => `| ${hu.dims[k].name} | ${Math
 
 \`\`\`
 biztonság   = súlyozott átlag(${Object.entries(RISK_WEIGHTS).map(([k, w]) => `${hu.dims[k].name} ${Math.round(w * 100)}%`).join(", ")})
-              árfolyam-előzmény esetén: 75% × biztonság + 25% × piaci kockázati pontszám
-Kockázat    = 100 − biztonság + ${FLAG_PENALTY.critical} × kritikus jelzések + ${FLAG_PENALTY.warning} × figyelmeztetések   (0–100 közé vágva)
+              árfolyam-előzmény esetén: ${Math.round((1 - MARKET_RISK_SHARE) * 100)}% × biztonság + ${Math.round(MARKET_RISK_SHARE * 100)}% × piaci kockázati pontszám
+alap        = 100 − biztonság
+P           = ${FLAG_PENALTY.critical} × kritikus jelzések + ${FLAG_PENALTY.warning} × figyelmeztetések
+Kockázat    = alap + (100 − alap) × (1 − e^(−P / ${PENALTY_SCALE}))   (telítődő: sosem ragad 100-on)
 \`\`\`
 
 **Minősítési sávok:** 80–100 Kiváló · 65–79 Erős · 45–64 Mérsékelt · 25–44 Gyenge · 0–24 Kritikus (kockázatnál fordítva: 0–20 nagyon alacsony … 76–100 nagyon magas). A szín mellett mindig szöveges minősítés is megjelenik.
