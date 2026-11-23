@@ -1,0 +1,157 @@
+=== NVDA 1045810 000104581026000090 items: Item 5.02: Departure of Directors or Certain Officers; Election of Directors; Appointment of Certain Officers: Compensatory Arrangements of Certain Officers Item 9.01: Financial Statements and Exhibits
+   doc: 1 | 8-K | nvda-20261122.htm &nbsp;&nbsp;iXBRL | 8-K | 22041
+   doc: 2 | EX-99.1 | nov23pressrelease.htm | EX-99.1 | 7529
+   doc: &nbsp; | Complete submission text file | 0001045810-26-000090.txt | &nbsp; | 147395
+   doc: 3 | XBRL TAXONOMY EXTENSION SCHEMA DOCUMENT | nvda-20261122.xsd | EX-101.SCH | 1876
+   doc: 4 | XBRL TAXONOMY EXTENSION LABEL LINKBASE DOCUMENT | nvda-20261122_lab.xml | EX-101.LAB | 21885
+   doc: 5 | XBRL TAXONOMY EXTENSION PRESENTATION LINKBASE DOCUMENT | nvda-20261122_pre.xml | EX-101.PRE | 12599
+   doc: 15 | EXTRACTED XBRL INSTANCE DOCUMENT | nvda-20261122_htm.xml | XML | 2711
+=== NVDA 1045810 000104581026000088 items: Item 2.02: Results of Operations and Financial Condition Item 9.01: Financial Statements and Exhibits
+   doc: 1 | 8-K | nvda-20261117.htm &nbsp;&nbsp;iXBRL | 8-K | 26811
+   doc: 2 | EX-99.1 | q3fy27pr.htm | EX-99.1 | 348063
+   doc: 3 | EX-99.2 | q3fy27cfocommentary.htm | EX-99.2 | 251464
+   doc: 4 | EX-99.3 | supplementalfinancialinfor.htm | EX-99.3 | 240566
+   doc: 8 | NVDA LOGO | nvdalogoa19.jpg | GRAPHIC | 13441
+   doc: &nbsp; | Complete submission text file | 0001045810-26-000088.txt | &nbsp; | 1062246
+   doc: 5 | XBRL TAXONOMY EXTENSION SCHEMA DOCUMENT | nvda-20261117.xsd | EX-101.SCH | 2125
+   doc: 6 | XBRL TAXONOMY EXTENSION LABEL LINKBASE DOCUMENT | nvda-20261117_lab.xml | EX-101.LAB | 22403
+   doc: 7 | XBRL TAXONOMY EXTENSION PRESENTATION LINKBASE DOCUMENT | nvda-20261117_pre.xml | EX-101.PRE | 13326
+   doc: 18 | EXTRACTED XBRL INSTANCE DOCUMENT | nvda-20261117_htm.xml | XML | 2711
+=== NVDA 1045810 000104581026000082 items: Item 5.02: Departure of Directors or Certain Officers; Election of Directors; Appointment of Certain Officers: Compensatory Arrangements of Certain Officers Item 9.01: Financial Statements and Exhibits
+   doc: 1 | 8-K | nvda-20261111.htm &nbsp;&nbsp;iXBRL | 8-K | 23068
+   doc: 2 | EX-99.1 | nvidiaannouncesceotransiti.htm | EX-99.1 | 11297
+   doc: &nbsp; | Complete submission text file | 0001045810-26-000082.txt | &nbsp; | 153008
+   doc: 3 | XBRL TAXONOMY EXTENSION SCHEMA DOCUMENT | nvda-20261111.xsd | EX-101.SCH | 1876
+   doc: 4 | XBRL TAXONOMY EXTENSION LABEL LINKBASE DOCUMENT | nvda-20261111_lab.xml | EX-101.LAB | 21885
+   doc: 5 | XBRL TAXONOMY EXTENSION PRESENTATION LINKBASE DOCUMENT | nvda-20261111_pre.xml | EX-101.PRE | 12599
+   doc: 15 | EXTRACTED XBRL INSTANCE DOCUMENT | nvda-20261111_htm.xml | XML | 2711
+=== Everli Global Holdings Inc. (0002016221) 2016221 000121390026122973 items: Item 1.01: Entry into a Material Definitive Agreement Item 3.02: Unregistered Sales of Equity Securities Item 9.01: Financial Statements and Exhibits
+   doc: 1 | CURRENT REPORT | ea0313217-8k_everli.htm &nbsp;&nbsp;iXBRL | 8-K | 61781
+   doc: 2 | STANDBY EQUITY PURCHASE AGREEMENT, DATED NOVEMBER 23, 2026, BY AND BETWEEN EVERL | ea031321702ex10-1.htm | EX-10.1 | 232050
+   doc: 3 | AMENDMENT TO CONVERTIBLE PROMISSORY NOTES, DATED AS OF NOVEMBER 23, 2026, BY AND | ea031321702ex10-2.htm | EX-10.2 | 35353
+   doc: 4 | AMENDMENT NO. 1 TO SECURED PROMISSORY NOTE AND PLEDGE AGREEMENT, DATED NOVEMBER | ea031321702ex10-3.htm | EX-10.3 | 62526
+   doc: 5 | FOURTH AMENDMENT, DATED NOVEMBER 20, 2026, TO THE SECURED PROMISSORY NOTE AND PL | ea031321702ex10-4.htm | EX-10.4 | 15537
+   doc: &nbsp; | Complete submission text file | 0001213900-26-122973.txt | &nbsp; | 712182
+   doc: 6 | XBRL SCHEMA FILE | maciw-20261120.xsd | EX-101.SCH | 3799
+   doc: 7 | XBRL DEFINITION FILE | maciw-20261120_def.xml | EX-101.DEF | 26645
+   doc: 8 | XBRL LABEL FILE | maciw-20261120_lab.xml | EX-101.LAB | 36708
+   doc: 9 | XBRL PRESENTATION FILE | maciw-20261120_pre.xml | EX-101.PRE | 25269
+   doc: 19 | EXTRACTED XBRL INSTANCE DOCUMENT | ea0313217-8k_everli_htm.xml | XML | 5364
+=== Life360, Inc. (0001581760) (Filer) 1581760 000158176026000189 items: Item 5.02: Departure of Directors or Certain Officers; Election of Directors; Appointment of Certain Officers: Compensatory Arrangements of Certain Officers
+   doc: 1 | 8-K | lifx-20261122.htm &nbsp;&nbsp;iXBRL | 8-K | 28055
+   doc: &nbsp; | Complete submission text file | 0001581760-26-000189.txt | &nbsp; | 126812
+   doc: 2 | XBRL TAXONOMY EXTENSION SCHEMA DOCUMENT | lifx-20261122.xsd | EX-101.SCH | 1761
+   doc: 3 | XBRL TAXONOMY EXTENSION LABEL LINKBASE DOCUMENT | lifx-20261122_lab.xml | EX-101.LAB | 20073
+   doc: 4 | XBRL TAXONOMY EXTENSION PRESENTATION LINKBASE DOCUMENT | lifx-20261122_pre.xml | EX-101.PRE | 11496
+   doc: 15 | EXTRACTED XBRL INSTANCE DOCUMENT | lifx-20261122_htm.xml | XML | 2005
+=== New Fortress Energy Inc. (0001749723) (F 1749723 000174972326000189 items: Item 8.01: Other Events Item 9.01: Financial Statements and Exhibits
+   doc: 1 | 8-K | nfe-20261123.htm &nbsp;&nbsp;iXBRL | 8-K | 30761
+   doc: &nbsp; | Complete submission text file | 0001749723-26-000189.txt | &nbsp; | 178117
+   doc: 2 | XBRL TAXONOMY EXTENSION SCHEMA DOCUMENT | nfe-20261123.xsd | EX-101.SCH | 2180
+   doc: 3 | XBRL TAXONOMY EXTENSION DEFINITION LINKBASE DOCUMENT | nfe-20261123_def.xml | EX-101.DEF | 5357
+   doc: 4 | XBRL TAXONOMY EXTENSION LABEL LINKBASE DOCUMENT | nfe-20261123_lab.xml | EX-101.LAB | 28285
+   doc: 5 | XBRL TAXONOMY EXTENSION PRESENTATION LINKBASE DOCUMENT | nfe-20261123_pre.xml | EX-101.PRE | 17500
+   doc: 16 | EXTRACTED XBRL INSTANCE DOCUMENT | nfe-20261123_htm.xml | XML | 4071
+=== GRAHAM CORP (0000716314) (Filer) 716314 000119312526471087 items: Item 7.01: Regulation FD Disclosure Item 9.01: Financial Statements and Exhibits
+   doc: 1 | 8-K | d105877d8k.htm &nbsp;&nbsp;iXBRL | 8-K | 26312
+   doc: 2 | EX-99.1 | d105877dex991.htm | EX-99.1 | 25700
+   doc: 3 | EX-99.2 | d105877dex992.htm | EX-99.2 | 13332
+   doc: 7 | GRAPHIC | g105877dsp004.jpg | GRAPHIC | 7457
+   doc: 8 | GRAPHIC | g105877ex99_2s1g1.jpg | GRAPHIC | 86025
+   doc: 9 | GRAPHIC | g105877ex99_2s2g1.jpg | GRAPHIC | 218411
+   doc: 10 | GRAPHIC | g105877ex99_2s3g1.jpg | GRAPHIC | 118403
+   doc: 11 | GRAPHIC | g105877ex99_2s4g1.jpg | GRAPHIC | 111248
+   doc: 12 | GRAPHIC | g105877ex99_2s5g1.jpg | GRAPHIC | 109108
+   doc: 13 | GRAPHIC | g105877ex99_2s6g1.jpg | GRAPHIC | 110251
+   doc: &nbsp; | Complete submission text file | 0001193125-26-471087.txt | &nbsp; | 1240051
+   doc: 4 | XBRL TAXONOMY EXTENSION SCHEMA | ghm-20261123.xsd | EX-101.SCH | 3182
+   doc: 5 | XBRL TAXONOMY EXTENSION LABEL LINKBASE | ghm-20261123_lab.xml | EX-101.LAB | 17235
+   doc: 6 | XBRL TAXONOMY EXTENSION PRESENTATION LINKBASE | ghm-20261123_pre.xml | EX-101.PRE | 10815
+   doc: 24 | EXTRACTED XBRL INSTANCE DOCUMENT | d105877d8k_htm.xml | XML | 3518
+=== OLB GROUP, INC. (0001314196) (Filer) 1314196 000118518526005585 items: Item 5.07: Submission of Matters to a Vote of Security Holders Item 9.01: Financial Statements and Exhibits
+   doc: 1 | FORM 8-K | olbgroup8k112226.htm &nbsp;&nbsp;iXBRL | 8-K | 39477
+   doc: 2 | EXHIBIT 10.1 | olbgroupex10-1.htm | EX-10.1 | 151971
+   doc: &nbsp; | Complete submission text file | 0001185185-26-005585.txt | &nbsp; | 388817
+   doc: 3 | XBRL LABEL FILE | olb-20261119_lab.xml | EX-101.LAB | 34235
+   doc: 4 | XBRL PRESENTATION FILE | olb-20261119_pre.xml | EX-101.PRE | 22343
+   doc: 5 | XBRL SCHEMA FILE | olb-20261119.xsd | EX-101.SCH | 2992
+   doc: 15 | EXTRACTED XBRL INSTANCE DOCUMENT | olbgroup8k112226_htm.xml | XML | 3319
+=== Standard Nuclear, Inc. (0002086716) (Fil 2086716 000162828026075381 items: Item 8.01: Other Events Item 9.01: Financial Statements and Exhibits
+   doc: 1 | 8-K | stdn-20261112.htm &nbsp;&nbsp;iXBRL | 8-K | 24385
+   doc: 2 | EX-99.1 | pr_dsa-submissionx11x23x20.htm | EX-99.1 | 16134
+   doc: &nbsp; | Complete submission text file | 0001628280-26-075381.txt | &nbsp; | 192665
+   doc: 3 | XBRL TAXONOMY EXTENSION SCHEMA DOCUMENT | stdn-20261112.xsd | EX-101.SCH | 2060
+   doc: 4 | XBRL TAXONOMY EXTENSION DEFINITION LINKBASE DOCUMENT | stdn-20261112_def.xml | EX-101.DEF | 14929
+   doc: 5 | XBRL TAXONOMY EXTENSION LABEL LINKBASE DOCUMENT | stdn-20261112_lab.xml | EX-101.LAB | 26412
+   doc: 6 | XBRL TAXONOMY EXTENSION PRESENTATION LINKBASE DOCUMENT | stdn-20261112_pre.xml | EX-101.PRE | 15583
+   doc: 16 | EXTRACTED XBRL INSTANCE DOCUMENT | stdn-20261112_htm.xml | XML | 2814
+=== TPG Inc. (0001880661) (Filer) 1880661 000188066126000063 items: Item 7.01: Regulation FD Disclosure Item 9.01: Financial Statements and Exhibits
+   doc: 1 | 8-K | tpg-20261123.htm &nbsp;&nbsp;iXBRL | 8-K | 29082
+   doc: &nbsp; | Complete submission text file | 0001880661-26-000063.txt | &nbsp; | 187200
+   doc: 2 | XBRL TAXONOMY EXTENSION SCHEMA DOCUMENT | tpg-20261123.xsd | EX-101.SCH | 2608
+   doc: 3 | XBRL TAXONOMY EXTENSION DEFINITION LINKBASE DOCUMENT | tpg-20261123_def.xml | EX-101.DEF | 15963
+   doc: 4 | XBRL TAXONOMY EXTENSION LABEL LINKBASE DOCUMENT | tpg-20261123_lab.xml | EX-101.LAB | 28395
+   doc: 5 | XBRL TAXONOMY EXTENSION PRESENTATION LINKBASE DOCUMENT | tpg-20261123_pre.xml | EX-101.PRE | 16701
+   doc: 15 | EXTRACTED XBRL INSTANCE DOCUMENT | tpg-20261123_htm.xml | XML | 4124
+=== NOCERA, INC. (0001756180) (Filer) 1756180 000168316826009032 items: Item 1.01: Entry into a Material Definitive Agreement Item 7.01: Regulation FD Disclosure Item 9.01: Financial Statements and Exhibits
+   doc: 1 | FORM 8-K | nocera_8k.htm &nbsp;&nbsp;iXBRL | 8-K | 38481
+   doc: 2 | LETTER OF INTENT, DATED NOVEMBER 19, 2026, BETWEEN BITROCK LTD. AND NOCERA, INC. | nocera_ex1001.htm | EX-10.1 | 49888
+   doc: 3 | PRESS RELEASE, DATED NOVEMBER 23, 2026. | nocera_ex9901.htm | EX-99.1 | 19757
+   doc: &nbsp; | Complete submission text file | 0001683168-26-009032.txt | &nbsp; | 293760
+   doc: 4 | XBRL SCHEMA FILE | ncra-20261119.xsd | EX-101.SCH | 3008
+   doc: 5 | XBRL LABEL FILE | ncra-20261119_lab.xml | EX-101.LAB | 34239
+   doc: 6 | XBRL PRESENTATION FILE | ncra-20261119_pre.xml | EX-101.PRE | 22354
+   doc: 16 | EXTRACTED XBRL INSTANCE DOCUMENT | nocera_8k_htm.xml | XML | 3344
+=== Phio Pharmaceuticals Corp. (0001533040)  1533040 000143774926037987 items: Item 8.01: Other Events Item 9.01: Financial Statements and Exhibits
+   doc: 1 | FORM 8-K | phio20261119_8k.htm &nbsp;&nbsp;iXBRL | 8-K | 25641
+   doc: 2 | EXHIBIT 99.1 | ex_1049393.htm | EX-99.1 | 11275
+   doc: 7 |  | logo.jpg | GRAPHIC | 7422
+   doc: &nbsp; | Complete submission text file | 0001437749-26-037987.txt | &nbsp; | 185528
+   doc: 3 | XBRL TAXONOMY EXTENSION SCHEMA | phio-20261123.xsd | EX-101.SCH | 3580
+   doc: 4 | XBRL TAXONOMY EXTENSION DEFINITION LINKBASE | phio-20261123_def.xml | EX-101.DEF | 11808
+   doc: 5 | XBRL TAXONOMY EXTENSION LABEL LINKBASE | phio-20261123_lab.xml | EX-101.LAB | 15859
+   doc: 6 | XBRL TAXONOMY EXTENSION PRESENTATION LINKBASE | phio-20261123_pre.xml | EX-101.PRE | 12023
+   doc: 17 | EXTRACTED XBRL INSTANCE DOCUMENT | phio20261119_8k_htm.xml | XML | 2960
+=== NVIDIA CORP (0001045810) (Filer) 1045810 000104581026000090 items: Item 5.02: Departure of Directors or Certain Officers; Election of Directors; Appointment of Certain Officers: Compensatory Arrangements of Certain Officers Item 9.01: Financial Statements and Exhibits
+   doc: 1 | 8-K | nvda-20261122.htm &nbsp;&nbsp;iXBRL | 8-K | 22041
+   doc: 2 | EX-99.1 | nov23pressrelease.htm | EX-99.1 | 7529
+   doc: &nbsp; | Complete submission text file | 0001045810-26-000090.txt | &nbsp; | 147395
+   doc: 3 | XBRL TAXONOMY EXTENSION SCHEMA DOCUMENT | nvda-20261122.xsd | EX-101.SCH | 1876
+   doc: 4 | XBRL TAXONOMY EXTENSION LABEL LINKBASE DOCUMENT | nvda-20261122_lab.xml | EX-101.LAB | 21885
+   doc: 5 | XBRL TAXONOMY EXTENSION PRESENTATION LINKBASE DOCUMENT | nvda-20261122_pre.xml | EX-101.PRE | 12599
+   doc: 15 | EXTRACTED XBRL INSTANCE DOCUMENT | nvda-20261122_htm.xml | XML | 2711
+=== Silexion Therapeutics Corp (0002022416)  2022416 000117891326005321 items: Item 7.01: Regulation FD Disclosure Item 9.01: Financial Statements and Exhibits
+   doc: 1 | 8-K | zk2636461.htm &nbsp;&nbsp;iXBRL | 8-K | 27278
+   doc: 2 | EXHIBIT 99.1 | exhibit_99-1.htm | EX-99.1 | 11986
+   doc: 7 | GRAPHIC | image_001.jpg | GRAPHIC | 39997
+   doc: &nbsp; | Complete submission text file | 0001178913-26-005321.txt | &nbsp; | 306838
+   doc: 3 | XBRL SCHEMA FILE | slxn-20261123.xsd | EX-101.SCH | 3519
+   doc: 4 | XBRL DEFINITION FILE | slxn-20261123_def.xml | EX-101.DEF | 26577
+   doc: 5 | XBRL LABEL FILE | slxn-20261123_lab.xml | EX-101.LAB | 36604
+   doc: 6 | XBRL PRESENTATION FILE | slxn-20261123_pre.xml | EX-101.PRE | 25201
+   doc: 17 | EXTRACTED XBRL INSTANCE DOCUMENT | zk2636461_htm.xml | XML | 5124
+=== Ondas Inc. (0001646188) (Filer) 1646188 000121390026122950 items: Item 7.01: Regulation FD Disclosure Item 9.01: Financial Statements and Exhibits
+   doc: 1 | CURRENT REPORT | ea0313216-8k_ondas.htm &nbsp;&nbsp;iXBRL | 8-K | 25840
+   doc: 2 | LETTER TO STOCKHOLDERS, DATED NOVEMBER 23, 2026 | ea031321601ex99-1.htm | EX-99.1 | 22583
+   doc: 3 | GRAPHIC | ea031321601_ex99-1img1.jpg | GRAPHIC | 3024
+   doc: &nbsp; | Complete submission text file | 0001213900-26-122950.txt | &nbsp; | 224239
+   doc: 4 | XBRL SCHEMA FILE | onds-20261123.xsd | EX-101.SCH | 3005
+   doc: 5 | XBRL LABEL FILE | onds-20261123_lab.xml | EX-101.LAB | 34239
+   doc: 6 | XBRL PRESENTATION FILE | onds-20261123_pre.xml | EX-101.PRE | 22352
+   doc: 16 | EXTRACTED XBRL INSTANCE DOCUMENT | ea0313216-8k_ondas_htm.xml | XML | 3196
+=== PRUDENTIAL FINANCIAL INC (0001137774) (F 1137774 000119312526471012 items: Item 5.02: Departure of Directors or Certain Officers; Election of Directors; Appointment of Certain Officers: Compensatory Arrangements of Certain Officers Item 7.01: Regulation FD Disclosure Item 9.01: Financial Statements and Exhibits
+   doc: 1 | 8-K | d42838d8k.htm &nbsp;&nbsp;iXBRL | 8-K | 30187
+   doc: 2 | EX-99.1 | d42838dex991.htm | EX-99.1 | 5149
+   doc: 7 | GRAPHIC | g42838g1120230214909.jpg | GRAPHIC | 14672
+   doc: 8 | GRAPHIC | g42838g1120230215763.jpg | GRAPHIC | 2531
+   doc: &nbsp; | Complete submission text file | 0001193125-26-471012.txt | &nbsp; | 220962
+   doc: 3 | XBRL TAXONOMY EXTENSION SCHEMA | pru-20261120.xsd | EX-101.SCH | 4880
+   doc: 4 | XBRL TAXONOMY EXTENSION DEFINITION LINKBASE | pru-20261120_def.xml | EX-101.DEF | 14007
+   doc: 5 | XBRL TAXONOMY EXTENSION LABEL LINKBASE | pru-20261120_lab.xml | EX-101.LAB | 23512
+   doc: 6 | XBRL TAXONOMY EXTENSION PRESENTATION LINKBASE | pru-20261120_pre.xml | EX-101.PRE | 15039
+   doc: 19 | EXTRACTED XBRL INSTANCE DOCUMENT | d42838d8k_htm.xml | XML | 8014
+NQ watchlist n=20: status 200, got 19 NVDA $167.37 +33.33% Pre Market Nov 23, 2026 9:27 AM ET ; AAPL $347.2315 +1.36% Pre Market Nov 23, 2026 9:27 AM ET ; MSFT $505.95 +4.42% Pre Market Nov 23, 2026 9:27 AM ET
+NQ watchlist n=40: status 200, got 19 NVDA $167.11 +33.12% Pre Market Nov 23, 2026 9:27 AM ET ; AAPL $347.2632 +1.37% Pre Market Nov 23, 2026 9:27 AM ET ; MSFT $506.0013 +4.43% Pre Market Nov 23, 2026 9:27 AM ET
+NQ watchlist n=62: status 200, got 19 NVDA $167.4051 +33.36% Pre Market Nov 23, 2026 9:27 AM ET ; AAPL $347.3113 +1.39% Pre Market Nov 23, 2026 9:27 AM ET ; MSFT $506.0254 +4.44% Pre Market Nov 23, 2026 9:27 AM ET
+   symbols back: NVDA:+33.36% AAPL:+1.39% MSFT:+4.44% GOOGL:+6.74% AMZN:+5.79% META:+6.17% TSLA:+8.24% AVGO:+5.79% JPM:+2.39% BRK.B:-0.17% LLY:+0.46% V:+0.78% WMT:-1.31% XOM:-0.74% UNH:-5.12% MA:+0.55% ORCL:+15.89% COST:-0.74% HD:+0.88%
+market-info PREMARKET Pre Market Nov 20, 2026
