@@ -4,6 +4,7 @@ on:
     branches: [diag]
 permissions:
   contents: write
+  actions: read
 jobs:
   d:
     runs-on: ubuntu-latest
@@ -11,19 +12,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: { ref: diag }
-      - name: Webmail address check
+      - name: Intraday run log summary
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p out
           {
-          for u in https://webmail.s23.wpx.net/ https://s23.wpx.net/ https://webmail.terastockx.com/; do
-            echo "$u -> $(curl -s -o /tmp/p.html -m 20 -w '%{http_code} %{redirect_url}' "$u" 2>&1) title: $(grep -o '<title>[^<]*</title>' /tmp/p.html 2>/dev/null | head -1)"
-          done
-          echo "MX: $(dig +short MX terastockx.com | tr '\n' ' ')"
-          echo "mail A: $(dig +short mail.terastockx.com | tr '\n' ' ')"
-          echo "s23 A: $(dig +short s23.wpx.net | tr '\n' ' ') webmail.s23 A: $(dig +short webmail.s23.wpx.net | tr '\n' ' ')"
-          } 2>&1 | tee out/webmail.txt
+          gh run view 45167473389 --repo TeraStockX/terastockx.github.io --log 2>&1 | grep -E "new filings|refreshed:|quotes updated|ERROR|index.json:|search pages|kept from|warn" | cut -c1-300 | head -40
+          echo "--- live"
+          curl -s https://terastockx.com/data/index.json -o idx.json && node -e 'const i=require("./idx.json"); console.log("generated", i.generated, "rows", i.companies.length, "lg", i.companies.filter(r=>r.lg).length, "dc", i.companies.filter(r=>r.dc!=null).length); const today=new Date().toISOString().slice(0,10); const lr=i.companies.filter(r=>r.lr && r.lr.startsWith(today)); console.log("reports filed today:", lr.length, lr.slice(0,10).map(r=>r.t+":"+r.lr).join(" "));'
+          curl -s https://terastockx.com/data/fx.json | head -c 200; echo
+          curl -s https://terastockx.com/assets/js/search.js | head -c 120; echo
+          } 2>&1 | tee out/intraday-log.txt
       - name: Save results to the diag branch
         if: always()
         run: |
           git config user.name diag; git config user.email diag@users.noreply.github.com
-          git add out && git commit -qm "diag: webmail results" && git push -q origin HEAD:diag
+          git add out && git commit -qm "diag: intraday log results" && git push -q origin HEAD:diag
