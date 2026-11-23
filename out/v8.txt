@@ -1,0 +1,14 @@
+now 2026-11-23T22:11:55Z run 45275592623
+build 2026-11-23T22:01:56.2021744Z (node:2242) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse(
+build 2026-11-23T22:02:13.9225687Z   refreshed: 0 with a new report, 4 with a new current report; 0 left for the next run
+build 2026-11-23T22:02:28.6191589Z   quotes updated: 5857 companies (1884 with a quote of the day), 0 ETFs in the screener; session: post; live quotes: 304, kept from today's session: 2100
+build 2026-11-23T22:02:31.9822328Z (node:2290) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse(
+build 2026-11-23T22:02:32.8900721Z   if-no-files-found: error
+build 2026-11-23T22:02:33.5711733Z (node:2317) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse(
+deploy 2026-11-23T22:02:44.3340711Z   error_count: 10
+--- classes.json
+{"generated":"2026-11-23T22:02:28.928Z","classes":{"AACI":"A","AACO":"A","AACP":"A","ABLV":"B","ABNB":"A","ABTC":"A","ACAA":"A","ACCL":"A","ACCV":"A","ACDC":"A","ACGC":"A","ACMR":"A","ADAC":"A","ADV":"A","AEAQ":"A","AEHL":"A","AERT":"A","AESP":"A","AFRM":"A","AFYA":"A","AGCC":"A","AGMH":"A","AGRZ":"A","AHMA":"A","AIAI":"A","AIFU":"A","AIIO":"B","AIOS":"A","AIRJ":"A","AISP":"A","ALF":"A","ALMR":"A"
+--- index engine
+{"generated":"2026-11-23T22:02:31.105Z","engineVersion":"2.1.0","scoreKeys":["overall","profitability","cashFlow","balan
+--- scoring.js
+ENGINE_VERSION = "2.1.0"
