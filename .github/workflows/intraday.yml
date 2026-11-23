@@ -109,10 +109,16 @@ jobs:
             echo "Outside the intraday hours: no next run (the schedule starts the chain again)."; exit 0
           fi
           step=600; if [ "$h" -ge 13 ] && [ "$h" -le 21 ]; then step=300; fi
-          created=$(gh run view "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --json createdAt -q .createdAt)
-          wait=$(( $(date -d "$created" +%s) + step - $(date +%s) ))
+          # A short GitHub API hiccup must not break the chain: every call is tried 3 times.
+          retry() { for i in 1 2 3; do if "$@"; then return 0; fi; sleep 15; done; return 1; }
+          created=$(retry gh run view "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --json createdAt -q .createdAt || true)
+          wait=$(( $(date -d "${created:-now}" +%s) + step - $(date +%s) ))
           if [ "$wait" -gt 0 ] && [ "$wait" -le "$step" ]; then echo "Waiting ${wait}s"; sleep "$wait"; fi
-          others=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow intraday.yml --limit 20 --json databaseId,status -q "[.[] | select(.databaseId != $GITHUB_RUN_ID and .status != \"completed\")] | length")
-          if [ "$others" -gt 0 ]; then echo "Another run is already waiting; it continues the chain."; exit 0; fi
-          gh workflow run intraday.yml --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF_NAME"
-          echo "Next run started."
+          # Unknown? Start the next run anyway: of two waiting runs GitHub keeps one (concurrency group).
+          others=$(retry gh run list --repo "$GITHUB_REPOSITORY" --workflow intraday.yml --limit 20 --json databaseId,status -q "[.[] | select(.databaseId != $GITHUB_RUN_ID and .status != \"completed\")] | length" || echo 0)
+          if [ "${others:-0}" -gt 0 ]; then echo "Another run is already waiting; it continues the chain."; exit 0; fi
+          if retry gh workflow run intraday.yml --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF_NAME"; then
+            echo "Next run started."
+          else
+            echo "::warning::The next run could not be started; the schedule starts the chain again."
+          fi
