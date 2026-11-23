@@ -1,10 +1,11 @@
-# Intraday update on weekdays (times in UTC; GitHub may start scheduled runs a few minutes late):
+# Intraday update on weekdays (times in UTC):
 # - every 5 minutes from 13:00 to 21:59, which covers the US trading session in summer and winter
 #   (9:30–16:00 New York time = 13:30–20:00 / 14:30–21:00 UTC)
 # - every 10 minutes from 11:00 to 12:59 and from 22:00 to 00:59, before and after the session, when most
 #   companies publish their results and file their reports
-# Minutes start at :02 rather than :00, when GitHub is busiest. Five minutes is the shortest interval GitHub
-# allows for scheduled workflows; the 10-builds-per-hour Pages limit does not apply to workflow deployments.
+# GitHub starts scheduled runs late or skips them when it is busy (on a busy day only every hour or so), so
+# each run starts the next one itself (the "next" job, at the end); the schedule below only starts this
+# chain, and starts it again if it ever stops. Outside these hours the chain stops by itself.
 # Each run:
 # - prices and market caps (stocks and ETFs; Nasdaq, delayed about 15 minutes), so the price-dependent parts
 #   of every TeraScore (valuation) follow the market
@@ -13,15 +14,15 @@
 #   refreshed
 # - the index, the market summary and the search pages are rebuilt and published
 # Nothing is saved to the data branch (the daily run does the full update); companies refreshed during the
-# day are carried from run to run in the Actions cache.
+# day are carried from run to run in the Actions cache. The runs have their own concurrency group, so they
+# never cancel a waiting run of the daily update; two deployments at the same moment are handled by the
+# retry of the deploy job.
 name: Napközbeni frissítés
 
 on:
   schedule:
-    - cron: "2-59/5 13-21 * * 1-5"
-    - cron: "2-59/10 11-12 * * 1-5"
-    - cron: "2-59/10 22-23 * * 1-5"
-    - cron: "2-59/10 0 * * 2-6"
+    - cron: "7-59/15 11-23 * * 1-5"
+    - cron: "7-59/15 0 * * 2-6"
   workflow_dispatch:
 
 permissions:
@@ -30,7 +31,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages
+  group: intraday
   cancel-in-progress: false
 
 jobs:
@@ -88,3 +89,30 @@ jobs:
       - id: retry
         if: steps.deployment.outcome == 'failure'
         uses: actions/deploy-pages@v4
+
+  # Starts the next run: 5 minutes after this run's start during the US session, 10 minutes before and after
+  # it; nothing outside the intraday hours. If another run is already waiting, that one continues the chain.
+  next:
+    needs: [build, deploy]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      actions: write
+    steps:
+      - name: Következő futás indítása
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          dow=$(date -u +%u); h=$((10#$(date -u +%H)))
+          if { [ "$dow" -le 5 ] && [ "$h" -ge 11 ]; } || { [ "$dow" -ge 2 ] && [ "$dow" -le 6 ] && [ "$h" -lt 1 ]; }; then :; else
+            echo "Outside the intraday hours: no next run (the schedule starts the chain again)."; exit 0
+          fi
+          step=600; if [ "$h" -ge 13 ] && [ "$h" -le 21 ]; then step=300; fi
+          created=$(gh run view "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --json createdAt -q .createdAt)
+          wait=$(( $(date -d "$created" +%s) + step - $(date +%s) ))
+          if [ "$wait" -gt 0 ] && [ "$wait" -le "$step" ]; then echo "Waiting ${wait}s"; sleep "$wait"; fi
+          others=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow intraday.yml --limit 20 --json databaseId,status -q "[.[] | select(.databaseId != $GITHUB_RUN_ID and .status != \"completed\")] | length")
+          if [ "$others" -gt 0 ]; then echo "Another run is already waiting; it continues the chain."; exit 0; fi
+          gh workflow run intraday.yml --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF_NAME"
+          echo "Next run started."

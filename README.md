@@ -71,7 +71,7 @@ Az árfolyam- és piaci adatok (Nasdaq, Yahoo Finance, Stooq) opcionálisak: ha 
 
 ## Online közzététel (GitHub Pages)
 
-A `.github/workflows/deploy.yml` minden `main`-re pusholáskor közzéteszi az oldalt, minden nap pedig frissíti az adatokat (a bennfentes adatokat hétfőnként); hétköznap az amerikai kereskedési időben (13:00–22:00 UTC) 5 percenként, előtte és utána (11:00–13:00 és 22:00–01:00 UTC) 10 percenként az árfolyamokat, az aznap beadott jelentések alapján a cégek adatait és TeraScore-ját, valamint a „Piac ma” összefoglalót is (`.github/workflows/intraday.yml`). A cégek logóit a napi frissítés tölti le és kicsinyíti (`scripts/logos.mjs`). Az adatok a `data` ágra kerülnek, amely mindig egyetlen commitot tartalmaz, így a repó nem nő hétről hétre.
+A `.github/workflows/deploy.yml` minden `main`-re pusholáskor közzéteszi az oldalt, minden nap pedig frissíti az adatokat (a bennfentes adatokat hétfőnként); hétköznap az amerikai kereskedési időben (13:00–22:00 UTC) 5 percenként, előtte és utána (11:00–13:00 és 22:00–01:00 UTC) 10 percenként az árfolyamokat, az aznap beadott jelentések alapján a cégek adatait és TeraScore-ját, valamint a „Piac ma” összefoglalót is (`.github/workflows/intraday.yml`). Mivel a GitHub az ütemezett futásokat terhelés idején késve vagy egyáltalán nem indítja, minden napközbeni futás a végén maga indítja a következőt; az ütemezés csak elindítja (vagy újraindítja) ezt a láncot. A cégek logóit a napi frissítés tölti le és kicsinyíti (`scripts/logos.mjs`). Az adatok a `data` ágra kerülnek, amely mindig egyetlen commitot tartalmaz, így a repó nem nő hétről hétre.
 
 1. **Settings → Pages → Source: GitHub Actions**
 2. **Settings → Secrets and variables → Actions → New repository secret:** `SEC_USER_AGENT` = `Név email@cim.hu`
