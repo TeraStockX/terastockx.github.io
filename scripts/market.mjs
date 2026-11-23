@@ -106,7 +106,7 @@ export async function extendedQuotes(symbols) {
         if (x.symbol && Number.isFinite(price) && price > 0) out.set(String(x.symbol).toUpperCase(), { price, changePct, change, status: x.marketStatus || null, at: x.lastTradeTimestampDateTime || null });
       }
     } catch {}
-    await new Promise((res) => setTimeout(res, 250));
+    await new Promise((res) => setTimeout(res, 150));
   }
   return out;
 }

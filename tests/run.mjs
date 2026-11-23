@@ -517,7 +517,21 @@ test("News headlines: press-release titles, the reported item, kinds of news", a
   const files = { "0001045810-26-000090-index.htm": "nvda-reinstated-index.htm", "nov23pressrelease.htm": "nvda-reinstated-ex99.htm" };
   const get = async (url) => { const f = Object.keys(files).find((k) => url.endsWith(k)); return f ? fx(files[f]) : null; };
   const r = await h.headlineFor({ url: "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000090/nvda-20261122.htm", items: ["5.02", "9.01"] }, get);
-  assert.deepEqual(r, { title: "NVIDIA Board Reinstates Jensen Huang as President, CEO and Board Director", kind: "leadership" });
+  assert.equal(r.title, "NVIDIA Board Reinstates Jensen Huang as President, CEO and Board Director");
+  assert.equal(r.kind, "leadership");
+  assert.match(r.lede, /^NVIDIA today announced that effective immediately, Jensen Huang has been reinstated/);
+  // Leadership change: the chief executive, CFO, president or chair is the one who comes or goes.
+  for (const [text, lead] of [
+    ["NVIDIA Announces CEO Transition", true],
+    ["Jensen Huang has resigned as President, Chief Executive Officer, and a member of the Board, effective immediately.", true],
+    ["Mr. Hulls will retire as Executive Chairman, effective December 31, 2026.", true],
+    ["Acme Names Jane Doe Chief Executive Officer", true],
+    ["Acme Chief Financial Officer to Step Down", true],
+    ["The Board appointed Mark Goines, the Company’s Lead Independent Director, as Chair of the Board.", true],
+    ["The Board increased the number of directors from 13 to 14 and elected Jane Roe, President and Chief Executive Officer of Roe Corp., as a director.", false],
+    ["The Compensation Committee approved the annual bonus plan for the CEO and other executive officers.", false],
+  ]) assert.equal(h.isLeadershipChange(text), lead, text);
+  assert.equal(h.tidySentence("(d) On November 17, 2026, the Board of Directors of The PNC Financial Services Group, Inc. (the “Corporation”) increased the number of directors."), "The Board of Directors of The PNC Financial Services Group, Inc. increased the number of directors.");
   // Without a press release: the item's first sentence from the 8-K itself.
   const r2 = await h.headlineFor({ url: "https://www.sec.gov/Archives/edgar/data/1581760/000158176026000189/lifx-20261122.htm", items: ["5.02"] }, async (url) => (url.endsWith("lifx-20261122.htm") ? fx("lifx-8k.htm") : null));
   assert.equal(r2.kind, "leadership");

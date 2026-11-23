@@ -92,6 +92,7 @@ export function clip(s, max = 240) {
 // leading date ("On November 22, 2026, ") are left out.
 export function tidySentence(s) {
   let t = String(s || "")
+    .replace(/^\(\s*[a-z]\s*\)\s*/i, "") // sub-item marker: "(d) On November 17, …"
     .replace(/\s*\((?:collectively,\s*)?(?:the\s+|our\s+)?["“][^"”]{1,60}["”](?:\s*(?:or|and)\s*(?:the\s+)?["“][^"”]{1,60}["”])*\)/gi, "")
     .replace(/\s*\(\s*(?:NASDAQ|Nasdaq|NYSE(?: American| Arca)?|Cboe|TSX|OTC[A-Z]*|LSE)\s*:\s*[A-Z.\-]{1,8}(?:\s*[;,]\s*[A-Z]{2,6}\s*:\s*[A-Z.\-]{1,8})*\s*\)/g, "")
     .replace(new RegExp(`^On\\s+${MONTH}\\.?\\s+\\d{1,2},?\\s+\\d{4},?\\s+`, "i"), "")
@@ -181,8 +182,21 @@ export function exhibitPath(indexHtml) {
 
 // ---------- Kind of news ----------
 
-const LEADER = /\b(chief executive|ceo|president|chair(?:man|woman|person)?|chief financial|cfo|chief operating|coo|founder)\b/i;
-const CHANGE = /\b(appoint|name[ds]?\b|elect|resign|retire|step(?:s|ped|ping)? down|depart|terminat|succe(?:ed|ssion|ssor)|transition|reinstat|hire[ds]?\b|promot|replac|leav(?:e|es|ing)\b|interim|dismiss|remov|separat|return)/i;
+// A leadership change: the chief executive, the chief financial or operating officer, the president or the
+// chair is the one appointed or leaving – not a new director who happens to be a CEO elsewhere.
+const ROLE = "(?:chief executive|ceo|president|(?:executive\\s+|co-?)?chair(?:man|woman|person)?|chief financial|cfo|chief operating|coo)";
+const ROLE_CASED = "(?:Chief Executive|CEO|President|Chair(?:man|woman|person)?|Chief Financial|CFO|Chief Operating|COO)";
+const LEADERSHIP = [
+  // "reinstated Jensen Huang as President", "appointed Mark Goines, the Lead Independent Director, as Chair"
+  new RegExp(`\\b(?:appoint|name|elect|promot|hire|reinstat|select|tap)\\w*\\b[^.;]{0,120}?\\bas\\s+(?:its\\s+|the\\s+|our\\s+|new\\s+|next\\s+|interim\\s+|acting\\s+|company['’]s\\s+)*${ROLE}\\b`, "i"),
+  // "Acme Names Jane Doe Chief Executive Officer"
+  new RegExp(`\\b(?:Appoints|Names|Promotes|Hires|Taps|Selects|appoints|names|promotes|hires)\\s+(?:[A-Z][\\w.'’-]*\\s+){1,4}(?:as\\s+)?(?:its\\s+|the\\s+|new\\s+|interim\\s+)?${ROLE_CASED}\\b`),
+  // "CEO Transition", "Chief Financial Officer to Step Down", "CEO succession"
+  new RegExp(`\\b${ROLE}\\b(?:\\W+\\w+){0,6}?\\W+(?:to\\s+)?(?:resign|retire|step(?:s|ped|ping)?\\s+down|depart|leav|transition|succession|terminat)\\w*`, "i"),
+  // "resigned as President", "will retire as Executive Chairman"
+  new RegExp(`\\b(?:resign|retire|step(?:s|ped|ping)?\\s+down|depart)\\w*\\s+(?:\\w+\\s+){0,3}?(?:as|from)\\s+(?:its\\s+|the\\s+|his\\s+|her\\s+|their\\s+)?(?:position\\s+(?:as|of)\\s+)?${ROLE}\\b`, "i"),
+];
+export const isLeadershipChange = (text) => LEADERSHIP.some((re) => re.test(text));
 const DEAL = /\b(merger|merge[sd]?\b|acqui(?:re[sd]?|sition|ring)|to be acquired|business combination|tender offer|takeover|buyout|take[- ]private|spin[- ]?off|divest(?:iture|s|ed)?|sale of (?:the|its|our) [a-z ]{0,30}business)\b/i;
 
 export function classifyNews(items = [], text = "") {
@@ -190,7 +204,7 @@ export function classifyNews(items = [], text = "") {
   if (s.has("1.03") || s.has("4.02")) return "critical";
   if (s.has("1.05")) return "cyber";
   if (s.has("5.01") || s.has("2.01") || ((s.has("1.01") || s.has("8.01") || s.has("7.01")) && DEAL.test(text))) return "deal";
-  if (s.has("5.02") && LEADER.test(text) && CHANGE.test(text)) return "leadership";
+  if (s.has("5.02") && isLeadershipChange(text)) return "leadership";
   if (s.has("2.05")) return "restructuring";
   if (s.has("3.01") || s.has("2.04") || s.has("2.06") || s.has("4.01")) return "major";
   if (s.has("2.02")) return "results";
@@ -219,5 +233,5 @@ export async function headlineFor(filing, get) {
     if (html) title = itemSentence(html, filing.items);
   }
   title = title || lede;
-  return { title: title || null, kind: classifyNews(filing.items, `${title} ${lede}`) };
+  return { title: title || null, lede: lede && lede !== title ? lede : null, kind: classifyNews(filing.items, `${title} ${lede}`) };
 }

@@ -23,7 +23,7 @@ import { parseCompanyFacts } from "./sec-parse.mjs";
 import { sectorFromSic, sectorFromNasdaq, profileFor } from "./sectors.mjs";
 import { nasdaqScreener, nasdaqEtfScreener, etfSummary, priceHistory, priceBudgetLeft, fxToUsd, marketSession, extendedQuotes } from "./market.mjs";
 import { majorEvents, recentFilings } from "./events.mjs";
-import { headlineFor } from "./news-headline.mjs";
+import { headlineFor, classifyNews } from "./news-headline.mjs";
 import { fillMissingFilings } from "./xbrl-instance.mjs";
 import { buildSeo } from "./seo.mjs";
 import { buildPulse, INDEX_ETFS } from "./pulse.mjs";
@@ -100,13 +100,17 @@ const isBig = (marketCap) => (marketCap ?? 0) >= BIG_NEWS_CAP;
 const EVENT_DAYS = 365;
 const STORY_DAYS = 3; // news of the last days for the top stories
 
-// Recent 8-Ks with headlines; a headline is downloaded once and kept in the company file.
+// How the news is read; companies read with an older version are read again by the intraday catch-up.
+const NEWS_VERSION = 2;
+
+// Recent 8-Ks with headlines; a headline is downloaded once and kept in the company file (the kind of news is
+// worked out again every time, so better rules apply to the kept headlines too).
 async function companyNews(sub, old) {
   const cached = new Map((old?.news || []).filter((n) => n.title).map((n) => [n.url, n]));
   const out = [];
   for (const f of recentFilings(sub)) {
     const hit = cached.get(f.url);
-    if (hit) { out.push({ ...f, title: hit.title, kind: hit.kind }); continue; }
+    if (hit) { out.push({ ...f, title: hit.title, lede: hit.lede ?? null, kind: classifyNews(f.items, `${hit.title} ${hit.lede || ""}`) }); continue; }
     const h = await headlineFor(f, async (url, type) => { const r = await get(url, type); await sleep(110); return r; });
     out.push({ ...f, ...h });
   }
@@ -116,12 +120,14 @@ async function companyNews(sub, old) {
 // Major events with the headlines of the news; leadership changes of large companies (chief executive,
 // chief financial officer, chair) are kept among the major events too, for 12 months like the others.
 function eventsWithNews(events, news, old, now = new Date()) {
+  const fresh = new Map((news || []).map((n) => [n.url, n]));
   const info = new Map();
   for (const e of old?.events || []) if (e.title || e.kind) info.set(e.url, e);
   for (const n of news || []) info.set(n.url, n);
   const out = events.map((e) => { const x = info.get(e.url); return x ? { ...e, title: x.title ?? null, kind: x.kind ?? null } : e; });
   const have = new Set(out.map((e) => e.url));
-  for (const e of [...(news || []), ...(old?.events || [])]) {
+  // The news read now decides about its own filings; older leadership changes are kept from before.
+  for (const e of [...(news || []), ...(old?.events || []).filter((x) => !fresh.has(x.url))]) {
     if (e.kind !== "leadership" || have.has(e.url) || (now - new Date(e.date)) / 86400000 > EVENT_DAYS) continue;
     have.add(e.url);
     out.push({ date: e.date, items: ["5.02"], severity: 4, url: e.url, title: e.title ?? null, kind: "leadership" });
@@ -131,50 +137,104 @@ function eventsWithNews(events, news, old, now = new Date()) {
 
 // Market session of this run's quotes (intraday runs): pre-market, open, after-hours or closed.
 let SESSION = null;
-// Before the open and after the close, the latest trades of this many of the largest companies are read.
-const EXT_TOP = 300;
+// The screener's prices stay at the previous close for most of the day (Nasdaq refreshes them after the
+// session), so the latest trades are read separately, 20 symbols per request: during the session for the
+// companies above about $2 billion (this many, the largest first) and the largest funds; before the open and
+// after the close for the largest companies and the index funds (pre-market, after-hours).
+const LIVE_TOP = 2000, LIVE_ETFS = 100, EXT_TOP = 300;
+const etDate = (d = new Date()) => d.toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+
+// The day's session quotes, kept between intraday runs (in the Actions cache, with the refreshed companies):
+// after the close they are the day's closing prices and changes while the screener still shows the previous day.
+function readDayQuotes() {
+  const empty = { date: etDate(), q: {} };
+  try {
+    const f = OVERLAY && join(OVERLAY, "quotes.json");
+    const d = f && existsSync(f) ? readJson(f) : null;
+    return d?.date === empty.date && d.q ? d : empty;
+  } catch {
+    return empty;
+  }
+}
+function writeDayQuotes(d) {
+  if (!OVERLAY) return;
+  mkdirSync(OVERLAY, { recursive: true });
+  writeFileSync(join(OVERLAY, "quotes.json"), JSON.stringify(d) + "\n");
+}
 
 // Intraday: current prices only. Market cap moves with the price; everything else stays from the daily run.
 async function updateQuotes(screener = null) {
   screener ||= await nasdaqScreener();
   const etfQuotes = await nasdaqEtfScreener();
   if (!screener.size) { console.warn("  no quotes; nothing updated"); return; }
-  // The regular-session quotes do not move before the open or after the close: there the latest trades of
-  // the largest companies and the index funds are read too (pre-market, after-hours).
   SESSION = await marketSession();
-  let ext = new Map();
-  if (SESSION?.session === "pre" || SESSION?.session === "post") {
-    const big = [...screener.entries()].filter(([, q]) => q.marketCap > 0).sort((a, b) => b[1].marketCap - a[1].marketCap).slice(0, EXT_TOP).map(([t]) => ({ t }));
-    ext = await extendedQuotes([...big, ...INDEX_ETFS.map((t) => ({ t, etf: true }))]);
-    console.log(`  ${SESSION.session === "pre" ? "pre-market" : "after-hours"} quotes: ${ext.size}`);
+  const session = SESSION?.session || null;
+  const day = readDayQuotes();
+  const ef = join(DATA, "etfs.json");
+  const etfData = existsSync(ef) ? readJson(ef) : null;
+  const byCap = [...screener.entries()].filter(([, q]) => q.marketCap > 0).sort((a, b) => b[1].marketCap - a[1].marketCap).map(([t]) => ({ t }));
+  const bigFunds = (etfData?.etfs || []).filter((r) => r.aum > 0).sort((a, b) => b.aum - a.aum).slice(0, LIVE_ETFS).map((r) => r.t);
+  const funds = [...new Set([...INDEX_ETFS, ...(session === "open" ? bigFunds : [])])].map((t) => ({ t, etf: true }));
+  let live = new Map();
+  if (session === "open") live = await extendedQuotes([...byCap.slice(0, LIVE_TOP), ...funds]);
+  else if (session === "pre" || session === "post") live = await extendedQuotes([...byCap.slice(0, EXT_TOP), ...funds]);
+  if (session === "open" && live.size) {
+    for (const [t, x] of live) if (Number.isFinite(x.changePct)) day.q[t] = [x.price, x.changePct];
+    day.at = new Date().toISOString();
+    writeDayQuotes(day);
   }
-  const extOf = (t) => { const x = ext.get(t); return x && Number.isFinite(x.changePct) ? { session: SESSION.session, price: x.price, changePct: x.changePct, at: x.at } : undefined; };
-  let n = 0;
+  const kept = Object.keys(day.q).length;
+  // During and after the session the screener's change is the previous day's: a company without a quote of
+  // the day has no change of the day (unless the live quotes are unavailable altogether).
+  const screenerStale = (session === "open" && live.size > 50) || ((session === "post" || session === "closed") && kept > 50);
+  const dayQuote = (t) => {
+    const x = session === "open" ? live.get(t) : null;
+    if (x && Number.isFinite(x.changePct)) return { price: x.price, changePct: x.changePct };
+    const k = session !== "pre" ? day.q[t] : null;
+    return k ? { price: k[0], changePct: k[1] } : null;
+  };
+  // Before the open: the pre-market change against the previous close, as Nasdaq reports it. After the
+  // close: the after-hours change against the day's closing price.
+  const extOf = (t) => {
+    if (session !== "pre" && session !== "post") return undefined;
+    const x = live.get(t);
+    if (!x || !Number.isFinite(x.price)) return undefined;
+    const close = session === "post" ? day.q[t]?.[0] : null;
+    const changePct = close > 0 ? (x.price / close - 1) * 100 : x.changePct;
+    return Number.isFinite(changePct) ? { session, price: x.price, changePct: +changePct.toFixed(2), at: x.at } : undefined;
+  };
+  let n = 0, fresh = 0;
   for (const f of readdirSync(COMPANIES)) {
     const c = readJson(join(COMPANIES, f));
     const q = screener.get(c.ticker);
-    if (!q || !Number.isFinite(q.price)) continue;
+    const d = dayQuote(c.ticker);
+    const price = d?.price ?? q?.price;
+    if (!Number.isFinite(price)) continue;
     const m = c.market || {};
-    const ratio = Number.isFinite(m.price) && m.price > 0 ? q.price / m.price : null;
-    c.market = { ...m, price: q.price, priceDate: todayIso(), changePct: q.changePct ?? null,
-      marketCap: q.marketCap || (Number.isFinite(m.marketCap) && ratio ? m.marketCap * ratio : m.marketCap ?? null), quoteTime: new Date().toISOString(), ext: extOf(c.ticker) };
+    const ratio = Number.isFinite(m.price) && m.price > 0 ? price / m.price : null;
+    // The screener's market cap belongs to its own (older) price.
+    const marketCap = q?.marketCap > 0 && q.price > 0 ? q.marketCap * (price / q.price) : Number.isFinite(m.marketCap) && ratio ? m.marketCap * ratio : m.marketCap ?? null;
+    const changePct = d ? d.changePct : screenerStale ? null : q?.changePct ?? null;
+    c.market = { ...m, price, priceDate: todayIso(), changePct, marketCap, quoteTime: new Date().toISOString(), ext: extOf(c.ticker) };
     writeFileSync(join(COMPANIES, f), JSON.stringify(c) + "\n");
     n++;
+    if (d) fresh++;
   }
-  const ef = join(DATA, "etfs.json");
-  if (existsSync(ef) && etfQuotes.size) {
-    const e = readJson(ef);
-    for (const r of e.etfs) {
+  if (etfData) {
+    for (const r of etfData.etfs) {
       const q = etfQuotes.get(r.t);
-      if (q && Number.isFinite(q.price)) { r.px = q.price; if (Number.isFinite(q.changePct)) r.dc = q.changePct; }
+      const d = dayQuote(r.t);
+      if (d) { r.px = d.price; r.dc = d.changePct; }
+      else if (q && Number.isFinite(q.price)) { r.px = q.price; r.dc = screenerStale ? null : Number.isFinite(q.changePct) ? q.changePct : r.dc; }
+      else if (screenerStale) r.dc = null;
       const x = extOf(r.t);
-      if (x) { r.xc = +x.changePct.toFixed(2); r.xp = x.price; r.xs = x.session; } else { delete r.xc; delete r.xp; delete r.xs; }
+      if (x) { r.xc = x.changePct; r.xp = x.price; r.xs = x.session; } else { delete r.xc; delete r.xp; delete r.xs; }
     }
-    e.quotesAt = new Date().toISOString();
-    e.session = SESSION ? { session: SESSION.session, previousTradeDate: SESSION.previousTradeDate } : null;
-    writeFileSync(ef, JSON.stringify(e) + "\n");
+    etfData.quotesAt = new Date().toISOString();
+    etfData.session = SESSION ? { session, previousTradeDate: SESSION.previousTradeDate } : null;
+    writeFileSync(ef, JSON.stringify(etfData) + "\n");
   }
-  console.log(`  quotes updated: ${n} companies, ${etfQuotes.size} ETFs${SESSION ? `; session: ${SESSION.session}` : ""}`);
+  console.log(`  quotes updated: ${n} companies (${fresh} with a quote of the day), ${etfQuotes.size} ETFs in the screener; session: ${session || "unknown"}; live quotes: ${live.size}, kept from today's session: ${kept}`);
 }
 
 // Large companies whose recent news has not been read yet (when this was introduced, or a company that grew
@@ -184,7 +244,7 @@ async function backfillNews(budgetMs = 150000) {
   const todo = [];
   for (const f of readdirSync(COMPANIES)) {
     const c = readJson(join(COMPANIES, f));
-    if (c.cik && !c.newsChecked && isBig(c.market?.marketCap)) todo.push({ t: c.ticker, mc: c.market.marketCap });
+    if (c.cik && c.newsVersion !== NEWS_VERSION && isBig(c.market?.marketCap)) todo.push({ t: c.ticker, mc: c.market.marketCap });
   }
   if (!todo.length) return;
   todo.sort((a, b) => b.mc - a.mc);
@@ -202,6 +262,7 @@ async function backfillNews(budgetMs = 150000) {
       c.events = eventsWithNews(majorEvents(sub), c.news, c);
       // Not marked as a refresh of the filings: a report that is still waiting for its download stays due.
       c.newsChecked = new Date().toISOString();
+      c.newsVersion = NEWS_VERSION;
       writeFileSync(file, JSON.stringify(c) + "\n");
       if (OVERLAY) {
         mkdirSync(join(OVERLAY, "companies"), { recursive: true });
@@ -275,7 +336,7 @@ async function refreshCurrentFilings(screener) {
         const cur = readJson(join(COMPANIES, `${c.ticker}.json`));
         const news = isBig(cur.market?.marketCap) ? await companyNews(sub, cur).catch(() => cur.news) : undefined;
         cur.events = eventsWithNews(majorEvents(sub), news, cur);
-        if (news) { cur.news = news.length ? news : undefined; cur.newsChecked = new Date().toISOString(); }
+        if (news) { cur.news = news.length ? news : undefined; cur.newsChecked = new Date().toISOString(); cur.newsVersion = NEWS_VERSION; }
         cur.lastReport = latestReport(sub) || cur.lastReport || null;
         cur.eventsRetrieved = new Date().toISOString();
         writeCompany(cur);
@@ -370,6 +431,7 @@ async function fetchCompany(item, sec, q = {}, fx = {}) {
     events: eventsWithNews(majorEvents(sub), news, old),
     news: news?.length ? news : undefined,
     newsChecked: news ? new Date().toISOString() : undefined,
+    newsVersion: news ? NEWS_VERSION : undefined,
     insiders: old?.insiders ?? null,
     scoreHistory: old?.scoreHistory ?? undefined,
     prices: hist,
