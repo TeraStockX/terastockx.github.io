@@ -1,0 +1,9 @@
+now 2026-11-23T19:40:05Z run 45250397941
+build 2026-11-23T19:35:00.0108267Z (node:2425) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse(
+build 2026-11-23T19:35:24.7682196Z   new filings: 186 in the SEC feed, 0 companies to refresh (991 kept from earlier runs today)
+build 2026-11-23T19:36:34.7611482Z   quotes updated: 5857 companies (1884 with a quote of the day), 0 ETFs in the screener; session: open; live quotes: 2100, kept from today's session: 2100
+build 2026-11-23T19:36:39.5014721Z (node:2526) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse(
+build 2026-11-23T19:36:40.7074018Z   if-no-files-found: error
+build 2026-11-23T19:36:41.7248495Z (node:2556) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse(
+deploy 2026-11-23T19:37:22.1612636Z   error_count: 10
+{"generated":"2026-11-23T18:46:12.989Z","quotesAt":"2026-11-23T18:46:12.989Z","etfs":[{"t":"VUAA:LSE","dt":"VUAA","isin":"IE00BFMXXD54","ex":"LSE","cur":"USD","n":"Vanguard S&P 500 UCITS ETF (USD) Accumulating","er":0.0007,"acc":true,"px":140.58,"dc":5.04,"date":"2026-11-23"},{"t":"VUAG:LSE","dt":"VUAG","isin":"IE00BFMXXD54","ex":"LSE","cur":"GBP","n":"Vanguard S&P 500 UCITS ETF (USD) Accumulating","er":0.0007,"acc":true,"px":107.98,"dc":5.9,"date":"2026-11-23"},{"t":"VUAA:XETRA","dt":"VUAA","isin":"IE00BFMXXD54","ex":"XETRA","cur":"EUR","n":"Vanguard S&P 500 UCITS ETF (USD) Accumulating","er"
