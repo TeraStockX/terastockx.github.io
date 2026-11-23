@@ -1,0 +1,11 @@
+stooq single ERR fetch failed 
+stooq multi ERR fetch failed 
+
+stooq monthly vuag ERR fetch failed 
+stooq monthly sxr8 ERR fetch failed 
+justetf IE00BFMXXD54 200 {"latestQuote":{"raw":129.00,"localized":"129.00"},"latestQuoteDate":"2026-11-23","previousQuote":{"raw":121.77,"localized":"121.77"},"previousQuoteDate":"2026-11-20","dtdPrc":{"raw":5.94,"localized":"5.94"},"dtdAmt":{"raw":7.23,"localized":"7.23"},"quoteTradingVenue":"LSE","quoteLowHigh":{"low":{"raw":106.37,"localized":"106.37"},"high":{"raw":135.10,"localized":"135.10"}}}
+justetf IE00B5BMR087 200 {"latestQuote":{"raw":719.54,"localized":"719.54"},"latestQuoteDate":"2026-11-23","previousQuote":{"raw":679.09,"localized":"679.09"},"previousQuoteDate":"2026-11-20","dtdPrc":{"raw":5.96,"localized":"5.96"},"dtdAmt":{"raw":40.45,"localized":"40.45"},"quoteTradingVenue":"XETRA","quoteLowHigh":{"low":{"raw":593.19,"localized":"593.19"},"high":{"raw":753.40,"localized":"753.40"}}}
+yahoo 429 https://query2.finance.yahoo.com/v8/finance/chart/VUAG.L?range=5d&interval=1d Too Many Requests
+
+yahoo 429 https://query1.finance.yahoo.com/v8/finance/chart/SXR8.DE?range=5d&interval=1d Too Many Requests
+
