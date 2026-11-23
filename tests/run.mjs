@@ -698,3 +698,29 @@ test("Search: tickers and names, typos ('trsla' → Tesla), size breaks ties", a
   assert.ok(sc.get("TSLA") > 0 && sc.get("TSLA") < STRONG, "a typo match is weaker than an exact one");
   assert.ok(scoreAll(items, "tesla").get("TSLA") >= STRONG);
 });
+
+test("European ETFs: listings with currency, month-end closes from justETF and Nasdaq, search by ticker", async () => {
+  const { UCITS, monthlyCloses, nasdaqMonthlyRows } = await import("../scripts/ucits.mjs");
+  const keys = new Set(UCITS.map((e) => e.t));
+  assert.equal(keys.size, UCITS.length, "every listing has its own key");
+  const vuag = UCITS.find((e) => e.t === "VUAG:LSE");
+  assert.deepEqual([vuag.dt, vuag.ex, vuag.cur, vuag.isin], ["VUAG", "LSE", "GBP", "IE00BFMXXD54"]);
+  assert.ok(UCITS.every((e) => /^[A-Z]{2}[A-Z0-9]{10}$/.test(e.isin) && ["USD", "GBP", "EUR"].includes(e.cur)));
+  const series = [{ date: "2026-09-29", value: { raw: 100 } }, { date: "2026-09-30", value: { raw: 101 } }, { date: "2026-10-31", value: { raw: 99.5 } }, { date: "2026-11-23", value: { raw: 107.98 } }];
+  assert.deepEqual(monthlyCloses(series), [["2026-09", 101], ["2026-10", 99.5], ["2026-11", 107.98]]);
+  const rows = [{ date: "11/20/2026", close: "635.54" }, { date: "10/31/2026", close: "$680.10" }, { date: "10/30/2026", close: "678.00" }, { date: "09/30/2026", close: "1,650.00" }];
+  assert.deepEqual(nasdaqMonthlyRows(rows), [["2026-09", 1650], ["2026-10", 680.1], ["2026-11", 635.54]]);
+  const { prepareSearch, searchCompanies } = await import("../assets/js/search.js");
+  const items = prepareSearch([{ t: "VUAG:LSE", dt: "VUAG", n: "Vanguard S&P 500 UCITS ETF (USD) Accumulating", mc: 1e11 }, { t: "VOO", n: "Vanguard S&P 500 ETF", mc: 9e11 }, { t: "VUG", n: "Vanguard Growth ETF", mc: 2e11 }]);
+  assert.equal(searchCompanies(items, "vuag")[0].t, "VUAG:LSE", "a European listing is found by its ticker");
+  assert.equal(searchCompanies(items, "voo")[0].t, "VOO");
+});
+
+test("Donut chart: one slice per part, shares in the legend", async () => {
+  const { donutChart } = await import("../assets/js/charts.js");
+  const html = donutChart("By holding", [{ label: "AAPL", value: 0.5 }, { label: "VUAG", value: 0.3 }, { label: "Other", value: 0.2 }, { label: "Zero", value: 0 }], (f) => `${Math.round(f * 100)}%`, "3");
+  assert.equal((html.match(/<path /g) || []).length, 3, "empty parts are left out");
+  assert.match(html, /AAPL[\s\S]*50%[\s\S]*VUAG[\s\S]*30%/);
+  assert.equal(donutChart("Empty", [], String), "");
+  assert.equal((donutChart("One", [{ label: "VOO", value: 1 }], String).match(/<path /g) || []).length, 1, "a single part is a full ring");
+});

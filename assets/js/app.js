@@ -2,7 +2,7 @@ import { analyze, scoreHistory, gradeKey, GRADE_TONE, DIMENSIONS, METRIC_FORMAT,
 import { portfolioSummary, PORTFOLIO_LIMITS } from "./portfolio.js";
 import { SCREENS, screenById } from "./screens.js";
 import { LANGS, lang, setLang, t, fill, fmt, money, date, num, dict } from "./i18n/index.js";
-import { barChart, lineChart, wireCharts } from "./charts.js";
+import { barChart, lineChart, wireCharts, donutChart } from "./charts.js";
 import { prepareSearch, searchCompanies, scoreAll, STRONG, popularity } from "./search.js";
 
 const app = document.getElementById("app");
@@ -180,6 +180,15 @@ function overallCell(row) {
   return `<span class="dq ${isNew ? "dq-new" : "dq-none"}" title="${esc(t(isNew ? "dq.newTitle" : "dq.noneTitle"))}">${esc(t(isNew ? "dq.newListing" : "dq.none"))}</span>`;
 }
 const dqLegend = (rows) => (rows.some(isPartial) ? `<p class="small muted dq-legend"><span class="dq-partial-inline">${DQ_HALF} %</span> = ${esc(t("dq.legend"))}</p>` : "");
+// A small coloured chip for search suggestions and headers: partial analysis (under 80% of the TeraScore backed
+// by data), little data, no analysis yet; nothing for a fully analysed company or a fund.
+function dqChip(row) {
+  if (!row || row.etf) return "";
+  if (isPartial(row)) return `<span class="dq-chip dq-chip-partial" title="${esc(partialTitle(row))}">${DQ_HALF}${isNum(row.cm) ? `${row.cm}%` : esc(t("dq.partial"))}</span>`;
+  if (row.sc && !isNum(row.sc.overall)) return `<span class="dq-chip dq-chip-little" title="${esc(t("dq.littleTitle"))}">${esc(t("dq.little"))}</span>`;
+  if (!row.sc) return `<span class="dq-chip dq-chip-none" title="${esc(t(isNewListing(row) ? "dq.newTitle" : "dq.noneTitle"))}">${esc(t(isNewListing(row) ? "dq.newListing" : "dq.none"))}</span>`;
+  return "";
+}
 
 // The company cell of every list: star, logo, ticker (link), exchange and badges, name.
 function companyCell(row, { star = true, watch = null } = {}) {
@@ -203,6 +212,32 @@ async function loadEtfs() {
     try { const r = await fetch("data/etfs.json", { cache: "no-cache" }); etfCache = r.ok ? await r.json() : { etfs: [] }; } catch { etfCache = { etfs: [] }; }
   }
   return etfCache;
+}
+
+// European (UCITS) ETFs and the monthly closes of US-listed ETFs (portfolio only).
+let ucitsCache = null, etfHistCache = null;
+async function loadUcits() {
+  if (!ucitsCache) { try { const r = await fetch("data/ucits.json", { cache: "no-cache" }); ucitsCache = r.ok ? await r.json() : { etfs: [] }; } catch { ucitsCache = { etfs: [] }; } }
+  return ucitsCache;
+}
+async function loadEtfHistory() {
+  if (!etfHistCache) { try { const r = await fetch("data/etf-history.json", { cache: "no-cache" }); etfHistCache = r.ok ? await r.json() : { h: {} }; } catch { etfHistCache = { h: {} }; } }
+  return etfHistCache;
+}
+// The currency the portfolio is shown in: chosen by the user, else by language (forint, euro or dollar).
+const PF_CURRENCIES = ["USD", "EUR", "HUF", "GBP", "CHF", "PLN", "CZK", "RON", "SEK", "NOK", "DKK", "JPY", "CNY", "CAD", "AUD"];
+function pfCurrency(fx) {
+  let c = null;
+  try { c = localStorage.getItem("tsx-pf-cur"); } catch {}
+  if (c && (c === "USD" || fx[c])) return c;
+  const byLang = { hu: "HUF", de: "EUR", fr: "EUR", es: "EUR" }[lang()];
+  return byLang && fx[byLang] ? byLang : "USD";
+}
+// A full amount (not abbreviated) in a currency: "12 345 678 Ft", "$12,345.68".
+function fullMoney(v, cur = "USD") {
+  if (!isNum(v)) return "–";
+  const whole = ["HUF", "JPY", "KRW", "ISK", "CLP", "IDR"].includes(cur) || Math.abs(v) >= 1e6;
+  try { return new Intl.NumberFormat(dict().meta.locale, { style: "currency", currency: cur, maximumFractionDigits: whole ? 0 : 2, minimumFractionDigits: whole ? 0 : 2 }).format(v); } catch { return `${num(v, 2)} ${cur}`; }
 }
 
 function getPortfolio() { try { return JSON.parse(localStorage.getItem("tsx-portfolio") || "[]").filter((h) => h && h.t); } catch { return []; } }
@@ -355,7 +390,7 @@ function attachPicker(input, items, onPick, { limit = 8 } = {}) {
   const render = () => {
     if (!results.length) { close(); return; }
     list.innerHTML = results.map((r, i) => `<li role="option" id="${list.id}-${i}" data-i="${i}" class="${i === active ? "on" : ""}" aria-selected="${i === active}">
-      ${r.row.etf ? letterLogo(r.row) : logo(r.row)}<span class="ac-t">${esc(r.row.t)}</span>${r.row.etf ? `<span class="badge">ETF</span>` : r.row.ex ? `<span class="badge ex">${esc(r.row.ex)}</span>` : ""}<span class="ac-n">${esc(r.row.n || "")}</span></li>`).join("");
+      ${r.row.etf ? letterLogo(r.row) : logo(r.row)}<span class="ac-t">${esc(r.row.dt || r.row.t)}</span>${r.row.etf ? `<span class="badge">ETF</span>${r.row.ex ? `<span class="badge ex">${esc(r.row.ex)}${r.row.cur ? ` · ${esc(r.row.cur)}` : ""}</span>` : ""}` : r.row.ex ? `<span class="badge ex">${esc(r.row.ex)}</span>` : ""}<span class="ac-n">${esc(r.row.n || "")}</span>${dqChip(r.row)}</li>`).join("");
     list.hidden = false;
     input.setAttribute("aria-expanded", "true");
     if (active >= 0) input.setAttribute("aria-activedescendant", `${list.id}-${active}`);
@@ -432,14 +467,13 @@ async function renderList() {
         <p>${esc(t("ui.heroText"))}</p>
         <div class="hero-stats">
           <div class="hero-stat"><div class="v">${num(idx.companies.filter((c) => isNum(c.sc?.overall)).length, 0)}</div><div class="k">${esc(t("ui.ratedCompanies"))}</div></div>
-          <a class="hero-stat hs-watch ${watchMode ? "on" : ""}" id="watch-btn" href="${watchMode ? "#/" : "#/watchlist"}" aria-pressed="${watchMode}"><div class="v">${starSvg(true)}<span id="watch-count">${getWatch().length}</span></div><div class="k">${esc(t("ui.watchlist"))}</div></a>
+          <button type="button" class="hero-stat hs-watch ${watchMode ? "on" : ""}" id="watch-btn" aria-pressed="${watchMode}"><div class="v">${starSvg(true)}<span id="watch-count">${getWatch().length}</span>${watchMode ? `<span class="hs-on">✓</span>` : ""}</div><div class="k">${esc(t("ui.watchlist"))}</div></button>
           <div class="hero-stat"><div class="v">${esc(updatedWhen(idx.generated))}</div><div class="k">${esc(t("ui.updatedLabel"))}</div></div>
         </div>
       </div>
       <img class="hero-art" src="assets/img/hero.svg" alt="" width="560" height="360">
     </section>
-    <div id="market-strip"></div>
-    <div id="home-stories"></div>
+    ${watchMode ? "" : `<div id="home-pulse"></div>`}
     <div id="alerts"></div>
     ${installBanner()}
     <div class="controls">
@@ -455,7 +489,7 @@ async function renderList() {
         ${["analyzed", "all"].map((f) => `<option value="${f}" ${listState.filter === f ? "selected" : ""}>${esc(t({ analyzed: "ui.onlyAnalyzed", all: "ui.allCompanies" }[f]))}</option>`).join("")}
       </select>
     </div>
-    ${watchMode ? `<div class="watch-head"><h2 class="section-title" style="margin:0">★ ${esc(t("ui.watchlist"))}</h2><a class="small" href="#/">‹ ${esc(t("ui.allCompanies"))}</a></div>` : ""}
+    ${watchMode ? `<div class="watch-head"><h2 class="section-title" style="margin:0">★ ${esc(t("ui.watchlist"))}</h2><button type="button" class="link-btn small" id="watch-exit">‹ ${esc(t("ui.allCompanies"))}</button></div>` : ""}
     <details class="glass filters" id="filters" ${listState.filtersOpen ? "open" : ""}>
       <summary><span>${esc(t("ui.filtersAndScreens"))}</span> <span class="small muted" id="filters-count"></span></summary>
       <div class="filter-section" id="screens-label">${esc(t("ui.screensTitle"))}</div>
@@ -496,7 +530,6 @@ async function renderList() {
     </table></div>
     <div id="dq-legend"></div>
     <div class="pager" id="pager"></div>
-    <div id="home-news"></div>
     ${idx.companies.some((c) => c.demo) ? `<p class="small muted" style="margin-top:16px">${esc(t("ui.demoNote"))}</p>` : ""}
   `;
 
@@ -662,19 +695,20 @@ async function renderList() {
   draw();
   drawAlerts();
   document.getElementById("install-x")?.addEventListener("click", () => { try { localStorage.setItem("tsx-install-hide", "1"); } catch {} document.getElementById("install-banner")?.remove(); });
-  // The market in one line, the top stories of large companies right below it, the latest major events at the end.
-  loadPulse().then((p) => {
-    const strip = document.getElementById("market-strip");
-    if (strip && p) strip.innerHTML = marketStrip(p);
-    const box = document.getElementById("home-stories");
-    if (box && p?.stories?.length) box.innerHTML = topNewsBox(p.stories.slice(0, 3));
-  }).catch(() => {});
-  loadNews().then((n) => {
-    const top = (n.events || []).filter(isTopEvent).slice(0, 4);
-    const el = document.getElementById("home-news");
-    if (!top.length || !el) return;
-    el.innerHTML = `<div class="section-title" style="margin-top:28px">${esc(t("ui.latestEvents"))} <a class="small" href="#/news">${esc(t("ui.allNews"))} ›</a></div>
-      <div class="events" style="margin-bottom:20px">${top.map((e) => eventCard(e)).join("")}</div>`;
+  // The watchlist opens here, in place of the full list (the news lines hide meanwhile); a second tap closes it.
+  const toggleWatch = () => {
+    if (listState.filter === "watch") listState.filter = listState.prevFilter || "analyzed";
+    else { listState.prevFilter = listState.filter; listState.filter = "watch"; }
+    listState.page = 0;
+    if (location.hash && location.hash !== "#/") history.replaceState(null, "", "#/");
+    renderList();
+  };
+  document.getElementById("watch-btn").addEventListener("click", toggleWatch);
+  document.getElementById("watch-exit")?.addEventListener("click", toggleWatch);
+  // The market and the top stories in one small block above the list; the arrows lead to the news page.
+  if (!watchMode) loadPulse().then((p) => {
+    const el = document.getElementById("home-pulse");
+    if (el && p) el.innerHTML = homePulse(p);
   }).catch(() => {});
 }
 
@@ -766,55 +800,75 @@ function eventCard(e, withCompany = true) {
 // the close) and the headline of the company's own press release, in its original English.
 const KIND_TONE = { critical: "critical", cyber: "serious", major: "serious", restructuring: "warning" };
 const cap1 = (s) => (s ? s.charAt(0).toLocaleUpperCase(dict().meta.locale) + s.slice(1) : s);
-function storyCard(s) {
+// A small "i" that opens an explanation (a tap is enough on phones).
+const infoTip = (text) => `<details class="info-tip"><summary aria-label="Info">ⓘ</summary><p class="small">${esc(text)}</p></details>`;
+
+// One line per story: company, move, kind and time, then the headline (three lines at most).
+function storyRow(s) {
   const row = fullRow(s);
   const when = s.at || (s.date ? `${s.date}T12:00:00` : null);
-  return `<article class="glass story">
-    <div class="story-head">
-      <div class="event-co-row">${starBtn(s.t, getWatch().includes(s.t))}<a class="event-co" href="#/c/${encodeURIComponent(s.t)}">${logo(row)}<span><span class="tick">${esc(s.t)}</span>${row.ex ? `<span class="badge ex">${esc(row.ex)}</span>` : ""} <span class="muted">${esc(s.n)}</span></span></a></div>
-      ${isNum(s.move) ? `<div class="story-move">${dayChange(s.move)}<span class="small muted">${esc(t(`pulse.when.${s.when || "day"}`))}</span></div>` : ""}
+  return `<div class="nrow story-row">
+    ${starBtn(s.t, getWatch().includes(s.t))}
+    <a class="nrow-logo" href="#/c/${encodeURIComponent(s.t)}" tabindex="-1" aria-hidden="true">${logo(row)}</a>
+    <div class="nrow-main">
+      <div class="nrow-top"><a class="tick" href="#/c/${encodeURIComponent(s.t)}">${esc(s.t)}</a><span class="nrow-name muted">${esc(s.n)}</span>
+        <span class="pill tone-${KIND_TONE[s.kind] || "none"} nrow-kind"><span class="dot"></span>${esc(t(`pulse.kind.${s.kind}`))}</span>${when && s.kind !== "move" ? `<span class="small muted">${esc(updatedWhen(when))}</span>` : ""}</div>
+      ${s.title ? `<div class="nrow-title clamp3" lang="en" title="${esc(s.title)}">${esc(s.title)}${s.url ? ` <a class="nrow-src" href="${esc(s.url)}" target="_blank" rel="noopener" title="${esc(t("pulse.readMore"))}">SEC ↗</a>` : ""}</div>` : ""}
     </div>
-    <div class="story-kind"><span class="pill tone-${KIND_TONE[s.kind] || "none"}"><span class="dot"></span>${esc(t(`pulse.kind.${s.kind}`))}</span>${when && s.kind !== "move" ? `<span class="small muted">${esc(updatedWhen(when))}</span>` : ""}</div>
-    ${s.title ? `<p class="news-title"><q lang="en">${esc(s.title)}</q></p>` : ""}
-    ${s.url ? `<a class="small" href="${esc(s.url)}" target="_blank" rel="noopener">${esc(t("pulse.readMore"))} ↗</a>` : ""}
-  </article>`;
-}
-// Home page: the top stories in a compact box (one line each: company, kind and headline, move).
-function topNewsBox(list) {
-  return `<div class="glass top-news">
-    <div class="top-news-head"><b>${esc(t("pulse.storiesTitle"))}</b><a class="small" href="#/news">${esc(t("pulse.moreNews"))} ›</a></div>
-    ${list.map((s) => `<a class="tn-row" href="#/c/${encodeURIComponent(s.t)}">${logo(fullRow(s))}<span class="tn-text"><b>${esc(s.t)}</b> · ${esc(t(`pulse.kind.${s.kind}`))}${s.title ? `: <span lang="en">${esc(s.title)}</span>` : ""}</span>${isNum(s.move) ? `<span class="tn-move">${dayChange(s.move)}${s.when && s.when !== "day" ? `<span class="small muted">${esc(t(`pulse.when.${s.when}`))}</span>` : ""}</span>` : ""}</a>`).join("")}
+    ${isNum(s.move) ? `<div class="nrow-move">${dayChange(s.move)}<span class="small muted">${esc(t(`pulse.when.${s.when || "day"}`))}</span></div>` : ""}
   </div>`;
 }
-function storiesView(p, { limit = 8, home = false } = {}) {
+function storiesView(p, { limit = 8 } = {}) {
   const list = (p?.stories || []).slice(0, limit);
-  if (!list.length) return home ? "" : `<h2 class="section-title">${esc(t("pulse.storiesTitle"))}</h2><div class="glass empty small">${esc(t("pulse.storiesNone"))}</div>`;
-  return `<h2 class="section-title"${home ? ' style="margin-top:28px"' : ""}>${esc(t("pulse.storiesTitle"))}${home ? ` <a class="small" href="#/news">${esc(t("pulse.moreNews"))} ›</a>` : ""}</h2>
-    ${home ? "" : `<p class="small muted" style="max-width:820px;margin:-4px 0 12px">${esc(t("pulse.storiesNote"))}</p>`}
-    <div class="stories"${home ? ' style="margin-bottom:20px"' : ""}>${list.map(storyCard).join("")}</div>`;
+  return `<h2 class="section-title news-sec">${esc(t("pulse.storiesTitle"))} ${infoTip(t("pulse.storiesNote"))}</h2>
+    ${list.length ? `<div class="glass nlist">${list.map(storyRow).join("")}</div>` : `<div class="glass empty small">${esc(t("pulse.storiesNone"))}</div>`}`;
+}
+
+// Events of the 8-K list, one line each; the most interesting first: severity, company size, how recent.
+const SEV_W = { 5: 60, 4: 40, 3: 22, 2: 10 };
+const eventInterest = (e, now = Date.now()) => (SEV_W[e.severity] || 0) + 6 * Math.log10(Math.max(e.mc || 1e7, 1e7)) - Math.min(60, (now - new Date(`${e.date}T12:00:00`)) / 86400000) * 1.2 + (e.title ? 6 : 0);
+function eventRow(e) {
+  const row = fullRow(e);
+  return `<div class="nrow event-row">
+    ${starBtn(e.t, getWatch().includes(e.t))}
+    <a class="nrow-logo" href="#/c/${encodeURIComponent(e.t)}" tabindex="-1" aria-hidden="true">${logo(row)}</a>
+    <div class="nrow-main">
+      <div class="nrow-top"><a class="tick" href="#/c/${encodeURIComponent(e.t)}">${esc(e.t)}</a><span class="nrow-name muted">${esc(e.n)}</span>
+        <span class="pill tone-${SEV_TONE[e.severity]} nrow-kind"><span class="dot"></span>${esc(t(`ui.sev${e.severity}`))}</span><span class="small muted">${esc(date(e.date))}</span></div>
+      <div class="nrow-title">${e.items.map((i) => esc(eventName(i))).join(" · ")}${e.title ? ` – <span lang="en">${esc(e.title)}</span>` : ""} <a class="nrow-src" href="${esc(e.url)}" target="_blank" rel="noopener" title="${esc(t("ui.viewFiling"))}">8-K ↗</a></div>
+    </div>
+  </div>`;
 }
 
 async function renderNews() {
   document.title = `${t("ui.newsTitle")} | TeraStockX`;
   app.innerHTML = `<div class="skeleton"></div>`;
   const [n, pulse] = await Promise.all([loadNews(), loadPulse(), loadIndex().catch(() => null)]);
-  const state = { filter: "top" };
+  const state = { filter: "top", shown: 12 };
+  // The most interesting first: top stories, the market (indices, themes, sectors), the biggest moves, the
+  // major events, then the new reports, TeraScore changes and new listings.
   app.innerHTML = `
-    <div class="prose" style="max-width:none;margin-top:8px"><h1>${esc(t("ui.newsTitle"))}</h1></div>
+    <div class="prose news-head"><h1>${esc(t("ui.newsTitle"))}</h1></div>
     ${storiesView(pulse)}
-    ${pulseView(pulse)}
-    <h2 class="section-title">${esc(t("ui.eventsTitle"))}</h2>
-    <p class="small muted" style="max-width:820px;margin:-4px 0 12px">${esc(t("ui.newsIntro"))}</p>
-    <div class="controls"><select class="select" id="sev">
+    ${marketView(pulse)}
+    <h2 class="section-title news-sec">${esc(t("ui.eventsTitle"))} ${infoTip(t("ui.newsIntro"))}</h2>
+    <div class="controls news-controls"><select class="select" id="sev">
       <option value="top">${esc(t("ui.newsTop"))}</option><option value="4">${esc(t("ui.onlyCritical"))}</option><option value="3">${esc(t("ui.allSeverities"))}</option>
     </select></div>
-    <div class="events" id="news-list"></div>`;
+    <div id="news-list"></div>
+    ${moreMarketView(pulse)}`;
   const draw = () => {
-    const list = (n.events || []).filter((e) => (state.filter === "top" ? isTopEvent(e) : e.severity >= Number(state.filter))).slice(0, 60);
-    document.getElementById("news-list").innerHTML = list.length ? list.map((e) => eventCard(e)).join("") : `<div class="glass empty">${esc(t("ui.newsEmpty"))}</div>`;
+    const now = Date.now();
+    const all = (n.events || []).filter((e) => (state.filter === "top" ? isTopEvent(e) : e.severity >= Number(state.filter)))
+      .map((e) => ({ e, w: eventInterest(e, now) })).sort((a, b) => b.w - a.w).map((x) => x.e).slice(0, 60);
+    const list = all.slice(0, state.shown);
+    document.getElementById("news-list").innerHTML = list.length
+      ? `<div class="glass nlist">${list.map(eventRow).join("")}</div>${all.length > list.length ? `<button type="button" class="btn more-btn" id="news-more">${esc(t("ui.showMore"))} (${all.length - list.length})</button>` : ""}`
+      : `<div class="glass empty">${esc(t("ui.newsEmpty"))}</div>`;
+    document.getElementById("news-more")?.addEventListener("click", () => { state.shown += 20; draw(); });
   };
-  document.getElementById("sev").addEventListener("change", (e) => { state.filter = e.target.value; draw(); });
-  app.querySelectorAll("table.pulse").forEach((tb) => tb.addEventListener("click", (e) => { if (e.target.closest("a")) return; const tr = e.target.closest("tr[data-t]"); if (tr) location.hash = `#/c/${tr.dataset.t}`; }));
+  document.getElementById("sev").addEventListener("change", (e) => { state.filter = e.target.value; state.shown = 12; draw(); });
+  app.querySelectorAll("table.pulse").forEach((tb) => tb.addEventListener("click", (e) => { if (e.target.closest("a, button")) return; const tr = e.target.closest("tr[data-t]"); if (tr) location.hash = `#/c/${tr.dataset.t}`; }));
   draw();
 }
 
@@ -823,66 +877,66 @@ async function renderNews() {
 const dayChange = (v) => (isNum(v) ? `<span class="pill tone-${v > 0 ? "good" : v < 0 ? "critical" : "none"} daychg"><span class="dot"></span>${v > 0 ? "+" : ""}${num(v, 2)}%</span>` : "");
 const INDEX_NAMES = { SPY: "S&P 500", QQQ: "Nasdaq 100", DIA: "Dow Jones", IWM: "Russell 2000" };
 
-function marketStrip(p) {
+// Home page: the market and the top stories, one line each, with an arrow to the news page.
+function homePulse(p) {
   // Before the open the regular changes are the previous day's: the pre-market changes are shown instead.
   const pre = p.session === "pre" && (p.indices || []).some((e) => isNum(e.xc));
   const ai = pre ? null : (p.themes || []).find((x) => x.id === "ai");
-  const items = (p.indices || []).slice(0, 2).map((e) => `<span>${esc(INDEX_NAMES[e.t] || e.t)} ${dayChange(pre ? e.xc : e.dc)}</span>`);
-  if (ai) items.push(`<span>${esc(t("pulse.themes.ai"))} ${dayChange(ai.change)}</span>`);
-  if (!items.length) return "";
-  return `<a class="glass market-strip" href="#/news"><b>${esc(t("ui.marketToday"))}${pre ? ` <span class="small muted">(${esc(t("pulse.when.pre"))})</span>` : ""}</b>${items.join("")}<span class="small muted">${esc(t("ui.marketMore"))} ›</span></a>`;
+  const market = (p.indices || []).filter((e) => isNum(pre ? e.xc : e.dc)).slice(0, 2).map((e) => `<span class="hp-item">${esc(INDEX_NAMES[e.t] || e.t)} ${dayChange(pre ? e.xc : e.dc)}</span>`);
+  if (ai && isNum(ai.change)) market.push(`<span class="hp-item">${esc(t("pulse.themes.ai"))} ${dayChange(ai.change)}</span>`);
+  if (pre && market.length) market.push(`<span class="hp-note muted">${esc(t("pulse.when.pre"))}</span>`);
+  const stories = (p.stories || []).slice(0, 5).map((s) => `<a class="hp-story" href="#/c/${encodeURIComponent(s.t)}" title="${esc(`${t(`pulse.kind.${s.kind}`)}${s.title ? `: ${s.title}` : ""}`)}"><b>${esc(s.t)}</b>${isNum(s.move) ? dayChange(s.move) : ""}<span class="hp-kind">${esc(t(`pulse.kind.${s.kind}`))}</span></a>`);
+  if (!market.length && !stories.length) return "";
+  const line = (label, items, cls) => `<div class="hp-line"><a class="hp-label" href="#/news">${label}</a><div class="hp-items ${cls}">${items.join("")}</div><a class="hp-more" href="#/news" aria-label="${esc(t("ui.marketMore"))}">›</a></div>`;
+  return `<div class="glass home-pulse">
+    ${market.length ? line(esc(t("ui.marketToday")), market, "wrap") : ""}
+    ${stories.length ? line(esc(t("pulse.storiesTitle")), stories, "scroll") : ""}
+  </div>`;
 }
 
-function headlineText(h) {
-  const nm = (x) => `${x.n} (${x.t})`;
-  const pct = (v) => `${v > 0 ? "+" : ""}${num(v, 1)}%`;
-  switch (h.type) {
-    case "index": return t("pulse.hlIndex", { n: INDEX_NAMES[h.t] || h.t, v: pct(h.dc) });
-    case "theme": return t("pulse.hlTheme", { n: t(`pulse.themes.${h.id}`), v: pct(h.dc), b: `${h.best.t} ${pct(h.best.dc)}`, w: `${h.worst.t} ${pct(h.worst.dc)}` });
-    case "move": return t(h.dc > 0 ? "pulse.hlUp" : "pulse.hlDown", { n: nm(h), v: pct(h.dc) });
-    case "report": return t("pulse.hlReport", { n: nm(h), f: t(/K|F/.test(h.form) ? "pulse.annualReport" : "pulse.quarterlyReport"), form: h.form });
-    case "score": return t("pulse.hlScore", { n: nm(h), v: `${h.d1 > 0 ? "+" : ""}${h.d1}`, o: h.o ?? "–" });
-    case "listing": return t("pulse.hlListing", { n: nm(h) });
-    default: return "";
-  }
-}
-const HL_TONE = { index: "none", theme: "none", move: "none", report: "good", score: "none", listing: "good" };
-const HL_ICON = { index: "📈", theme: "🧭", move: "⚡", report: "📄", score: "🎯", listing: "🆕" };
 
 function pulseRows(list, extra) {
   const watch = new Set(getWatch());
   return list.map((r) => `<tr data-t="${esc(r.t)}" tabindex="0"><td>${companyCell({ ...r, ...fullRow(r) }, { watch })}</td>
     <td class="num col-md small">${isNum(r.mc) ? money(r.mc) : "–"}</td><td class="num">${extra(r)}</td></tr>`).join("");
 }
-function pulseTable(title, list, head, extra) {
-  return `<div class="pulse-block"><div class="score-name">${esc(title)}</div>${list.length ? `<div class="glass table-wrap"><table class="list pulse"><thead><tr><th>${esc(t("ui.company"))}</th><th class="num col-md">${esc(t("ui.marketCap"))}</th><th class="num">${esc(head)}</th></tr></thead><tbody>${pulseRows(list, extra)}</tbody></table></div>` : `<div class="glass empty small">${esc(t("pulse.none"))}</div>`}</div>`;
+// A compact table: the first rows, the rest behind "Show more".
+function pulseTable(title, list, head, extra, first = 5) {
+  if (!list.length) return `<div class="pulse-block"><div class="score-name">${esc(title)}</div><div class="glass empty small">${esc(t("pulse.none"))}</div></div>`;
+  const table = (rows) => `<div class="glass table-wrap"><table class="list pulse compact"><thead><tr><th>${esc(t("ui.company"))}</th><th class="num col-md">${esc(t("ui.marketCap"))}</th><th class="num">${esc(head)}</th></tr></thead><tbody>${pulseRows(rows, extra)}</tbody></table></div>`;
+  return `<div class="pulse-block"><div class="score-name">${esc(title)}</div>${table(list.slice(0, first))}
+    ${list.length > first ? `<details class="more-rows"><summary>${esc(t("ui.showMore"))} (${list.length - first})</summary>${table(list.slice(first))}</details>` : ""}</div>`;
 }
 
-function pulseView(p) {
+// The market: indices, themes and sectors in a small space, then the biggest moves.
+function marketView(p) {
   if (!p || !(p.indices?.length || p.themes?.length || p.gainers?.length)) return `<div class="glass empty small">${esc(t("pulse.notYet"))}</div>`;
-  const hl = (p.headlines || []).map((h) => `<li class="glass hl"><span class="hl-icon" aria-hidden="true">${HL_ICON[h.type] || "•"}</span><span>${h.t && h.type !== "index" ? `<a href="#/c/${encodeURIComponent(h.t)}">${esc(headlineText(h))}</a>` : esc(headlineText(h))}</span></li>`).join("");
-  const themeCards = (p.themes || []).map((x) => `<div class="glass theme-card"><div class="theme-name">${esc(t(`pulse.themes.${x.id}`))}</div><div class="theme-val">${dayChange(x.change)}</div>
-    <div class="small muted">${esc(t("pulse.bestWorst", { b: `${x.best.t} ${x.best.dc > 0 ? "+" : ""}${num(x.best.dc, 1)}%`, w: `${x.worst.t} ${x.worst.dc > 0 ? "+" : ""}${num(x.worst.dc, 1)}%` }))}</div></div>`).join("");
+  const pct1 = (v) => `${v > 0 ? "+" : ""}${num(v, 1)}%`;
+  const themes = (p.themes || []).map((x) => `<span class="theme-chip" title="${esc(t("pulse.bestWorst", { b: `${x.best.t} ${pct1(x.best.dc)}`, w: `${x.worst.t} ${pct1(x.worst.dc)}` }))}">${esc(t(`pulse.themes.${x.id}`))} ${dayChange(x.change)}</span>`).join("");
   const maxAbs = Math.max(0.5, ...(p.sectors || []).map((x) => Math.abs(x.change)));
   const sectorBars = (p.sectors || []).map((x) => `<div class="sec-row"><span>${esc(sectorName(x.s))}</span><span class="sec-bar"><span class="${x.change >= 0 ? "up" : "down"}" style="width:${Math.round((Math.abs(x.change) / maxAbs) * 50)}%"></span></span><span class="num">${x.change > 0 ? "+" : ""}${num(x.change, 2)}%</span></div>`).join("");
   return `
-    <div class="pulse-head">
+    <div class="pulse-head news-sec">
       <h2 class="section-title" style="margin:0">${esc(t("ui.marketToday"))}</h2>
-      <span class="small muted">${esc(t("pulse.asOf", { d: updatedWhen(p.quotesAt || p.generated, { lower: true }) }))}</span>
+      <span class="small muted">${esc(t("pulse.asOfShort", { d: updatedWhen(p.quotesAt || p.generated, { lower: true }) }))}</span>
     </div>
     ${p.session === "pre" ? `<p class="glass session-note small">${esc(t("pulse.preNote", { d: p.prevDay ? date(p.prevDay) : "–" }))}</p>` : p.session === "post" ? `<p class="glass session-note small">${esc(t("pulse.postNote"))}</p>` : ""}
-    ${p.indices?.length ? `<div class="index-strip">${p.indices.map((e) => `<div class="glass index-chip"><div class="small muted">${esc(INDEX_NAMES[e.t] || e.t)} <span class="muted">(${esc(e.t)})</span></div><div class="index-val">${fmt(e.px, "usd")} ${dayChange(e.dc)}</div>${isNum(e.xc) && e.xs ? `<div class="small muted">${esc(cap1(t(`pulse.when.${e.xs}`)))} ${dayChange(e.xc)}</div>` : ""}</div>`).join("")}</div>` : ""}
-    ${hl ? `<div class="score-name" style="margin:18px 0 8px">${esc(t("pulse.headlines"))}</div><ul class="hl-list">${hl}</ul>` : ""}
-    ${themeCards ? `<div class="score-name" style="margin:18px 0 8px">${esc(t("pulse.themesTitle"))}</div><div class="theme-grid">${themeCards}</div>` : ""}
-    ${sectorBars ? `<div class="score-name" style="margin:18px 0 8px">${esc(t("pulse.sectorsTitle"))}</div><div class="glass pad sec-list">${sectorBars}</div>` : ""}
-    <div class="pulse-grid">
+    <div class="theme-chips">${(p.indices || []).filter((e) => isNum(e.dc) || isNum(e.xc)).map((e) => `<span class="theme-chip index" title="${esc(`${e.t} · ${fmt(e.px, "usd")}`)}">${esc(INDEX_NAMES[e.t] || e.t)} ${dayChange(e.dc)}${isNum(e.xc) && e.xs ? `<span class="small muted">${esc(t(`pulse.when.${e.xs}`))}</span>${dayChange(e.xc)}` : ""}</span>`).join("")}${themes}</div>
+    <div class="market-cols">
+      ${sectorBars ? `<div><div class="score-name">${esc(t("pulse.sectorsTitle"))}</div><div class="glass pad sec-list compact">${sectorBars}</div></div>` : ""}
       ${pulseTable(t("pulse.gainers"), p.gainers || [], t("pulse.today"), (r) => dayChange(r.dc))}
       ${pulseTable(t("pulse.losers"), p.losers || [], t("pulse.today"), (r) => dayChange(r.dc))}
+    </div>`;
+}
+// Less urgent market news, below the major events.
+function moreMarketView(p) {
+  if (!p) return "";
+  return `<div class="pulse-grid news-sec">
       ${pulseTable(t("pulse.reports"), p.reports || [], t("pulse.filed"), (r) => `<span class="small">${esc(r.form)} · ${esc(date(r.date))}</span>`)}
       ${pulseTable(t("pulse.scoreMoves"), p.scoreMoves || [], t("ui.colChangeFy"), (r) => `${changePill(r.d1)} <span class="small muted">→ ${r.o ?? "–"}</span>`)}
       ${pulseTable(t("pulse.newListings"), p.newListings || [], t("pulse.listed"), (r) => `<span class="small">${esc(r.fs ? date(r.fs) : r.ipo ? String(r.ipo) : "–")}</span>`)}
     </div>
-    <p class="small muted">${esc(t("pulse.note"))}</p>`;
+    <p class="small muted">${esc(t("pulse.note"))} ${esc(t("pulse.asOf", { d: updatedWhen(p.quotesAt || p.generated, { lower: true }) }))}</p>`;
 }
 
 // A listed company without an annual report yet (e.g. a recent IPO): what is known so far.
@@ -1369,18 +1423,23 @@ async function renderCompare(tickers) {
 
   let table = "";
   if (comps.length) {
-    const head = `<tr><th></th>${comps.map((c) => { const row = indexCache?.byT?.get(c.ticker) || { t: c.ticker, n: c.name }; return `<th><a class="cmp-co" href="#/c/${encodeURIComponent(c.ticker)}">${logo(row)}<span>${esc(c.ticker)}</span></a><span class="small muted">${esc(c.name)}</span>${isPartial(row) ? partialMark(row) : ""}</th>`; }).join("")}</tr>`;
+    const rowsOf = comps.map((c) => indexCache?.byT?.get(c.ticker) || { t: c.ticker, n: c.name });
+    const head = `<tr><th></th>${comps.map((c, i) => `<th><a class="cmp-co" href="#/c/${encodeURIComponent(c.ticker)}">${logo(rowsOf[i])}<span>${esc(c.ticker)}</span></a><span class="small muted">${esc(c.name)}</span>${dqChip(rowsOf[i])}</th>`).join("")}</tr>`;
+    // A dimension the company's filings do not allow to score: "no data", not a dash that looks like zero.
+    const noData = `<span class="small cmp-nodata" title="${esc(t("dq.legend"))}">${esc(t("ui.noData"))}</span>`;
     const dimRows = ["overall", ...DIMENSIONS].map((d) => {
       const vals = as.map((a) => (a.ok ? a.scores[d] : null));
-      return row(esc(d === "overall" ? t("ui.overallScore") : t(`dims.${d}.name`)), vals, vals.map((v) => scorePill(v, d === "risk")), d === "risk");
+      return row(esc(d === "overall" ? t("ui.overallScore") : t(`dims.${d}.name`)), vals, vals.map((v, i) => (isNum(v) || !as[i].ok ? scorePill(v, d === "risk") : noData)), d === "risk");
     }).join("");
+    const partial = rowsOf.filter((r) => isPartial(r) || (r.sc && !isNum(r.sc.overall)));
+    var cmpNote = partial.length ? `<div class="notice dq-notice cmp-note"><span>${DQ_HALF}</span><span>${esc(t("ui.cmpPartialNote", { list: partial.map((r) => (isNum(r.cm) && isNum(r.sc?.overall) ? `${r.t} (${r.cm}%)` : `${r.t} (${t("dq.little").toLocaleLowerCase(dict().meta.locale)})`)).join(", ") }))}</span></div>` : "";
     const mRows = CMP_METRICS.map((k) => {
       const vals = as.map((a) => (a.ok ? a.metrics[k] : null));
       if (vals.every((v) => v === null || v === undefined)) return "";
       return row(`<span class="info" title="${esc(metricDesc(k))}">${esc(metricLabel(k))}</span>`, vals, vals.map((v, i) => fmt(v, METRIC_FORMAT[k], k === "marketCap" ? "USD" : comps[i].currency || "USD")), LOWER_BETTER.has(k));
     }).join("");
     const n = comps.length + 1;
-    table = `<div class="glass table-wrap"><table class="cmp"><thead>${head}</thead><tbody>
+    table = `${cmpNote}<div class="glass table-wrap"><table class="cmp"><thead>${head}</thead><tbody>
       <tr class="group"><td colspan="${n}">${esc(t("ui.sectionScores"))}</td></tr>${dimRows}
       <tr class="group"><td colspan="${n}">${esc(t("ui.sectionKey"))}</td></tr>${mRows}
     </tbody></table></div>`;
@@ -1407,8 +1466,10 @@ async function renderCompare(tickers) {
 
 // ---------- Portfolio ----------
 
+// A European ETF's key ("VUAG:LSE") is shown as its ticker.
+const dispT = (tk) => String(tk).split(":")[0];
 const PW_TEXT = {
-  position: (w) => t("pw.position", { t: w.t, w: fmt(w.weight, "pct0"), l: fmt(PORTFOLIO_LIMITS.position, "pct0") }),
+  position: (w) => t("pw.position", { t: dispT(w.t), w: fmt(w.weight, "pct0"), l: fmt(PORTFOLIO_LIMITS.position, "pct0") }),
   sector: (w) => t("pw.sector", { s: sectorName(w.s), w: fmt(w.weight, "pct0"), l: fmt(PORTFOLIO_LIMITS.sector, "pct0") }),
   few: (w) => t("pw.few", { n: w.n, m: PORTFOLIO_LIMITS.minHoldings }),
   critical: (w) => t("pw.critical", { list: w.list.join(", ") }),
@@ -1420,31 +1481,41 @@ const PW_TEXT = {
 async function renderPortfolio(prefill = "") {
   document.title = `${t("ui.navPortfolio")} | TeraStockX`;
   app.innerHTML = `<div class="skeleton"></div>`;
-  const [idx, etfs] = await Promise.all([loadIndex(), loadEtfs()]);
+  const [idx, etfs, ucits, fx] = await Promise.all([loadIndex(), loadEtfs(), loadUcits(), loadFx()]);
   const rows = new Map(idx.companies.map((c) => [c.t, c]));
-  for (const e of etfs.etfs || []) if (!rows.has(e.t)) rows.set(e.t, { ...e, etf: true });
+  for (const e of etfs.etfs || []) if (!rows.has(e.t)) rows.set(e.t, { ...e, etf: true, cur: "USD" });
+  // European ETFs trade in pounds or euros: their price is converted to dollars for the totals.
+  for (const e of ucits.etfs || []) rows.set(e.t, { ...e, etf: true, ucits: true, ...(e.acc ? { dy: 0 } : {}), pxLocal: e.px, px: isNum(e.px) && (e.cur === "USD" || fx[e.cur]) ? e.px * (e.cur === "USD" ? 1 : fx[e.cur]) : null, mc: 1e11 });
+  // A European ETF typed or recognised by its ticker alone ("VUAG"): its first listing.
+  for (const e of ucits.etfs || []) if (!rows.has(e.dt)) rows.set(e.dt, rows.get(e.t));
   const list = getPortfolio();
   const p = portfolioSummary(list.map((h) => ({ ...h, row: rows.get(h.t) })));
+  const cur = pfCurrency(fx);
+  const rate = cur === "USD" ? 1 : fx[cur] || 1; // US dollars per unit of the chosen currency
+  const inCur = (usd) => (isNum(usd) ? usd / rate : null);
+  const pct = (f) => fmt(f, "pct");
+  const tickerOf = (h) => h.row?.dt || h.t;
   const stat = (k, v, sub = "") => `<div class="hero-stat"><div class="v">${v}</div><div class="k">${esc(t(k))}${sub ? ` <span class="muted">${sub}</span>` : ""}</div></div>`;
   const tone = { critical: "critical", warning: "warning", info: "none" };
 
   const summary = list.length ? `
     <div class="glass pad pf-summary">
       <div class="hero-stats">
-        ${stat("ui.pfValue", p.total ? money(p.total) : "–")}
+        ${stat("ui.pfValue", p.total ? fullMoney(inCur(p.total), cur) : "–")}
         ${stat("ui.pfScore", scorePill(p.score), p.etfWeight > 0 && isNum(p.score) ? esc(t("ui.pfScoreCover", { p: fmt(p.scoreCovered, "pct0") })) : "")}
         ${stat("ui.risk", scorePill(p.risk, true))}
-        ${stat("ui.pfIncome", p.income ? money(p.income) : "–", isNum(p.yield) && p.yield > 0 ? `(${fmt(p.yield, "pct")})` : "")}
+        ${stat("ui.pfIncome", p.income ? money(inCur(p.income), cur) : "–", isNum(p.yield) && p.yield > 0 ? `(${fmt(p.yield, "pct")})` : "")}
         ${stat("ui.pfPe", isNum(p.pe) ? `${num(p.pe, 1)}×` : "–")}
         ${stat("ui.pfHoldings", String(list.length))}
       </div>
     </div>
+    <h2 class="section-title">${esc(t("ui.pfAllocTitle"))}</h2>
+    <div class="donut-grid">
+      ${donutChart(t("ui.pfByHolding"), (() => { const xs = p.positions.filter((h) => isNum(h.weight)).sort((a, b) => b.weight - a.weight); const top = xs.slice(0, 7).map((h) => ({ label: tickerOf(h), value: h.weight })); const rest = xs.slice(7).reduce((a, h) => a + h.weight, 0); return rest > 0 ? [...top, { label: t("ui.pfOther"), value: rest }] : top; })(), pct, String(p.positions.length))}
+      ${donutChart(t("ui.pfSectors"), p.sectors.map((x) => ({ label: x.s === "other" ? t("ui.pfOther") : x.s === "etf" ? t("ui.pfEtfs") : sectorName(x.s), value: x.weight })), pct)}
+      ${donutChart(t("ui.pfByCurrency"), (() => { const m = new Map(); for (const h of p.positions) if (isNum(h.weight)) { const c = h.row?.cur || "USD"; m.set(c, (m.get(c) || 0) + h.weight); } return [...m].sort((a, b) => b[1] - a[1]).map(([label, value]) => ({ label, value })); })(), pct)}
+    </div>
     <div class="pf-grid">
-      <div class="glass pad">
-        <div class="score-name" style="margin-bottom:12px">${esc(t("ui.pfSectors"))}</div>
-        ${p.sectors.map((x) => `<div class="pf-bar"><span>${esc(x.s === "other" ? t("ui.pfOther") : x.s === "etf" ? t("ui.pfEtfs") : sectorName(x.s))}</span><span class="num">${fmt(x.weight, "pct")}</span>
-          <div class="bar"><span style="width:${Math.round(x.weight * 100)}%"></span></div></div>`).join("") || `<p class="small muted">${esc(t("ui.notEnough"))}</p>`}
-      </div>
       <div class="glass pad">
         <div class="score-name" style="margin-bottom:12px">${esc(t("ui.pfChecks"))}</div>
         ${p.warnings.length ? `<ul class="pf-warn">${p.warnings.map((w) => `<li><span class="pill tone-${tone[w.level]}"><span class="dot"></span>${esc(t(w.level === "critical" ? "ui.critical" : w.level === "warning" ? "ui.warningTag" : "ui.pfInfo"))}</span> ${esc(PW_TEXT[w.id](w))}</li>`).join("")}</ul>`
@@ -1457,11 +1528,11 @@ async function renderPortfolio(prefill = "") {
         <th class="num">${esc(t("ui.dividendYieldShort"))}</th><th class="num col-xl">${esc(t("ui.dividendSafety"))}</th><th></th></tr></thead>
       <tbody>${p.positions.map((h) => `<tr>
         <td>${h.row?.etf
-          ? `<div class="co">${letterLogo({ t: h.t, n: h.row.n })}<div class="co-txt"><div class="tick">${esc(h.t)} <span class="badge">ETF</span></div><div class="cname">${esc(h.row.n)}</div>${isNum(h.row.er) ? `<div class="small muted">${esc(t("ui.etfExpense", { v: `${num(h.row.er * 100, 2)}%` }))}</div>` : ""}</div></div>`
+          ? `<div class="co">${letterLogo({ t: tickerOf(h), n: h.row.n })}<div class="co-txt"><div class="tick">${esc(tickerOf(h))} <span class="badge">ETF</span>${h.row.ex ? `<span class="badge ex">${esc(h.row.ex)} · ${esc(h.row.cur || "USD")}</span>` : ""}</div><div class="cname">${esc(h.row.n)}</div>${isNum(h.row.er) ? `<div class="small muted">${esc(t("ui.etfExpense", { v: `${num(h.row.er * 100, 2)}%` }))}${h.row.ucits ? ` · ${esc(t(h.row.acc ? "ui.etfAcc" : "ui.etfDist"))}` : ""}</div>` : ""}</div></div>`
           : `<a class="co" href="#/c/${encodeURIComponent(h.t)}">${logo(h.row || { t: h.t })}<div class="co-txt"><div class="tick">${esc(h.t)}</div><div class="cname">${esc(h.row?.n || t("ui.notFound", { t: h.t }))}</div></div></a>`}</td>
         <td class="num"><input class="pf-shares" type="number" min="0" step="any" inputmode="decimal" value="${esc(h.shares)}" data-t="${esc(h.t)}" aria-label="${esc(t("ui.pfShares"))} ${esc(h.t)}"></td>
-        <td class="num col-md">${isNum(h.price) ? fmt(h.price, "usd") : "–"}</td>
-        <td class="num">${isNum(h.value) ? money(h.value) : "–"}</td>
+        <td class="num col-md">${h.row?.ucits ? fullMoney(h.row.pxLocal, h.row.cur) : isNum(h.price) ? fmt(h.price, "usd") : "–"}</td>
+        <td class="num">${isNum(h.value) ? fullMoney(inCur(h.value), cur) : "–"}</td>
         <td class="num col-md">${isNum(h.weight) ? fmt(h.weight, "pct") : "–"}</td>
         <td class="num">${h.row?.etf ? `<span class="small muted" title="${esc(t("ui.etfNoScore"))}">–</span>` : h.row ? overallCell(h.row) : "–"}</td>
         <td class="num col-lg">${h.row?.etf ? "–" : scorePill(h.row?.sc?.risk, true)}</td>
@@ -1471,11 +1542,14 @@ async function renderPortfolio(prefill = "") {
         <td class="num col-xl">${isNum(h.row?.ds) ? `<span class="pill tone-${DIVIDEND_TONE[dividendLevelOf(h.row.ds)]}"><span class="dot"></span>${h.row.ds}</span>` : "–"}</td>
         <td><button class="icon-btn" data-rm="${esc(h.t)}" aria-label="${esc(t("ui.remove"))} ${esc(h.t)}">×</button></td></tr>`).join("")}</tbody>
     </table></div>
-    <p class="small muted" style="margin-top:12px">${esc(t("ui.pfNote", { d: updatedWhen(idx.generated, { lower: true }) }))}${p.etfWeight > 0 ? ` ${esc(t("ui.etfNote"))}` : ""}</p>
-    ${p.missingYield.length ? `<div class="notice" style="margin-top:10px"><span>ℹ️</span><span>${esc(t("ui.etfYieldMissing", { list: p.missingYield.join(", ") }))}</span></div>` : ""}` : `<div class="glass empty">${esc(t("ui.pfEmpty"))}</div>`;
+    <p class="small muted" style="margin-top:12px">${esc(t("ui.pfNote", { d: updatedWhen(idx.generated, { lower: true }), c: cur }))}${p.etfWeight > 0 ? ` ${esc(t("ui.etfNote"))}` : ""}</p>
+    <h2 class="section-title">${esc(t("ui.pfHistTitle"))}</h2>
+    <div id="pf-history"><div class="glass empty small">${esc(t("ui.pfHistLoading"))}</div></div>
+    ${p.missingYield.length ? `<div class="notice" style="margin-top:10px"><span>ℹ️</span><span>${esc(t("ui.etfYieldMissing", { list: p.missingYield.map(dispT).join(", ") }))}</span></div>` : ""}` : `<div class="glass empty">${esc(t("ui.pfEmpty"))}</div>`;
 
   app.innerHTML = `
-    <div class="prose" style="max-width:none;margin-top:8px"><h1>${esc(t("ui.navPortfolio"))}</h1><p style="max-width:820px">${esc(t("ui.pfIntro"))}</p></div>
+    <div class="pf-title"><div class="prose" style="max-width:none;margin-top:8px"><h1>${esc(t("ui.navPortfolio"))}</h1><p style="max-width:820px">${esc(t("ui.pfIntro"))}</p></div>
+      <label class="pf-cur">${esc(t("ui.pfCurrency"))} <select class="select" id="pf-cur">${PF_CURRENCIES.filter((c) => c === "USD" || fx[c]).map((c) => `<option value="${c}" ${c === cur ? "selected" : ""}>${c}</option>`).join("")}</select></label></div>
     <form class="glass pad pf-add" id="pf-add">
       ${pickerField("pf-t", t("ui.pfAddPlaceholder"), prefill, t("ui.company"))}
       <input id="pf-n" type="number" min="0" step="any" inputmode="decimal" placeholder="${esc(t("ui.pfShares"))}" aria-label="${esc(t("ui.pfShares"))}">
@@ -1491,9 +1565,11 @@ async function renderPortfolio(prefill = "") {
   if (prefill) document.getElementById("pf-n").focus();
   const save = (next) => { setPortfolio(next); renderPortfolio(); };
   // Stocks with a price and ETFs, searched by ticker or name.
-  if (!idx.pfRows || idx.pfRowsEtfs !== etfs) {
-    idx.pfRows = [...idx.companies.filter((c) => isNum(c.px)), ...(etfs.etfs || []).filter((e) => !idx.byT.has(e.t)).map((e) => ({ ...e, etf: true, mc: e.aum }))];
+  if (!idx.pfRows || idx.pfRowsEtfs !== etfs || idx.pfRowsUcits !== ucits) {
+    idx.pfRows = [...idx.companies.filter((c) => isNum(c.px)), ...(etfs.etfs || []).filter((e) => !idx.byT.has(e.t)).map((e) => ({ ...e, etf: true, cur: "USD", mc: e.aum })),
+      ...(ucits.etfs || []).filter((e) => isNum(e.px)).map((e) => ({ ...e, etf: true, ucits: true, mc: 1e11 }))];
     idx.pfRowsEtfs = etfs;
+    idx.pfRowsUcits = ucits;
   }
   const picker = attachPicker(document.getElementById("pf-t"), searchItems(idx.pfRows), (row) => {
     document.getElementById("pf-t").value = row.t;
@@ -1506,6 +1582,7 @@ async function renderPortfolio(prefill = "") {
     if (tk && !rows.has(tk)) tk = picker.resolve()?.t || tk;
     const n = Number(document.getElementById("pf-n").value);
     if (!rows.has(tk)) { document.getElementById("pf-msg").textContent = t("ui.notFound", { t: tk }); return; }
+    tk = rows.get(tk).t || tk; // "VUAG" → its listing "VUAG:LSE"
     if (!(n > 0)) { document.getElementById("pf-msg").textContent = t("ui.pfNeedShares"); return; }
     const cur = getPortfolio();
     const ex = cur.find((h) => h.t === tk);
@@ -1528,6 +1605,67 @@ async function renderPortfolio(prefill = "") {
     save(getPortfolio().map((h) => (h.t === inp.dataset.t ? { ...h, shares: n > 0 ? n : h.shares } : h)));
   }));
   app.querySelectorAll("[data-rm]").forEach((b) => b.addEventListener("click", () => save(getPortfolio().filter((h) => h.t !== b.dataset.rm))));
+  document.getElementById("pf-cur")?.addEventListener("change", (e) => { try { localStorage.setItem("tsx-pf-cur", e.target.value); } catch {} renderPortfolio(); });
+  if (list.length) portfolioHistoryView(p, fx, cur, rate).then((html) => {
+    const el = document.getElementById("pf-history");
+    if (el) { el.innerHTML = html; wireCharts(el); }
+  }).catch(() => { const el = document.getElementById("pf-history"); if (el) el.innerHTML = `<div class="glass empty small">${esc(t("ui.notEnough"))}</div>`; });
+}
+
+// How the current holdings would have moved: their value month by month over the last two years (in the chosen
+// currency; foreign prices at today's exchange rates) and their value-weighted TeraScore week by week, or by
+// fiscal year while there are only a few weekly snapshots.
+async function portfolioHistoryView(p, fx, cur, rate) {
+  const held = p.positions.filter((h) => h.row && isNum(h.shares) && h.shares > 0);
+  const stocks = held.filter((h) => !h.row.etf);
+  const [comps, eh] = await Promise.all([Promise.all(stocks.map((h) => loadCompany(h.t).catch(() => null))), held.some((h) => h.row.etf && !h.row.ucits) ? loadEtfHistory() : { h: {} }]);
+  const series = new Map();
+  stocks.forEach((h, i) => { const d = comps[i]?.prices?.data; if (d?.length) series.set(h.t, new Map(d)); });
+  for (const h of held.filter((x) => x.row.etf)) { const d = h.row.ucits ? h.row.h : eh.h?.[h.t]; if (d?.length) series.set(h.t, new Map(d)); }
+  const now = new Date();
+  const months = Array.from({ length: 24 }, (_, k) => { const d = new Date(now.getFullYear(), now.getMonth() - 23 + k, 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; });
+  // Closes carried forward over gaps; the current month is today's price.
+  const closes = new Map();
+  for (const h of held) {
+    const s = series.get(h.t);
+    if (!s) continue;
+    let last = null;
+    const firstKnown = [...s.keys()].sort()[0];
+    if (firstKnown > months[0] && s.size < 12) continue;
+    closes.set(h.t, months.map((m, i) => { if (i === months.length - 1) return h.row.ucits ? h.row.pxLocal : h.row.px; if (s.has(m)) last = s.get(m); else if (m < firstKnown) return null; return last; }));
+  }
+  const incl = held.filter((h) => closes.has(h.t));
+  const toUsd = (h) => (h.row.ucits && h.row.cur !== "USD" ? fx[h.row.cur] || null : 1);
+  const start = months.findIndex((_, i) => incl.every((h) => isNum(closes.get(h.t)[i])));
+  const valuePts = incl.length && start >= 0 ? months.slice(start).map((m, j) => [m, incl.reduce((a, h) => a + h.shares * closes.get(h.t)[start + j] * toUsd(h), 0) / rate]) : [];
+  const missing = held.filter((h) => !closes.has(h.t)).map((h) => h.row.dt || h.t);
+  const valueSub = `${t("ui.pfHistValueSub", { c: cur })}${missing.length ? ` ${t("ui.pfHistMissing", { list: missing.join(", ") })}` : ""}`;
+  const valueChart = lineChart(t("ui.pfHistValue"), valueSub, valuePts, (v) => fullMoney(v, cur), t("ui.notEnough"));
+  // TeraScore: weekly snapshots weighted by today's value.
+  const scored = stocks.map((h, i) => ({ h, c: comps[i] })).filter((x) => x.c && isNum(x.h.value));
+  const weekly = [...new Set(scored.flatMap((x) => (x.c.scoreHistory?.weekly || []).map((w) => w[0])))].sort();
+  let scorePts = weekly.map((d) => {
+    let s = 0, w = 0;
+    for (const x of scored) { const snap = (x.c.scoreHistory?.weekly || []).filter((q) => q[0] <= d && isNum(q[1])).pop(); if (snap) { s += snap[1] * x.h.value; w += x.h.value; } }
+    return [d, w ? +(s / w).toFixed(1) : null];
+  });
+  if (isNum(p.score)) scorePts.push([now.toISOString().slice(0, 10), p.score]);
+  let scoreTitle = t("ui.pfHistScoreWeekly");
+  if (scorePts.filter(([, v]) => isNum(v)).length < 3) {
+    // Few weekly snapshots yet: the point-in-time TeraScore of each fiscal year.
+    const bm = await loadBenchmarks();
+    const byYear = new Map();
+    for (const x of scored) for (const y of scoreHistory(x.c, { benchmarks: bm })) {
+      if (!isNum(y.overall)) continue;
+      const e = byYear.get(y.year) || { s: 0, w: 0 };
+      e.s += y.overall * x.h.value; e.w += x.h.value; byYear.set(y.year, e);
+    }
+    const totalW = scored.reduce((a, x) => a + x.h.value, 0);
+    scorePts = [...byYear].sort((a, b) => a[0] - b[0]).filter(([, e]) => e.w >= 0.6 * totalW).slice(-8).map(([y, e]) => [String(y), +(e.s / e.w).toFixed(1)]);
+    scoreTitle = t("ui.pfHistScoreYearly");
+  }
+  const scoreChart = lineChart(scoreTitle, t("ui.pfHistScoreSub"), scorePts, (v) => num(v, 0), t("ui.notEnough"));
+  return `<div class="charts pf-charts">${valueChart}${scoreChart}</div>`;
 }
 
 // Exchange rates (USD per unit of a currency), for screenshots that show values in forints or euros.
@@ -1560,7 +1698,8 @@ function wireScreenshotImport(rows, save) {
     let found;
     try {
       const [ocr, fx] = await Promise.all([import("./ocr-import.js"), loadFx()]);
-      const lookup = ocr.buildLookup([...rows.values()].map((r) => ({ t: r.t, n: r.n, mc: r.mc ?? r.aum ?? 0, px: r.px })), fx);
+      // European ETFs are recognised by their ticker alone ("VUAG"); prices in their own currency.
+      const lookup = ocr.buildLookup([...new Set(rows.values())].map((r) => ({ t: r.dt || r.t, n: r.n, mc: r.mc ?? r.aum ?? 0, px: r.ucits ? r.pxLocal : r.px })), fx);
       let current = 0;
       const progress = (p, phase) => status(phase !== "read" ? t("ocr.loading")
         : images.length > 1 ? t("ocr.readingN", { i: current + 1, n: images.length, p: Math.round(p * 100) }) : t("ocr.reading", { p: Math.round(p * 100) }));
@@ -1610,8 +1749,9 @@ function wireScreenshotImport(rows, save) {
       if (picked.some((x) => !(x.n > 0))) { document.getElementById("ocr-msg").textContent = t("ocr.needShares"); return; }
       const list = getPortfolio();
       for (const x of picked) {
-        const ex = list.find((h) => h.t === x.t);
-        if (ex) ex.shares = x.n; else list.push({ t: x.t, shares: x.n });
+        const key = rows.get(x.t)?.t || x.t; // "VUAG" → its listing "VUAG:LSE"
+        const ex = list.find((h) => h.t === key);
+        if (ex) ex.shares = x.n; else list.push({ t: key, shares: x.n });
       }
       if (location.hash !== "#/portfolio") history.replaceState(null, "", "#/portfolio");
       save(list);

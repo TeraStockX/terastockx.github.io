@@ -21,7 +21,8 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseCompanyFacts } from "./sec-parse.mjs";
 import { sectorFromSic, sectorFromNasdaq, profileFor } from "./sectors.mjs";
-import { nasdaqScreener, nasdaqEtfScreener, etfSummary, priceHistory, priceBudgetLeft, fxToUsd, marketSession, extendedQuotes } from "./market.mjs";
+import { nasdaqScreener, nasdaqEtfScreener, etfSummary, priceHistory, priceBudgetLeft, fxToUsd, marketSession, extendedQuotes, browserJson } from "./market.mjs";
+import { UCITS, ucitsQuote, ucitsHistory, nasdaqMonthlyRows } from "./ucits.mjs";
 import { majorEvents, recentFilings } from "./events.mjs";
 import { headlineFor, classifyNews, tidyTitle } from "./news-headline.mjs";
 import { fillMissingFilings } from "./xbrl-instance.mjs";
@@ -235,6 +236,63 @@ async function updateQuotes(screener = null) {
     writeFileSync(ef, JSON.stringify(etfData) + "\n");
   }
   console.log(`  quotes updated: ${n} companies (${fresh} with a quote of the day), ${etfQuotes.size} ETFs in the screener; session: ${session || "unknown"}; live quotes: ${live.size}, kept from today's session: ${kept}`);
+}
+
+// ---------- ETFs for European investors and ETF price history ----------
+
+// European (UCITS) ETFs: prices (and, in the daily update, two years of monthly closes) from justETF. Intraday
+// at most every 30 minutes, and not after the European close; the latest prices are carried between intraday
+// runs in the Actions cache.
+async function updateUcits({ history = false } = {}) {
+  const file = join(DATA, "ucits.json");
+  const kept = OVERLAY && join(OVERLAY, "ucits.json");
+  const candidates = [file, kept].filter((f) => f && existsSync(f)).map((f) => { try { return readJson(f); } catch { return null; } }).filter(Boolean);
+  const old = candidates.sort((a, b) => Date.parse(b.quotesAt || 0) - Date.parse(a.quotesAt || 0))[0] || { etfs: [] };
+  const now = new Date();
+  if (!history && old.quotesAt) {
+    const age = now - Date.parse(old.quotesAt);
+    const closed = now.getUTCHours() >= 17 && Date.parse(old.quotesAt) > Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 16, 40);
+    if (age < 30 * 60000 || closed) { writeFileSync(file, JSON.stringify(old) + "\n"); return; }
+  }
+  const prev = new Map((old.etfs || []).map((e) => [e.t, e]));
+  let ok = 0;
+  const etfs = [];
+  for (const e of UCITS) {
+    const p = prev.get(e.t) || {};
+    const q = await ucitsQuote(e, browserJson).catch(() => null);
+    await sleep(250);
+    let h = p.h;
+    if (history) {
+      const hh = await ucitsHistory(e, browserJson).catch(() => null);
+      await sleep(250);
+      if (hh?.length) h = hh;
+    }
+    if (q) ok++;
+    etfs.push({ ...e, px: q?.px ?? p.px ?? null, dc: q ? q.dc : p.dc ?? null, date: q?.date ?? p.date ?? null, h });
+  }
+  const out = { generated: now.toISOString(), quotesAt: ok ? now.toISOString() : old.quotesAt || null, etfs };
+  writeFileSync(file, JSON.stringify(out) + "\n");
+  if (kept) { mkdirSync(OVERLAY, { recursive: true }); writeFileSync(kept, JSON.stringify(out) + "\n"); }
+  console.log(`  European ETFs: ${ok} of ${UCITS.length} prices${history ? ", monthly closes" : ""}`);
+}
+
+// Monthly closes of the largest US-listed ETFs (by assets) for the portfolio charts.
+const ETF_HISTORY_TOP = 300;
+async function updateEtfHistory() {
+  const ef = join(DATA, "etfs.json");
+  if (!existsSync(ef)) return;
+  const top = readJson(ef).etfs.filter((x) => x.aum > 0).sort((a, b) => b.aum - a.aum).slice(0, ETF_HISTORY_TOP);
+  const to = new Date(), from = new Date(to.getFullYear(), to.getMonth() - 26, 1);
+  const d = (x) => x.toISOString().slice(0, 10);
+  const h = {};
+  for (const x of top) {
+    const j = await browserJson(`https://api.nasdaq.com/api/quote/${encodeURIComponent(x.t)}/historical?assetclass=etf&fromdate=${d(from)}&todate=${d(to)}&limit=9999`);
+    const m = nasdaqMonthlyRows(j?.data?.tradesTable?.rows);
+    if (m.length) h[x.t] = m;
+    await sleep(150);
+  }
+  if (Object.keys(h).length) writeFileSync(join(DATA, "etf-history.json"), JSON.stringify({ generated: new Date().toISOString(), h }) + "\n");
+  console.log(`  ETF price history: ${Object.keys(h).length} of ${top.length}`);
 }
 
 // Large companies whose recent news has not been read yet (when this was introduced, or a company that grew
@@ -707,12 +765,17 @@ if (quotesOnly) {
   if (!skipFilings) await refreshCurrentFilings(screener).catch((e) => console.warn(`new filings: ${e.message}`));
   if (!skipFilings) await backfillNews().catch((e) => console.warn(`news: ${e.message}`));
   await updateQuotes(screener);
+  await updateUcits().catch((e) => console.warn(`European ETFs: ${e.message}`));
 } else if (!indexOnly) await updateCompanies();
 // Company logos: new companies get theirs on the next full update (see scripts/logos.mjs).
 if (!indexOnly && !quotesOnly && !skipLogos) {
   const tickers = readdirSync(COMPANIES).filter((f) => f.endsWith(".json")).map((f) => f.slice(0, -5)).filter((t) => !onlyTickers || onlyTickers.has(t));
   await updateLogos({ dataDir: DATA, tickers }).catch((e) => console.warn(`logos: ${e.message}`));
 }
-if (!indexOnly && !quotesOnly && !onlyTickers && limit === Infinity) await updateEtfs();
+if (!indexOnly && !quotesOnly && !onlyTickers && limit === Infinity) {
+  await updateEtfs();
+  await updateUcits({ history: true }).catch((e) => console.warn(`European ETFs: ${e.message}`));
+  await updateEtfHistory().catch((e) => console.warn(`ETF history: ${e.message}`));
+}
 // Weekly snapshots are recorded only by full data updates, not by index rebuilds.
 buildIndex({ snapshot: !indexOnly && !quotesOnly && !onlyTickers && limit === Infinity });

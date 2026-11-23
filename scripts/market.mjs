@@ -8,6 +8,16 @@ const BROWSER_HEADERS = {
   "Accept-Language": "en-US,en;q=0.9",
 };
 
+// JSON from a public web API with browser-like headers; null when unavailable.
+export async function browserJson(url, timeout = 25000) {
+  try {
+    const r = await fetch(url, { headers: BROWSER_HEADERS, signal: AbortSignal.timeout(timeout) });
+    return r.ok ? await r.json() : null;
+  } catch {
+    return null;
+  }
+}
+
 const num = (s) => {
   if (s === null || s === undefined) return null;
   const n = Number(String(s).replace(/[$,%\s]/g, ""));

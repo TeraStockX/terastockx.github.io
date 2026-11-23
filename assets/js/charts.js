@@ -102,3 +102,32 @@ export function wireCharts(root) {
     card.addEventListener("pointerleave", hide);
   });
 }
+
+// Donut chart with a legend: slices [{ label, value }] (value > 0); pct(fraction) formats the shares.
+const PALETTE = ["#5ea2ff", "#22c55e", "#f59e0b", "#a78bfa", "#ef4444", "#14b8a6", "#f472b6", "#94a3b8", "#eab308", "#38bdf8"];
+export function donutChart(title, slices, pct, center = "") {
+  const xs = slices.filter((x) => isNum(x.value) && x.value > 0);
+  const total = xs.reduce((a, x) => a + x.value, 0);
+  if (!total) return "";
+  const C = 70, R = 62, r = 40;
+  const pt = (ang, rad) => `${(C + rad * Math.cos(ang)).toFixed(2)},${(C + rad * Math.sin(ang)).toFixed(2)}`;
+  let a0 = -Math.PI / 2;
+  const arcs = xs.map((x, i) => {
+    const frac = x.value / total;
+    const color = PALETTE[i % PALETTE.length];
+    if (frac > 0.9999) return { x, frac, color, d: `M${C},${C - R} A${R},${R} 0 1 1 ${C - 0.01},${C - R} Z M${C},${C - r} A${r},${r} 0 1 0 ${C + 0.01},${C - r} Z` };
+    const a1 = a0 + frac * 2 * Math.PI;
+    const large = a1 - a0 > Math.PI ? 1 : 0;
+    const d = `M${pt(a0, R)} A${R},${R} 0 ${large} 1 ${pt(a1, R)} L${pt(a1, r)} A${r},${r} 0 ${large} 0 ${pt(a0, r)} Z`;
+    a0 = a1;
+    return { x, frac, color, d };
+  });
+  return `<div class="glass chart donut"><h3>${esc(title)}</h3>
+    <div class="donut-body">
+      <svg viewBox="0 0 140 140" role="img" aria-label="${esc(title)}: ${esc(arcs.map((a) => `${a.x.label} ${pct(a.frac)}`).join(", "))}">
+        ${arcs.map((a) => `<path d="${a.d}" fill="${a.color}" fill-rule="evenodd"><title>${esc(a.x.label)}: ${esc(pct(a.frac))}</title></path>`).join("")}
+        ${center ? `<text x="70" y="75" text-anchor="middle" class="donut-center">${esc(center)}</text>` : ""}
+      </svg>
+      <ul class="donut-legend">${arcs.map((a) => `<li><span class="sw" style="background:${a.color}"></span><span class="lg-l">${esc(a.x.label)}</span><span class="lg-v">${esc(pct(a.frac))}</span></li>`).join("")}</ul>
+    </div></div>`;
+}

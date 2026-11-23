@@ -65,7 +65,8 @@ export function prepareSearch(rows) {
   return rows.filter((r) => r?.t).map((row) => {
     const nm = normName(row.n);
     const words = nm.split(" ").filter(Boolean);
-    return { row, t: row.t, tk: compact(row.t.toLowerCase()), nm, nc: compact(nm), words, mc: row.mc ?? row.aum ?? 0 };
+    // A listing key such as "VUAG:LSE" is searched by its ticker ("VUAG").
+    return { row, t: row.t, tk: compact(String(row.dt || row.t).toLowerCase()), nm, nc: compact(nm), words, mc: row.mc ?? row.aum ?? 0 };
   });
 }
 
