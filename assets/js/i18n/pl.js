@@ -1153,5 +1153,23 @@ export default {
   "portfolioEtfText": "Można dodawać także ETF-y (fundusze notowane na giełdzie): są wyceniane po kursie dziennym, nie mają TeraScore i nie biorą udziału w kontrolach pozycji, sektorów i liczby pozycji, bo fundusz jest już zdywersyfikowany. Ich stopa dywidendy pochodzi z Nasdaq, jeśli jest publikowana; w przeciwnym razie można ją wpisać ręcznie.",
   "zero": "0 pkt",
   "hundred": "100 pkt"
+ },
+ "ai": {
+  "button": "Zapytaj AI",
+  "title": "Asystent AI",
+  "intro": "Zapytaj o liczby na tej stronie lub o metodologię – wyjaśnię to prostymi słowami.",
+  "placeholder": "Wpisz pytanie…",
+  "send": "Wyślij",
+  "close": "Zamknij",
+  "note": "Odpowiedzi pisze AI i mogą zawierać błędy. To nie jest porada inwestycyjna.",
+  "error": "Asystent jest teraz niedostępny. Spróbuj ponownie później.",
+  "rate": "Zbyt wiele pytań z tego adresu. Spróbuj ponownie za godzinę.",
+  "thinking": "Myślę…",
+  "qCompany1": "Co oznacza płynność?",
+  "qCompany2": "Dlaczego ocena ryzyka jest taka?",
+  "qCompany3": "Co podnosi, a co obniża TeraScore?",
+  "qMethod1": "Jak obliczany jest TeraScore?",
+  "qMethod2": "Co oznacza ocena ryzyka?",
+  "qMethod3": "Czym jest analiza częściowa?"
  }
 };

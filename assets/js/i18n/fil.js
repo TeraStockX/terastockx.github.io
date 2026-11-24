@@ -1153,5 +1153,23 @@ export default {
   "portfolioEtfText": "Maaari ring magdagdag ng mga ETF (mga pondong kinakalakal sa exchange): pinahahalagahan ang mga ito sa araw-araw na presyo, walang TeraScore at hindi isinasama sa mga pagsusuri sa posisyon, sektor at bilang ng hawak, dahil diversified na ang isang pondo. Ang kanilang dividend yield ay mula sa Nasdaq kung inilalathala; kung hindi, maaari itong ilagay nang mano-mano.",
   "zero": "0 puntos",
   "hundred": "100 puntos"
+ },
+ "ai": {
+  "button": "Magtanong sa AI",
+  "title": "AI na katulong",
+  "intro": "Magtanong tungkol sa mga numero sa pahinang ito o sa metodolohiya – ipapaliwanag ko sa simpleng salita.",
+  "placeholder": "I-type ang tanong mo…",
+  "send": "Ipadala",
+  "close": "Isara",
+  "note": "AI ang sumusulat ng mga sagot at maaaring may mali. Hindi ito payo sa pamumuhunan.",
+  "error": "Hindi available ang katulong ngayon. Subukan ulit mamaya.",
+  "rate": "Masyadong maraming tanong mula sa address na ito. Subukan ulit pagkalipas ng isang oras.",
+  "thinking": "Nag-iisip…",
+  "qCompany1": "Ano ang ibig sabihin ng liquidity?",
+  "qCompany2": "Bakit ganito ang risk score?",
+  "qCompany3": "Ano ang nagpapataas at nagpapababa sa TeraScore?",
+  "qMethod1": "Paano kinakalkula ang TeraScore?",
+  "qMethod2": "Ano ang ibig sabihin ng risk score?",
+  "qMethod3": "Ano ang partial analysis?"
  }
 };

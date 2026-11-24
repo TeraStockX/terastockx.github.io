@@ -1153,5 +1153,23 @@ export default {
   "portfolioEtfText": "ETF'ler (borsada işlem gören fonlar) de eklenebilir: günlük fiyatlarıyla değerlenir, TeraScore'ları yoktur ve bir fon zaten çeşitlendirilmiş olduğundan pozisyon, sektör ve varlık sayısı kontrollerine dahil edilmez. Temettü verimleri yayımlanıyorsa Nasdaq'tan alınır; aksi hâlde elle girilebilir.",
   "zero": "0 puan",
   "hundred": "100 puan"
+ },
+ "ai": {
+  "button": "Yapay zekâya sor",
+  "title": "Yapay zekâ asistanı",
+  "intro": "Bu sayfadaki rakamları ya da yöntemi sorun; sade bir dille açıklayayım.",
+  "placeholder": "Sorunuzu yazın…",
+  "send": "Gönder",
+  "close": "Kapat",
+  "note": "Yanıtları yapay zekâ yazar ve hatalı olabilir. Yatırım tavsiyesi değildir.",
+  "error": "Asistan şu anda kullanılamıyor. Lütfen daha sonra tekrar deneyin.",
+  "rate": "Bu adresten çok fazla soru geldi. Lütfen bir saat sonra tekrar deneyin.",
+  "thinking": "Düşünüyorum…",
+  "qCompany1": "Likidite ne demek?",
+  "qCompany2": "Risk puanı neden bu düzeyde?",
+  "qCompany3": "TeraScore'u ne yükseltiyor, ne düşürüyor?",
+  "qMethod1": "TeraScore nasıl hesaplanıyor?",
+  "qMethod2": "Risk puanı ne anlama geliyor?",
+  "qMethod3": "Kısmi analiz nedir?"
  }
 };

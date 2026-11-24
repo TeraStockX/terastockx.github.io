@@ -1153,5 +1153,23 @@ export default {
   "portfolioEtfText": "Mogu se dodati i ETF-ovi (fondovi kojima se trguje na burzi): vrednuju se po dnevnoj cijeni, nemaju TeraScore i izostavljeni su iz provjera pozicija, sektora i broja pozicija jer je fond već diverzificiran. Njihov dividendni prinos potječe s Nasdaqa kada je objavljen; u suprotnom se može unijeti ručno.",
   "zero": "0 bod.",
   "hundred": "100 bod."
+ },
+ "ai": {
+  "button": "Pitaj UI",
+  "title": "UI pomoćnik",
+  "intro": "Pitajte o brojkama na ovoj stranici ili o metodologiji – objasnit ću jednostavnim riječima.",
+  "placeholder": "Upišite pitanje…",
+  "send": "Pošalji",
+  "close": "Zatvori",
+  "note": "Odgovore piše umjetna inteligencija i mogu sadržavati pogreške. Nije investicijski savjet.",
+  "error": "Pomoćnik trenutačno nije dostupan. Pokušajte ponovno kasnije.",
+  "rate": "Previše pitanja s ove adrese. Pokušajte ponovno za sat vremena.",
+  "thinking": "Razmišljam…",
+  "qCompany1": "Što znači likvidnost?",
+  "qCompany2": "Zašto je ocjena rizika ovakva?",
+  "qCompany3": "Što podiže, a što spušta TeraScore?",
+  "qMethod1": "Kako se izračunava TeraScore?",
+  "qMethod2": "Što znači ocjena rizika?",
+  "qMethod3": "Što je djelomična analiza?"
  }
 };

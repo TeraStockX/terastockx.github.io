@@ -4,6 +4,7 @@ import { SCREENS, screenById } from "./screens.js";
 import { LANG_LIST, EN, langMeta, ready, lang, setLang, t, fill, fmt, money, date, num, dict, locale, ltr } from "./i18n/index.js";
 import { barChart, lineChart, wireCharts, donutChart } from "./charts.js";
 import { prepareSearch, searchCompanies, scoreAll, STRONG, popularity } from "./search.js";
+import { aiPage } from "./ai.js";
 
 const app = document.getElementById("app");
 const CONTACT_EMAIL = "info@terastockx.com";
@@ -371,6 +372,7 @@ async function route(scroll = true) {
   if (scroll) window.scrollTo(0, 0);
   document.title = "TeraStockX";
   onWatchChange = null;
+  aiPage(null);
   if (page !== "watchlist" && listState.filter === "watch") listState.filter = "analyzed";
   try {
     if (page === "c" && arg) await renderCompany(decodeURIComponent(arg).toUpperCase());
@@ -1119,6 +1121,75 @@ async function renderCompany(ticker) {
   wireCharts(app);
   wirePeers(app);
   wireRaw(app, c);
+  aiPage({ page: "company", ticker: c.ticker, title: c.ticker, context: aiCompanyContext(c, a, idx, history) });
+}
+
+// ---------- AI helper: what it sees of a company page ----------
+
+// A figure in neutral notation (English labels, "." decimals), as the helper reads it.
+function aiNum(v, kind, cur = "USD") {
+  if (v === Infinity) return kind === "mult" || kind === "xyears" ? "n/m" : "∞";
+  if (v === -Infinity) return "−∞";
+  if (!isNum(v)) return "n/a";
+  switch (kind) {
+    case "pct": return `${(v * 100).toFixed(1)}%`;
+    case "pct0": return `${Math.round(v * 100)}%`;
+    case "spct": return `${v > 0 ? "+" : ""}${(v * 100).toFixed(1)}%`;
+    case "pp": return `${v > 0 ? "+" : ""}${(v * 100).toFixed(1)} pp`;
+    case "x": case "xyears": return `${v.toFixed(2)}×`;
+    case "mult": return `${v.toFixed(1)}×`;
+    case "money": return `${new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 2 }).format(v)} ${cur}`;
+    case "usd": return `${v.toFixed(2)} ${cur}`;
+    case "of9": return `${v}/9`;
+    case "years": return `${v.toFixed(1)} years`;
+    default: return String(+v.toFixed(2));
+  }
+}
+
+function aiCompanyContext(c, a, idx, history) {
+  const cur = c.currency || "USD";
+  const mName = (k) => (Array.isArray(EN.metrics?.[k]) ? EN.metrics[k][0] : k);
+  const dName = (k) => EN.dims?.[k]?.name || k;
+  const sign = (v) => `${v > 0 ? "+" : ""}${v}`;
+  const mk = c.market || {};
+  const row = idx?.byT?.get(c.ticker) || null;
+  const L = [`Company: ${c.name} (${c.ticker}); exchange ${c.exchange || "n/a"}; sector ${EN.sectors?.[c.sector] || c.sector || "n/a"}; industry ${c.industry || "n/a"}; country ${c.country || "n/a"}; reporting currency ${cur}.`];
+  if (isNum(mk.price)) L.push(`Share price ${aiNum(mk.price, "usd", "USD")}${isNum(mk.changePct) ? ` (${sign(+mk.changePct.toFixed(2))}% on the day)` : ""}; market cap ${aiNum(a.ok ? a.metrics.marketCap : mk.marketCap, "money", "USD")}.`);
+  if (!a.ok) { L.push("No TeraScore: there is not enough annual data to analyse this company."); return L.join("\n"); }
+  const rank = idx ? sectorRank(idx, c.sector, "overall", a.scores.overall) : null;
+  L.push(`Latest fiscal year ${a.latestYear}; data completeness ${a.completeness}% (${a.metrics.yearsOfData} years of data); scoring profile ${a.profile}; valuation on ${a.valuationBasis === "ttm" ? "the trailing twelve months" : "the last fiscal year"}.`);
+  L.push(`TeraScore ${a.scores.overall ?? "n/a"}/100 (${EN.grades?.[gradeKey(a.scores.overall)]})${isNum(rank) ? `, higher than ${rank}% of its sector` : ""}. Risk ${a.scores.risk ?? "n/a"}/100 (lower is better; ${EN.grades?.[gradeKey(a.scores.risk, true)]}). Financial distress: ${a.distress.level}. Trend: ${a.outlook.level}.${a.styles.length ? ` Styles: ${a.styles.join(", ")}.` : ""}`);
+  if (a.missing?.length) L.push(`Areas without data (counted as neutral or lower): ${a.missing.map(dName).join(", ")}.`);
+  if (a.estimated?.length) L.push(`Estimated figures: ${a.estimated.join(", ")}.`);
+  if (a.breakdown?.length) L.push(`What lifts and lowers the TeraScore (50 + weight × (score − 50)): ${[...a.breakdown].sort((x, y) => y.contribution - x.contribution).map((x) => `${dName(x.key)} ${Math.round(x.score)} × ${Math.round(x.weight * 100)}% → ${sign(+x.contribution.toFixed(1))}${x.missing ? " (no data)" : ""}`).join("; ")}.`);
+  L.push("Areas (score/100) and their metrics (value; sector median; points; weight in the area):");
+  for (const d of DIMENSIONS) {
+    if (d === "risk") continue;
+    const ps = (a.parts[d] || []).filter((p) => !p.na);
+    if (!isNum(a.scores[d]) && !ps.length) continue;
+    L.push(`- ${dName(d)} ${a.scores[d] ?? "n/a"}: ${ps.map((p) => {
+      const f = METRIC_FORMAT[p.key];
+      const basis = isNum(p.basis) && isNum(p.value) && Math.abs(p.basis - p.value) > Math.max(0.001, Math.abs(p.value) * 0.01) ? ` (3-year basis ${aiNum(p.basis, f, cur)})` : "";
+      return `${mName(p.key)} ${aiNum(p.value, f, cur)}${basis}${isNum(p.median) ? `; median ${aiNum(p.median, f, cur)}` : ""}; ${isNum(p.score) ? `${p.score} pts` : "not scored"}; ${Math.round(p.weight * 100)}%${p.cap ? "; capped by the cash runway" : ""}`;
+    }).join(" | ")}`);
+  }
+  const mr = a.parts.marketRisk || [];
+  const nCrit = a.flags.filter((f) => f.level === "critical").length, nWarn = a.flags.filter((f) => f.level === "warning").length;
+  L.push(`Risk inputs: fundamentals ${Math.round((1 - MARKET_RISK_SHARE) * 100)}% (balance sheet ${a.scores.balanceSheet ?? "n/a"}, consistency ${a.scores.consistency ?? "n/a"}, cash flow ${a.scores.cashFlow ?? "n/a"}, profitability ${a.scores.profitability ?? "n/a"}, liquidity ${a.scores.liquidity ?? "n/a"}), price history ${Math.round(MARKET_RISK_SHARE * 100)}% (${mr.map((p) => `${mName(p.key)} ${aiNum(p.value, METRIC_FORMAT[p.key])}, ${isNum(p.score) ? `${p.score} pts` : "not scored"}`).join("; ") || "n/a"}); warnings: ${nCrit} critical, ${nWarn} other.`);
+  if (a.flags.length) L.push(`Red flags and strengths: ${a.flags.map((f) => { const ft = flagText(f, cur); return `[${f.level}] ${ft.title}: ${ft.text}`; }).join(" | ")}`);
+  const dv = dividendProfile(c, a);
+  const cover = (v) => (v === Infinity ? "not covered" : aiNum(v, "pct0"));
+  L.push(dv.payer ? `Dividend safety ${dv.score ?? "n/a"}/100 (${dv.level}); yield ${aiNum(dv.yield, "pct")}; earnings payout ${cover(dv.earningsPayout)}; FCF payout ${cover(dv.fcfPayout)}; paid ${dv.paidYears} years, raised ${dv.growthYears} years, cuts ${dv.cuts}.` : `Dividend: ${dv.reason === "noDividend" ? "the company pays no dividend" : "not enough data"}.`);
+  L.push(`Key metrics: ${KEY_METRICS.filter((k) => a.metrics[k] !== null && a.metrics[k] !== undefined).map((k) => `${mName(k)} ${aiNum(a.metrics[k], METRIC_FORMAT[k], cur)}`).join("; ")}.`);
+  if (history.length) L.push(`TeraScore by fiscal year, from what was known then: ${history.slice(-8).map((y) => `${y.year}: ${y.overall}`).join(", ")}${isNum(row?.ch) ? `; change against the previous fiscal year ${sign(row.ch)}` : ""}${isNum(row?.d1) ? `; change at the last daily update ${sign(row.d1)}` : ""}.`);
+  const self = idx?.companies.find((x) => x.t === c.ticker);
+  if (self && isNum(self.sc?.overall)) {
+    const peers = findPeers(idx.companies, self, 5);
+    if (peers.length) L.push(`Similar companies (same sector, similar size): ${peers.map((p) => `${p.t} TeraScore ${p.sc.overall}, risk ${p.sc.risk ?? "n/a"}`).join("; ")}.`);
+  }
+  const ev = (c.events || []).slice(0, 5);
+  if (ev.length) L.push(`Major events (8-K, last 12 months): ${ev.map((e) => `${e.date}: ${e.items.map((i) => EN.events?.[i] || i).join(", ")}${e.title ? ` – "${e.title}"` : ""}`).join(" | ")}`);
+  return L.join("\n").slice(0, 7800);
 }
 
 const riskExplain = () => t("ui.riskExplain", {
@@ -2209,6 +2280,7 @@ function renderMethod() {
     <h2>${esc(t("method.limitsTitle"))}</h2><p>${esc(t("method.limitsText"))}</p><p class="small muted">${esc(t("method.logosText"))}</p>
   </div>`;
   loadBacktest().then((b) => { const el = document.getElementById("bt"); if (el) el.innerHTML = backtestView(b); });
+  aiPage({ page: "method", title: t("ui.navMethod") });
 }
 
 let backtestCache;

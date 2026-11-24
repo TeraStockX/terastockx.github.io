@@ -1153,5 +1153,23 @@ export default {
   "portfolioEtfText": "Ook ETF's (beursverhandelde fondsen) kunnen worden toegevoegd: ze worden gewaardeerd tegen hun dagkoers, hebben geen TeraScore en vallen buiten de controles op positie, sector en aantal posities, omdat een fonds al gespreid is. Hun dividendrendement komt van Nasdaq als dat wordt gepubliceerd; anders kun je het handmatig invullen.",
   "zero": "0 pnt",
   "hundred": "100 pnt"
+ },
+ "ai": {
+  "button": "Vraag het AI",
+  "title": "AI-assistent",
+  "intro": "Vraag naar de cijfers op deze pagina of naar de methode – ik leg het eenvoudig uit.",
+  "placeholder": "Typ je vraag…",
+  "send": "Versturen",
+  "close": "Sluiten",
+  "note": "De antwoorden worden door AI geschreven en kunnen fouten bevatten. Geen beleggingsadvies.",
+  "error": "De assistent is nu niet beschikbaar. Probeer het later opnieuw.",
+  "rate": "Te veel vragen vanaf dit adres. Probeer het over een uur opnieuw.",
+  "thinking": "Even denken…",
+  "qCompany1": "Wat betekent liquiditeit?",
+  "qCompany2": "Waarom is de risicoscore zoals hij is?",
+  "qCompany3": "Wat verhoogt en wat verlaagt de TeraScore?",
+  "qMethod1": "Hoe wordt de TeraScore berekend?",
+  "qMethod2": "Wat betekent de risicoscore?",
+  "qMethod3": "Wat is een gedeeltelijke analyse?"
  }
 };

@@ -1153,5 +1153,23 @@ export default {
   "portfolioEtfText": "Si possono aggiungere anche ETF (fondi quotati in borsa): sono valutati al prezzo giornaliero, non hanno TeraScore e sono esclusi dai controlli su posizione, settore e numero di posizioni, perché un fondo è già diversificato. Il loro rendimento da dividendo proviene dal Nasdaq quando è pubblicato; altrimenti si può inserire a mano.",
   "zero": "0 punti",
   "hundred": "100 punti"
+ },
+ "ai": {
+  "button": "Chiedi all'IA",
+  "title": "Assistente IA",
+  "intro": "Chiedi dei numeri di questa pagina o del metodo: te li spiego in parole semplici.",
+  "placeholder": "Scrivi la tua domanda…",
+  "send": "Invia",
+  "close": "Chiudi",
+  "note": "Le risposte sono scritte da un'IA e possono contenere errori. Non è una consulenza finanziaria.",
+  "error": "L'assistente non è disponibile al momento. Riprova più tardi.",
+  "rate": "Troppe domande da questo indirizzo. Riprova tra un'ora.",
+  "thinking": "Sto pensando…",
+  "qCompany1": "Cosa significa liquidità?",
+  "qCompany2": "Perché il punteggio di rischio è questo?",
+  "qCompany3": "Cosa alza e cosa abbassa il TeraScore?",
+  "qMethod1": "Come si calcola il TeraScore?",
+  "qMethod2": "Cosa significa il punteggio di rischio?",
+  "qMethod3": "Che cos'è un'analisi parziale?"
  }
 };

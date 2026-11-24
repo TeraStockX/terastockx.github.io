@@ -1153,5 +1153,23 @@ export default {
   "portfolioEtfText": "ETF (dana yang didagangkan di bursa) juga boleh ditambah: ia dinilai pada harga harian, tiada TeraScore dan dikecualikan daripada semakan kedudukan, sektor dan bilangan pegangan, kerana dana sudah pun dipelbagaikan. Hasil dividennya diambil daripada Nasdaq jika diterbitkan; jika tidak, ia boleh dimasukkan secara manual.",
   "zero": "0 mata",
   "hundred": "100 mata"
+ },
+ "ai": {
+  "button": "Tanya AI",
+  "title": "Pembantu AI",
+  "intro": "Tanya tentang angka di halaman ini atau metodologinya – saya terangkan dengan mudah.",
+  "placeholder": "Taip soalan anda…",
+  "send": "Hantar",
+  "close": "Tutup",
+  "note": "Jawapan ditulis oleh AI dan mungkin mengandungi kesilapan. Bukan nasihat pelaburan.",
+  "error": "Pembantu tidak tersedia sekarang. Sila cuba lagi kemudian.",
+  "rate": "Terlalu banyak soalan dari alamat ini. Sila cuba lagi dalam sejam.",
+  "thinking": "Sedang berfikir…",
+  "qCompany1": "Apakah maksud kecairan?",
+  "qCompany2": "Mengapa skor risiko begini?",
+  "qCompany3": "Apa yang menaikkan dan menurunkan TeraScore?",
+  "qMethod1": "Bagaimana TeraScore dikira?",
+  "qMethod2": "Apakah maksud skor risiko?",
+  "qMethod3": "Apakah analisis separa?"
  }
 };

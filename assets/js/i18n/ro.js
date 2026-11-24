@@ -1153,5 +1153,23 @@ export default {
   "portfolioEtfText": "Se pot adăuga și ETF-uri (fonduri tranzacționate la bursă): sunt evaluate la prețul zilnic, nu au TeraScore și sunt excluse din verificările de poziție, sector și număr de poziții, deoarece un fond este deja diversificat. Randamentul dividendului lor provine de la Nasdaq când este publicat; altfel poate fi introdus manual.",
   "zero": "0 pct.",
   "hundred": "100 pct."
+ },
+ "ai": {
+  "button": "Întreabă AI",
+  "title": "Asistent AI",
+  "intro": "Întreabă despre cifrele de pe această pagină sau despre metodologie – îți explic pe înțeles.",
+  "placeholder": "Scrie întrebarea ta…",
+  "send": "Trimite",
+  "close": "Închide",
+  "note": "Răspunsurile sunt scrise de AI și pot conține greșeli. Nu reprezintă consultanță de investiții.",
+  "error": "Asistentul nu este disponibil acum. Încearcă din nou mai târziu.",
+  "rate": "Prea multe întrebări de la această adresă. Încearcă din nou peste o oră.",
+  "thinking": "Mă gândesc…",
+  "qCompany1": "Ce înseamnă lichiditatea?",
+  "qCompany2": "De ce scorul de risc este acesta?",
+  "qCompany3": "Ce ridică și ce scade TeraScore?",
+  "qMethod1": "Cum se calculează TeraScore?",
+  "qMethod2": "Ce înseamnă scorul de risc?",
+  "qMethod3": "Ce este o analiză parțială?"
  }
 };

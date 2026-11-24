@@ -1,11 +1,11 @@
 // TeraStockX service worker: makes the site installable and usable offline.
 // Network first for everything, so code and data are always current when online;
 // the cache is only a fallback (offline, or a failed request).
-const CACHE = "tsx-v13";
+const CACHE = "tsx-v14";
 const SHELL = [
   "./", "index.html", "manifest.webmanifest",
   "assets/css/style.css",
-  "assets/js/app.js", "assets/js/scoring.js", "assets/js/charts.js", "assets/js/portfolio.js",
+  "assets/js/app.js", "assets/js/scoring.js", "assets/js/charts.js", "assets/js/portfolio.js", "assets/js/ai.js", "assets/js/config.js",
   "assets/js/i18n/index.js", "assets/js/i18n/en.js", "assets/js/i18n/hu.js", "assets/js/i18n/de.js", "assets/js/i18n/fr.js", "assets/js/i18n/es.js", "assets/js/i18n/zh.js",
   "assets/img/logo.svg", "assets/img/hero.svg", "assets/img/icons/icon-192.png", "assets/img/icons/apple-touch-icon.png",
 ];

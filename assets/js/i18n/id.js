@@ -1153,5 +1153,23 @@ export default {
   "portfolioEtfText": "ETF (reksa dana yang diperdagangkan di bursa) juga dapat ditambahkan: nilainya mengikuti harga harian, tidak memiliki TeraScore, dan tidak diikutkan dalam pemeriksaan posisi, sektor, dan jumlah kepemilikan, karena sebuah reksa dana sudah terdiversifikasi. Imbal hasil dividennya berasal dari Nasdaq jika diterbitkan; jika tidak, dapat dimasukkan secara manual.",
   "zero": "0 poin",
   "hundred": "100 poin"
+ },
+ "ai": {
+  "button": "Tanya AI",
+  "title": "Asisten AI",
+  "intro": "Tanyakan angka di halaman ini atau metodologinya – saya jelaskan dengan bahasa sederhana.",
+  "placeholder": "Tulis pertanyaan Anda…",
+  "send": "Kirim",
+  "close": "Tutup",
+  "note": "Jawaban ditulis oleh AI dan bisa keliru. Bukan saran investasi.",
+  "error": "Asisten sedang tidak tersedia. Coba lagi nanti.",
+  "rate": "Terlalu banyak pertanyaan dari alamat ini. Coba lagi dalam satu jam.",
+  "thinking": "Sedang berpikir…",
+  "qCompany1": "Apa arti likuiditas?",
+  "qCompany2": "Mengapa skor risikonya seperti ini?",
+  "qCompany3": "Apa yang menaikkan dan menurunkan TeraScore?",
+  "qMethod1": "Bagaimana TeraScore dihitung?",
+  "qMethod2": "Apa arti skor risiko?",
+  "qMethod3": "Apa itu analisis parsial?"
  }
 };

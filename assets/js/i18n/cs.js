@@ -1153,5 +1153,23 @@ export default {
   "portfolioEtfText": "Přidat lze i ETF (burzovně obchodované fondy): oceňují se denní cenou, nemají TeraScore a nezahrnují se do kontrol pozic, sektorů a počtu pozic, protože fond je již diverzifikovaný. Jejich dividendový výnos pochází z Nasdaq, pokud je zveřejněn; jinak ho lze zadat ručně.",
   "zero": "0 b.",
   "hundred": "100 b."
+ },
+ "ai": {
+  "button": "Zeptat se AI",
+  "title": "AI asistent",
+  "intro": "Zeptejte se na čísla na této stránce nebo na metodiku – vysvětlím je srozumitelně.",
+  "placeholder": "Napište svou otázku…",
+  "send": "Odeslat",
+  "close": "Zavřít",
+  "note": "Odpovědi píše AI a mohou obsahovat chyby. Nejde o investiční doporučení.",
+  "error": "Asistent teď není k dispozici. Zkuste to prosím později.",
+  "rate": "Z této adresy přišlo příliš mnoho otázek. Zkuste to znovu za hodinu.",
+  "thinking": "Přemýšlím…",
+  "qCompany1": "Co znamená likvidita?",
+  "qCompany2": "Proč je rizikové skóre takové?",
+  "qCompany3": "Co zvyšuje a co snižuje TeraScore?",
+  "qMethod1": "Jak se počítá TeraScore?",
+  "qMethod2": "Co znamená rizikové skóre?",
+  "qMethod3": "Co je částečná analýza?"
  }
 };

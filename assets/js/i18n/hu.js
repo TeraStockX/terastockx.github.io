@@ -419,4 +419,5 @@ export default {
     portfolioEtfText: "ETF-ek (tőzsdén kereskedett alapok) is felvehetők: napi árfolyamon értékelődnek, nem kapnak TeraScore-t, és kimaradnak a pozíció-, szektor- és tételszám-ellenőrzésből, mivel egy alap eleve diverzifikált. Osztalékhozamuk a Nasdaqtól származik, ahol közlik; egyébként kézzel megadható.",
     zero: "0 pont", hundred: "100 pont",
   },
+  ai: {"button":"Kérdezz","title":"AI-segéd","intro":"Kérdezz az oldal számairól vagy a módszertanról – közérthetően elmagyarázom.","placeholder":"Írd ide a kérdésed…","send":"Küldés","close":"Bezárás","note":"A válaszokat mesterséges intelligencia írja, és tévedhet. Nem befektetési tanácsadás.","error":"A segéd most nem érhető el. Próbáld újra később.","rate":"Túl sok kérdés érkezett erről a címről. Próbáld újra egy óra múlva.","thinking":"Gondolkodom…","qCompany1":"Mit jelent a likviditás?","qCompany2":"Miért ennyi a kockázati pontszám?","qCompany3":"Mi emeli és mi húzza le a TeraScore-t?","qMethod1":"Hogyan számoljátok a TeraScore-t?","qMethod2":"Mit jelent a kockázati pontszám?","qMethod3":"Mit jelent a részleges elemzés?"},
 };

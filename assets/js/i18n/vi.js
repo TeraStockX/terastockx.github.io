@@ -1153,5 +1153,23 @@ export default {
   "portfolioEtfText": "Có thể thêm cả ETF (quỹ giao dịch trên sàn): chúng được định giá theo giá hằng ngày, không có TeraScore và không tham gia kiểm tra vị thế, ngành và số lượng khoản nắm giữ, vì một quỹ vốn đã đa dạng hóa. Tỷ suất cổ tức của chúng lấy từ Nasdaq nếu có công bố; nếu không, có thể nhập thủ công.",
   "zero": "0 điểm",
   "hundred": "100 điểm"
+ },
+ "ai": {
+  "button": "Hỏi AI",
+  "title": "Trợ lý AI",
+  "intro": "Hãy hỏi về các con số trên trang này hoặc về phương pháp – tôi sẽ giải thích dễ hiểu.",
+  "placeholder": "Nhập câu hỏi của bạn…",
+  "send": "Gửi",
+  "close": "Đóng",
+  "note": "Câu trả lời do AI viết và có thể sai. Không phải lời khuyên đầu tư.",
+  "error": "Trợ lý hiện không khả dụng. Vui lòng thử lại sau.",
+  "rate": "Có quá nhiều câu hỏi từ địa chỉ này. Vui lòng thử lại sau một giờ.",
+  "thinking": "Đang suy nghĩ…",
+  "qCompany1": "Thanh khoản nghĩa là gì?",
+  "qCompany2": "Vì sao điểm rủi ro lại như vậy?",
+  "qCompany3": "Điều gì làm tăng và làm giảm TeraScore?",
+  "qMethod1": "TeraScore được tính như thế nào?",
+  "qMethod2": "Điểm rủi ro nghĩa là gì?",
+  "qMethod3": "Phân tích một phần là gì?"
  }
 };

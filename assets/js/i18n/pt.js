@@ -1153,5 +1153,23 @@ export default {
   "portfolioEtfText": "ETFs (fundos negociados em bolsa) também podem ser adicionados: são avaliados pelo preço diário, não têm TeraScore e ficam fora das verificações de posição, setor e número de posições, já que um fundo já é diversificado. O dividend yield vem da Nasdaq quando publicado; caso contrário, pode ser informado manualmente.",
   "zero": "0 pts",
   "hundred": "100 pts"
+ },
+ "ai": {
+  "button": "Pergunte à IA",
+  "title": "Assistente de IA",
+  "intro": "Pergunte sobre os números desta página ou sobre a metodologia – eu explico de forma simples.",
+  "placeholder": "Digite sua pergunta…",
+  "send": "Enviar",
+  "close": "Fechar",
+  "note": "As respostas são escritas por IA e podem conter erros. Não é recomendação de investimento.",
+  "error": "O assistente não está disponível agora. Tente novamente mais tarde.",
+  "rate": "Muitas perguntas deste endereço. Tente novamente em uma hora.",
+  "thinking": "Pensando…",
+  "qCompany1": "O que significa liquidez?",
+  "qCompany2": "Por que a pontuação de risco está assim?",
+  "qCompany3": "O que eleva e o que reduz o TeraScore?",
+  "qMethod1": "Como o TeraScore é calculado?",
+  "qMethod2": "O que significa a pontuação de risco?",
+  "qMethod3": "O que é uma análise parcial?"
  }
 };

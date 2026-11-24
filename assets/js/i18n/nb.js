@@ -1153,5 +1153,23 @@ export default {
   "portfolioEtfText": "ETF-er (børshandlede fond) kan også legges til: de verdsettes til dagskursen, har ingen TeraScore og holdes utenfor sjekkene av posisjoner, sektorer og antall beholdninger, siden et fond allerede er diversifisert. Direkteavkastningen deres hentes fra Nasdaq når den publiseres; ellers kan den legges inn manuelt.",
   "zero": "0 poeng",
   "hundred": "100 poeng"
+ },
+ "ai": {
+  "button": "Spør AI",
+  "title": "AI-assistent",
+  "intro": "Spør om tallene på denne siden eller om metoden – jeg forklarer det med enkle ord.",
+  "placeholder": "Skriv spørsmålet ditt…",
+  "send": "Send",
+  "close": "Lukk",
+  "note": "Svarene skrives av AI og kan inneholde feil. Ikke investeringsråd.",
+  "error": "Assistenten er ikke tilgjengelig akkurat nå. Prøv igjen senere.",
+  "rate": "For mange spørsmål fra denne adressen. Prøv igjen om en time.",
+  "thinking": "Tenker…",
+  "qCompany1": "Hva betyr likviditet?",
+  "qCompany2": "Hvorfor er risikoscoren som den er?",
+  "qCompany3": "Hva hever og hva senker TeraScore?",
+  "qMethod1": "Hvordan beregnes TeraScore?",
+  "qMethod2": "Hva betyr risikoscoren?",
+  "qMethod3": "Hva er en delvis analyse?"
  }
 };

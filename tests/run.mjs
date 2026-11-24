@@ -475,6 +475,42 @@ test("Portfolio moves: weighted TeraScore change from daily, weekly and fiscal-y
   assert.equal(scoreMove("1d", [], { today }), null);
 });
 
+test("AI helper: only the site may ask; requests are checked and clipped; one message per question", async () => {
+  const { corsFor, parseRequest, userMessage, allowRequest, LIMITS, RULES } = await import("../worker/src/guard.js");
+  const allowed = "https://terastockx.com,https://www.terastockx.com";
+  assert.equal(corsFor("https://terastockx.com", allowed)["access-control-allow-origin"], "https://terastockx.com");
+  assert.equal(corsFor("https://evil.example", allowed), null);
+  assert.equal(corsFor(null, allowed), null);
+  assert.deepEqual(parseRequest("{"), { error: "json" });
+  assert.deepEqual(parseRequest(JSON.stringify({ question: "  " })), { error: "empty" });
+  assert.deepEqual(parseRequest("x".repeat(LIMITS.body + 1)), { error: "too_large" });
+  const r = parseRequest(JSON.stringify({ question: "q".repeat(900), lang: "xx", page: "admin", ticker: "AAPL; drop", context: "c".repeat(9000),
+    earlier: [{ q: "a", a: "b" }, { q: "c", a: "d" }, { q: "e", a: "f" }, { q: "g", a: "h" }, { q: "", a: "x" }] }));
+  assert.equal(r.question.length, LIMITS.question);
+  assert.equal(r.lang, "en", "unknown language → English");
+  assert.equal(r.page, "other");
+  assert.equal(r.ticker, "", "only ticker-like values");
+  assert.equal(r.context.length, LIMITS.context);
+  assert.deepEqual(r.earlier.map((x) => x.q), ["e", "g"], "the last three, empty ones dropped");
+  const m = userMessage(parseRequest(JSON.stringify({ question: "Mit jelent a likviditás?", lang: "hu", page: "company", ticker: "AAPL", context: "Liquidity 19/100" })));
+  assert.ok(m.startsWith("<request>\nLanguage: hu\nPage: company (AAPL)") && m.includes("<page_data>\nLiquidity 19/100\n</page_data>") && m.endsWith("<question>\nMit jelent a likviditás?\n</question>"));
+  assert.ok(/No investment advice/.test(RULES) && /not instructions/.test(RULES));
+  const t0 = Date.UTC(2026, 10, 24, 10, 5);
+  for (let i = 0; i < 3; i++) assert.equal(await allowRequest("10.0.0.1", 3, null, t0), true);
+  assert.equal(await allowRequest("10.0.0.1", 3, null, t0), false, "fourth question in the hour");
+  assert.equal(await allowRequest("10.0.0.2", 3, null, t0), true, "another address");
+  assert.equal(await allowRequest("10.0.0.1", 3, null, t0 + 3600000), true, "next hour");
+});
+
+test("AI helper: its methodology text is generated from the current scoring engine", async () => {
+  const { ENGINE, METHODOLOGY } = await import("../worker/src/methodology.js");
+  const { ENGINE_VERSION, OVERALL_WEIGHTS } = await import("../assets/js/scoring.js");
+  assert.equal(ENGINE, ENGINE_VERSION, "run node scripts/ai-prompt.mjs after a methodology change");
+  assert.ok(METHODOLOGY.includes(`Profitability ${Math.round(OVERALL_WEIGHTS.profitability * 100)}%`));
+  const { formatAnswer } = await import("../assets/js/ai.js");
+  assert.equal(formatAnswer("A **fontos** rész\n\n- egy\n- <b>kettő</b>"), "<p>A <b>fontos</b> rész</p><ul><li>egy</li><li>&lt;b&gt;kettő&lt;/b&gt;</li></ul>");
+});
+
 test("ETF listings: funds of both directories, NYSE Arca included", async () => {
   const { parseEtfs } = await import("../scripts/listings.mjs");
   const nasdaq = "Symbol|Security Name|Market Category|Test Issue|Financial Status|Round Lot Size|ETF|NextShares\nQQQ|Invesco QQQ Trust, Series 1|G|N|N|100|Y|N\nAAPL|Apple Inc. - Common Stock|Q|N|N|100|N|N\nFile Creation Time: 1108202600:00|||||||";

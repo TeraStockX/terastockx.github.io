@@ -419,4 +419,5 @@ export default {
     portfolioEtfText: "ETFs (funds traded on the exchange) can be added as well: they are valued at their daily price, have no TeraScore and are left out of the position, sector and holdings-count checks, since a fund is already diversified. Their dividend yield comes from Nasdaq where it is published; otherwise it can be entered by hand.",
     zero: "0 pts", hundred: "100 pts",
   },
+  ai: {"button":"Ask AI","title":"AI helper","intro":"Ask about this page's figures or the methodology – I'll explain them in plain words.","placeholder":"Type your question…","send":"Send","close":"Close","note":"Answers are written by AI and can be wrong. Not investment advice.","error":"The helper is not available right now. Please try again later.","rate":"Too many questions from this address. Please try again in an hour.","thinking":"Thinking…","qCompany1":"What does liquidity mean?","qCompany2":"Why is the risk score what it is?","qCompany3":"What lifts and what lowers the TeraScore?","qMethod1":"How is the TeraScore calculated?","qMethod2":"What does the risk score mean?","qMethod3":"What is a partial analysis?"},
 };

@@ -1153,5 +1153,23 @@ export default {
   "portfolioEtfText": "Myös ETF:iä (pörssinoteerattuja rahastoja) voi lisätä: ne arvostetaan päivän hintaan, niillä ei ole TeraScorea, ja ne jätetään position, sektorin ja omistusten määrän tarkistusten ulkopuolelle, koska rahasto on jo hajautettu. Niiden osinkotuotto tulee Nasdaqista, jos se julkaistaan; muuten sen voi syöttää käsin.",
   "zero": "0 p",
   "hundred": "100 p"
+ },
+ "ai": {
+  "button": "Kysy tekoälyltä",
+  "title": "Tekoälyavustaja",
+  "intro": "Kysy tämän sivun luvuista tai menetelmästä – selitän ne selkeästi.",
+  "placeholder": "Kirjoita kysymyksesi…",
+  "send": "Lähetä",
+  "close": "Sulje",
+  "note": "Vastaukset kirjoittaa tekoäly, ja niissä voi olla virheitä. Ei sijoitusneuvontaa.",
+  "error": "Avustaja ei ole juuri nyt käytettävissä. Yritä myöhemmin uudelleen.",
+  "rate": "Tästä osoitteesta on tullut liian monta kysymystä. Yritä uudelleen tunnin kuluttua.",
+  "thinking": "Mietin…",
+  "qCompany1": "Mitä likviditeetti tarkoittaa?",
+  "qCompany2": "Miksi riskipisteet ovat tällaiset?",
+  "qCompany3": "Mikä nostaa ja mikä laskee TeraScorea?",
+  "qMethod1": "Miten TeraScore lasketaan?",
+  "qMethod2": "Mitä riskipisteet tarkoittavat?",
+  "qMethod3": "Mikä on osittainen analyysi?"
  }
 };

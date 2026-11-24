@@ -1256,5 +1256,6 @@ export default {
   "KC": "金山云",
   "MNSO": "名创优品",
   "ZK": "极氪"
- }
+ },
+ "ai": {"button":"问 AI","title":"AI 助手","intro":"可以询问本页的数据或方法论——我会用通俗的话来解释。","placeholder":"输入你的问题…","send":"发送","close":"关闭","note":"回答由 AI 生成，可能有误。不构成投资建议。","error":"助手暂时无法使用，请稍后再试。","rate":"此地址提问过多，请一小时后再试。","thinking":"思考中…","qCompany1":"流动性是什么意思？","qCompany2":"风险分数为什么是这样？","qCompany3":"哪些因素提高或拉低了 TeraScore？","qMethod1":"TeraScore 是怎么计算的？","qMethod2":"风险分数是什么意思？","qMethod3":"什么是部分分析？"}
 };

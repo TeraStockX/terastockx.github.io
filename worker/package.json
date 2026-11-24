@@ -1,0 +1,9 @@
+{
+  "name": "terastockx-ai",
+  "private": true,
+  "description": "TeraStockX AI helper: a Cloudflare Worker that keeps the Claude API key and answers questions from the website.",
+  "type": "module",
+  "dependencies": {
+    "@anthropic-ai/sdk": "1.8.0"
+  }
+}
