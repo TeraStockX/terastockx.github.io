@@ -1,0 +1,21 @@
+data branch at 2026-11-24T06:59:03Z
+run 45466292108 created 2026-11-24T19:04:21Z
+using run: 45466292108
+backtest.json
+benchmarks.json
+classes.json
+companies
+etf-history.json
+etfs.json
+fx.json
+index.json
+logos
+news.json
+pulse.json
+story-prices.json
+ucits.json
+companies: 5880
+index generated 2026-11-24T19:06:29.287Z 5880
+etfs quotesAt 2026-11-24T19:06:26.682Z {"t":"SPY","n":"State Street SPDR S&P 500 ETF Trust","ex":"NYSE Arca","px":716.985,"r1y":0.0803,"er":0.0009,"aum":766431872000,"dc":-0.73}
+AAPL 352.2634 0.91 undefined undefined
+124M	/home/runner/work/_temp/live/data
