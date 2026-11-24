@@ -21,13 +21,13 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseCompanyFacts } from "./sec-parse.mjs";
 import { sectorFromSic, sectorFromNasdaq, profileFor } from "./sectors.mjs";
-import { nasdaqScreener, nasdaqEtfScreener, etfSummary, priceHistory, priceBudgetLeft, fxToUsd, marketSession, extendedQuotes, browserJson } from "./market.mjs";
+import { nasdaqScreener, nasdaqEtfScreener, etfSummary, priceHistory, priceBudgetLeft, fxToUsd, marketSession, extendedQuotes, browserJson, dailyCloses } from "./market.mjs";
 import { UCITS, ucitsQuote, ucitsHistory, nasdaqMonthlyRows } from "./ucits.mjs";
 import { majorEvents, recentFilings } from "./events.mjs";
 import { headlineFor, classifyNews, tidyTitle } from "./news-headline.mjs";
 import { fillMissingFilings } from "./xbrl-instance.mjs";
 import { buildSeo } from "./seo.mjs";
-import { buildPulse, INDEX_ETFS } from "./pulse.mjs";
+import { buildPulse, INDEX_ETFS, STORY_CAP, isStoryNews, newsTime, closeDayBefore, closeOn } from "./pulse.mjs";
 import { parseNasdaqListed, parseOtherListed, parseEtfs } from "./listings.mjs";
 import { insiderActivity } from "./insider.mjs";
 import { updateLogos, logoSet } from "./logos.mjs";
@@ -687,7 +687,52 @@ function ensureBacktest(all, benchmarks) {
   } catch (e) { console.warn(`Backtest failed: ${e.message}`); }
 }
 
-function buildIndex({ snapshot = false } = {}) {
+// ---------- Top stories: closing prices before the news ----------
+
+// The change since a news item (scripts/pulse.mjs) is measured from the last close before the news. That
+// close is read once per news item from the daily price history of the company and kept between runs: in
+// the data folder by the daily update, in the Actions cache (with the refreshed companies) by the intraday
+// runs. News after the latest close needs none (the change of the day or of the extended session is shown).
+const STORY_PRICES = "story-prices.json";
+async function storyBases(news, rows, now = new Date(), { budgetMs = 60000, maxCompanies = 30 } = {}) {
+  const kept = {};
+  for (const f of [join(DATA, STORY_PRICES), OVERLAY ? join(OVERLAY, STORY_PRICES) : null]) {
+    if (!f || !existsSync(f)) continue;
+    try { Object.assign(kept, readJson(f).items || {}); } catch {}
+  }
+  const cap = new Map(rows.map((r) => [r.t, r.mc ?? 0]));
+  const latest = closeDayBefore(now);
+  const todo = new Map(); // ticker → [{ n, day }]
+  for (const n of news) {
+    const at = newsTime(n);
+    if (!n.url || !at || !isStoryNews(n) || (cap.get(n.t) ?? 0) < STORY_CAP) continue;
+    const k = kept[n.url];
+    if (Number.isFinite(k?.pb) || (k?.tried && now - new Date(k.tried) < 30 * 60000)) continue;
+    const day = closeDayBefore(at);
+    if (day >= latest) continue;
+    (todo.get(n.t) || todo.set(n.t, []).get(n.t)).push({ n, day });
+  }
+  const start = Date.now();
+  let read = 0;
+  for (const [t, list] of todo) {
+    if (read >= maxCompanies || Date.now() - start > budgetMs) break;
+    const closes = await dailyCloses(t).catch(() => []);
+    read++;
+    for (const { n, day } of list) {
+      const hit = closeOn(closes, day);
+      kept[n.url] = hit ? { t, at: newsTime(n), pb: hit[1], day: hit[0] } : { t, at: newsTime(n), tried: now.toISOString() };
+    }
+    await sleep(150);
+  }
+  for (const [url, k] of Object.entries(kept)) if (!(now - new Date(k.at) <= (STORY_DAYS + 3) * 86400000)) delete kept[url];
+  for (const n of news) if (Number.isFinite(kept[n.url]?.pb)) n.pb = kept[n.url].pb;
+  const out = JSON.stringify({ updated: now.toISOString(), items: kept }) + "\n";
+  writeFileSync(join(DATA, STORY_PRICES), out);
+  if (OVERLAY) { mkdirSync(OVERLAY, { recursive: true }); writeFileSync(join(OVERLAY, STORY_PRICES), out); }
+  if (todo.size) console.log(`  top stories: closing prices before the news read for ${read} of ${todo.size} companies`);
+}
+
+async function buildIndex({ snapshot = false } = {}) {
   const files = readdirSync(COMPANIES).filter((f) => f.endsWith(".json"));
   const all = files.map((f) => readJson(join(COMPANIES, f)));
   const now = new Date();
@@ -796,6 +841,7 @@ function buildIndex({ snapshot = false } = {}) {
   // Market today (big moves, new reports, score changes, new listings).
   const etfFile = join(DATA, "etfs.json");
   const etfData = existsSync(etfFile) ? readJson(etfFile) : { etfs: [] };
+  await storyBases(recentNews, companies, now).catch((e) => console.warn(`top stories: ${e.message}`));
   const pulse = buildPulse({ rows: companies.map((r) => ({ ...r, o: Array.isArray(r.sc) ? r.sc[0] : null })), etfs: etfData.etfs || [], now, quotesAt: quotesOnly ? now.toISOString() : etfData.quotesAt || null, news: recentNews, session: SESSION ? { session: SESSION.session, previousTradeDate: SESSION.previousTradeDate } : etfData.session || null });
   writeFileSync(join(DATA, "pulse.json"), JSON.stringify(pulse) + "\n");
   // Major-events feed: newest first. Critical events and major events of companies above $1 billion
@@ -832,4 +878,4 @@ if (!indexOnly && !quotesOnly && !onlyTickers && limit === Infinity) {
 }
 // Weekly snapshots are recorded only by full data updates, not by index rebuilds.
 await ensureClasses();
-buildIndex({ snapshot: !indexOnly && !quotesOnly && !onlyTickers && limit === Infinity });
+await buildIndex({ snapshot: !indexOnly && !quotesOnly && !onlyTickers && limit === Infinity });

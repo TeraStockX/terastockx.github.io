@@ -379,7 +379,9 @@ export default {
   "asOfShort": "Ceny: {d}, zpožděné asi o 15 minut",
   "themesShort": {
    "ai": "AI"
-  }
+  },
+  "sinceNews": "od zprávy",
+  "sinceNote": "U zprávy: změna ceny akcie od zprávy, měřená od poslední uzavírací ceny před ní (včetně obchodů před otevřením a po uzavření). U velkého cenového pohybu: pohyb za den, před otevřením nebo po uzavření."
  },
  "screens": {
   "top": {

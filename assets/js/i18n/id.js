@@ -379,7 +379,9 @@ export default {
   "asOfShort": "Harga: {d}, tertunda sekitar 15 menit",
   "themesShort": {
    "ai": "AI"
-  }
+  },
+  "sinceNews": "sejak berita",
+  "sinceNote": "Di samping berita: perubahan harga saham sejak berita, dihitung dari harga penutupan terakhir sebelum berita (termasuk perdagangan pra-pasar dan setelah jam bursa). Di samping pergerakan harga besar: pergerakan hari ini, pra-pasar, atau setelah jam bursa."
  },
  "screens": {
   "top": {

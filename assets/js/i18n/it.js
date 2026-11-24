@@ -379,7 +379,9 @@ export default {
   "asOfShort": "Prezzi: {d}, ritardo di circa 15 minuti",
   "themesShort": {
    "ai": "IA"
-  }
+  },
+  "sinceNews": "dalla notizia",
+  "sinceNote": "Accanto a una notizia: la variazione del prezzo dalla notizia, misurata dall'ultima chiusura precedente (compresi gli scambi pre-mercato e after-hours). Accanto a un grande movimento di prezzo: il movimento del giorno, pre-mercato o after-hours."
  },
  "screens": {
   "top": {

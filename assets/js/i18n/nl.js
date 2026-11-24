@@ -379,7 +379,9 @@ export default {
   "asOfShort": "Koersen: {d}, ca. 15 minuten vertraagd",
   "themesShort": {
    "ai": "AI"
-  }
+  },
+  "sinceNews": "sinds het nieuws",
+  "sinceNote": "Naast een nieuwsbericht: de koersverandering sinds het nieuws, gemeten vanaf de laatste slotkoers ervoor (voorbeurs en nabeurs inbegrepen). Naast een grote koersbeweging: de beweging van de dag, voorbeurs of nabeurs."
  },
  "screens": {
   "top": {

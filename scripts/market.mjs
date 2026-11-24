@@ -148,28 +148,39 @@ export async function fxToUsd() {
   return rates;
 }
 
+// Nasdaq.com daily history rows ({ date: "MM/DD/YYYY", close: "$1.23", … }, newest first; split-adjusted).
+// Class shares ("BRK.B") are written differently across Nasdaq endpoints; the common forms are tried.
+async function nasdaqDailyRows(ticker, from, to = new Date()) {
+  const d = (x) => x.toISOString().slice(0, 10);
+  const variants = ticker.includes(".") ? [ticker.replace(".", "/"), ticker.replace(".", "^"), ticker] : [ticker];
+  for (const v of variants) {
+    try {
+      const r = await fetch(`https://api.nasdaq.com/api/quote/${encodeURIComponent(v)}/historical?assetclass=stocks&fromdate=${d(from)}&todate=${d(to)}&limit=9999`, { headers: BROWSER_HEADERS, signal: AbortSignal.timeout(20000) });
+      if (!r.ok) continue;
+      const rows = (await r.json())?.data?.tradesTable?.rows || [];
+      if (rows.length) return rows;
+    } catch { /* the next form */ }
+  }
+  return [];
+}
+const usDay = (s) => { const [mm, dd, yyyy] = String(s).split("/"); return yyyy && mm && dd ? `${yyyy}-${mm.padStart(2, "0")}-${dd.padStart(2, "0")}` : null; };
+
+// Closing prices of the last `days` calendar days, oldest first: [["YYYY-MM-DD", close], …]. A session's own
+// close appears in the history some time after the session.
+export async function dailyCloses(ticker, days = 21) {
+  const rows = await nasdaqDailyRows(ticker, new Date(Date.now() - days * 86400000));
+  return rows.map((r) => [usDay(r.date), num(r.close)]).filter(([day, c]) => day && Number.isFinite(c) && c > 0).sort((a, b) => (a[0] < b[0] ? -1 : 1));
+}
+
 // Nasdaq.com daily history (split-adjusted closes), reduced to the last close of each month.
 async function nasdaqMonthly(ticker) {
-  const to = new Date();
-  const from = new Date(to.getTime() - 6 * 365.25 * 86400000);
-  const d = (x) => x.toISOString().slice(0, 10);
-  // Class shares ("BRK.B") are written differently across Nasdaq endpoints; try the common forms.
-  const variants = ticker.includes(".") ? [ticker.replace(".", "/"), ticker.replace(".", "^"), ticker] : [ticker];
-  let rows = [];
-  for (const v of variants) {
-    const r = await fetch(`https://api.nasdaq.com/api/quote/${encodeURIComponent(v)}/historical?assetclass=stocks&fromdate=${d(from)}&todate=${d(to)}&limit=9999`, { headers: BROWSER_HEADERS, signal: AbortSignal.timeout(20000) });
-    if (!r.ok) continue;
-    const j = await r.json();
-    rows = j?.data?.tradesTable?.rows || [];
-    if (rows.length) break;
-  }
+  const rows = await nasdaqDailyRows(ticker, new Date(Date.now() - 6 * 365.25 * 86400000));
   const months = new Map();
   for (const row of rows) {
-    const [mm, dd, yyyy] = String(row.date).split("/");
+    const day = usDay(row.date);
     const close = num(row.close);
-    if (!yyyy || !Number.isFinite(close)) continue;
-    const key = `${yyyy}-${mm}`;
-    const day = Number(dd);
+    if (!day || !Number.isFinite(close)) continue;
+    const key = day.slice(0, 7);
     const prev = months.get(key);
     if (!prev || day > prev.day) months.set(key, { day, close });
   }

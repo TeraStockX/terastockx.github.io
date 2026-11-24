@@ -379,7 +379,9 @@ export default {
   "asOfShort": "Kurser: {d}, forsinket ca. 15 minutter",
   "themesShort": {
    "ai": "KI"
-  }
+  },
+  "sinceNews": "siden nyheten",
+  "sinceNote": "Ved en nyhet: kursendringen siden nyheten, målt fra siste sluttkurs før den (handel før åpning og etter stengning medregnet). Ved en stor kursbevegelse: dagens bevegelse, før åpning eller etter stengning."
  },
  "screens": {
   "top": {

@@ -379,7 +379,9 @@ export default {
   "asOfShort": "Harga: {d}, lewat kira-kira 15 minit",
   "themesShort": {
    "ai": "AI"
-  }
+  },
+  "sinceNews": "sejak berita",
+  "sinceNote": "Di sebelah berita: perubahan harga saham sejak berita, diukur dari harga tutup terakhir sebelumnya (termasuk dagangan pra-pasaran dan selepas waktu dagangan). Di sebelah pergerakan harga besar: pergerakan hari ini, pra-pasaran atau selepas waktu dagangan."
  },
  "screens": {
   "top": {

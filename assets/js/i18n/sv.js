@@ -379,7 +379,9 @@ export default {
   "asOfShort": "Kurser: {d}, fördröjda cirka 15 minuter",
   "themesShort": {
    "ai": "AI"
-  }
+  },
+  "sinceNews": "sedan nyheten",
+  "sinceNote": "Bredvid en nyhet: kursförändringen sedan nyheten, räknat från den senaste stängningskursen före den (förhandel och efterhandel inräknade). Bredvid en stor kursrörelse: dagens rörelse, i förhandeln eller i efterhandeln."
  },
  "screens": {
   "top": {

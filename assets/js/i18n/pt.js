@@ -379,7 +379,9 @@ export default {
   "asOfShort": "Preços: {d}, com atraso de cerca de 15 minutos",
   "themesShort": {
    "ai": "IA"
-  }
+  },
+  "sinceNews": "desde a notícia",
+  "sinceNote": "Ao lado de uma notícia: a variação da cotação desde a notícia, medida a partir do último fechamento anterior a ela (incluindo pré-mercado e after-market). Ao lado de uma grande variação de preço: a variação do dia, do pré-mercado ou do after-market."
  },
  "screens": {
   "top": {

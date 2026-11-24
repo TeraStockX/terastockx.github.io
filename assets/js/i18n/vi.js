@@ -379,7 +379,9 @@ export default {
   "asOfShort": "Giá: {d}, trễ khoảng 15 phút",
   "themesShort": {
    "ai": "AI"
-  }
+  },
+  "sinceNews": "từ khi có tin",
+  "sinceNote": "Bên cạnh tin tức: biến động giá cổ phiếu từ khi có tin, tính từ giá đóng cửa gần nhất trước tin (bao gồm giao dịch trước phiên và sau giờ). Bên cạnh biến động giá lớn: biến động trong ngày, trước phiên hoặc sau giờ."
  },
  "screens": {
   "top": {

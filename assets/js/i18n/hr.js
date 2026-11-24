@@ -379,7 +379,9 @@ export default {
   "asOfShort": "Cijene: {d}, s odgodom od oko 15 minuta",
   "themesShort": {
    "ai": "AI"
-  }
+  },
+  "sinceNews": "od vijesti",
+  "sinceNote": "Uz vijest: promjena cijene dionice od vijesti, u odnosu na posljednju zaključnu cijenu prije nje (uključujući trgovanje prije otvaranja i nakon zatvaranja). Uz veliko kretanje cijene: kretanje toga dana, prije otvaranja ili nakon zatvaranja."
  },
  "screens": {
   "top": {

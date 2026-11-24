@@ -517,6 +517,41 @@ test("Top stories: news of large companies with headlines, pre-market moves, one
   assert.equal(buildStories({ rows: [{ t: "ORCL", n: "Oracle", mc: 5e11, dc: -9 }], news: [], session: { session: "closed" }, now })[0].when, "last");
 });
 
+test("Top stories: next to news the change since the news, not a later session's move", async () => {
+  const { buildStories, sinceNews, closeDayBefore, closeOn, nyTime } = await import("../scripts/pulse.mjs");
+  // New York time, and the last regular close before a moment (16:00 New York time, Monday to Friday).
+  assert.equal(nyTime("2026-11-23T13:57:54.000Z"), "2026-11-23T08:57");
+  assert.equal(closeDayBefore("2026-11-23T13:57:54.000Z"), "2026-11-20", "before Monday's open: Friday's close");
+  assert.equal(closeDayBefore("2026-11-23T21:12:08.000Z"), "2026-11-23", "after Monday's close: Monday's close");
+  assert.equal(closeDayBefore("2026-07-01T20:00:00Z"), "2026-07-01", "16:00 in summer time");
+  assert.equal(closeDayBefore("2026-07-01T19:59:00Z"), "2026-06-30");
+  // That close from the daily history; a holiday takes the session before it; not published yet: none.
+  const closes = [["2026-11-19", 145.98], ["2026-11-20", 125.53], ["2026-11-23", 165.05]];
+  assert.deepEqual(closeOn(closes, "2026-11-20"), ["2026-11-20", 125.53]);
+  assert.deepEqual(closeOn(closes, "2026-11-22"), ["2026-11-20", 125.53]);
+  assert.equal(closeOn(closes, "2026-11-24"), null);
+  // NVIDIA: the CEO news came before Monday's open (+31.5% on Monday); on Tuesday it is down 12%, which is
+  // +15.6% since the news. HPE's results came after Monday's close: Tuesday's change is the change since.
+  const now = new Date("2026-11-24T15:12:00Z");
+  const rows = [{ t: "NVDA", n: "NVIDIA", mc: 3.5e12, px: 145.15, dc: -12.06 }, { t: "HPE", n: "HPE", mc: 3e10, px: 20, dc: -10.07 }];
+  const news = [
+    { t: "NVDA", date: "2026-11-23", at: "2026-11-23T13:57:54.000Z", items: ["5.02"], kind: "leadership", title: "NVIDIA Board Reinstates Jensen Huang", url: "n1", pb: 125.53 },
+    { t: "HPE", date: "2026-11-23", at: "2026-11-23T21:12:08.000Z", items: ["2.02"], kind: "results", title: "HPE reports fiscal 2026 fourth quarter results", url: "n2" },
+  ];
+  const by = Object.fromEntries(buildStories({ rows, news, session: { session: "open" }, now }).map((x) => [x.t, x]));
+  assert.equal(by.NVDA.move, -12.06, "the day's move still counts for the order");
+  assert.equal(by.NVDA.since, 15.63);
+  assert.equal(by.HPE.since, -10.07);
+  // After the close: news of the evening shows the after-hours change; at night (no trade since) nothing;
+  // older news: from its close to the after-hours price; without its close: nothing.
+  assert.equal(sinceNews({ px: 20, dc: -1, xc: -6, xs: "post" }, { at: "2026-11-24T21:30:00Z" }, { now: new Date("2026-11-24T22:00:00Z"), session: "post" }), -6);
+  assert.equal(sinceNews({ px: 20, dc: -1 }, { at: "2026-11-24T21:30:00Z", pb: 22 }, { now: new Date("2026-11-25T03:00:00Z"), session: "closed" }), null);
+  assert.equal(sinceNews({ px: 20, dc: -1, xc: -6, xs: "post" }, { at: "2026-11-24T13:00:00Z", pb: 21 }, { now: new Date("2026-11-24T22:00:00Z"), session: "post" }), -10.48);
+  assert.equal(sinceNews({ px: 20, dc: -1 }, { at: "2026-11-20T13:00:00Z" }, { now, session: "open" }), null);
+  // Before the open: overnight news shows the pre-market change.
+  assert.equal(sinceNews({ px: 50, dc: 2, xc: 4.5, xs: "pre" }, { at: "2026-11-24T12:00:00Z" }, { now: new Date("2026-11-24T13:30:00Z"), session: "pre" }), 4.5);
+});
+
 test("News headlines: press-release titles, the reported item, kinds of news", async () => {
   const h = await import("../scripts/news-headline.mjs");
   const fx = (f) => readFileSync(new URL(`./fixtures/8k/${f}`, import.meta.url), "utf8");

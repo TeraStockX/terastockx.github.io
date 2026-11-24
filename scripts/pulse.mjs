@@ -35,8 +35,58 @@ const brief = (r, extra = {}) => ({ t: r.t, n: r.n, mc: r.mc ?? null, dc: r.dc ?
 // release), and big price moves, also before the open and after the close. The most important first.
 export const STORY_CAP = 1e10;
 const KIND_WEIGHT = { critical: 60, cyber: 45, leadership: 45, deal: 40, major: 35, restructuring: 30, results: 20, board: 0, other: 0 };
+// News that can be a top story by itself (not just the headline behind a big move).
+export const isStoryNews = (n) => (KIND_WEIGHT[n?.kind] ?? 0) > 0;
 // A move is big news for a large company at a smaller percentage.
 export const bigMove = (mc) => (mc >= 1e12 ? 2.5 : mc >= 2e11 ? 3.5 : mc >= 5e10 ? 5 : 8);
+
+// ---------- Change since the news ----------
+
+// New York wall-clock time of a moment as "YYYY-MM-DDTHH:MM" (comparable as text).
+const NY_FMT = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+export function nyTime(when) {
+  const p = Object.fromEntries(NY_FMT.formatToParts(new Date(when)).map((x) => [x.type, x.value]));
+  return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`;
+}
+const dayBefore = (day) => new Date(Date.parse(`${day}T12:00:00Z`) - DAY).toISOString().slice(0, 10);
+const isWeekday = (day) => { const g = new Date(`${day}T12:00:00Z`).getUTCDay(); return g >= 1 && g <= 5; };
+// The day of the last regular close (16:00 New York time, Monday to Friday) before a moment. Market holidays
+// are not known here: the price history decides (closeOn).
+export function closeDayBefore(when) {
+  const ny = nyTime(when);
+  let day = ny.slice(0, 10);
+  if (ny.slice(11) < "16:00") day = dayBefore(day);
+  while (!isWeekday(day)) day = dayBefore(day);
+  return day;
+}
+// When a news item came out: the SEC's acceptance time, else its filing date (taken as before the open).
+export const newsTime = (n) => n?.at || (n?.date ? `${n.date}T05:00:00Z` : null);
+// The close of the last session on or before `day` in a daily history (oldest first), as [day, close]. Null
+// while the history does not reach that day yet: a session's close is published some time after it, and
+// this keeps a close that is still missing apart from a market holiday.
+export function closeOn(closes, day) {
+  if (!closes?.length || closes.at(-1)[0] < day) return null;
+  let hit = null;
+  for (const c of closes) if (c[0] <= day) hit = c;
+  return hit;
+}
+// The latest price: the pre-market or after-hours trade of the largest companies, else the latest regular one.
+const latestPrice = (r) => (isNum(r.px) && r.px > 0 ? r.px * (isNum(r.xc) && (r.xs === "pre" || r.xs === "post") ? 1 + r.xc / 100 : 1) : null);
+// The share-price change since a news item, in percent: from the last close before the news (n.pb, read
+// from the daily history) to the latest price. News after the latest close: the change since that close
+// (the day's change during the session, the pre-market or after-hours change outside it; none at night,
+// when there is no trade since the news to show). Null when unknown.
+export function sinceNews(r, n, { now = new Date(), session = null } = {}) {
+  const at = newsTime(n);
+  if (!at) return null;
+  if (closeDayBefore(at) >= closeDayBefore(now)) {
+    if (session === "open") return isNum(r.dc) ? r.dc : null;
+    if ((session === "pre" || session === "post") && r.xs === session && isNum(r.xc)) return r.xc;
+    return null;
+  }
+  const cur = latestPrice(r);
+  return isNum(n.pb) && n.pb > 0 && isNum(cur) ? +((cur / n.pb - 1) * 100).toFixed(2) : null;
+}
 
 export function buildStories({ rows, news = [], session = null, now = new Date(), max = 8, maxMovesOnly = 4 }) {
   const byCo = new Map();
@@ -65,6 +115,8 @@ export function buildStories({ rows, news = [], session = null, now = new Date()
     out.push({
       w, t: r.t, n: r.n, mc: r.mc ?? null, dc: r.dc ?? null, o: r.o ?? null,
       move: move ? +move.v.toFixed(2) : null, when: move?.when ?? null,
+      // Next to news the change since the news, not the change of a later session.
+      since: items[0] ? sinceNews(r, items[0], { now, session: session?.session ?? null }) : null,
       kind: items[0]?.kind || "move", title: item?.title || null, date: item?.date || null, at: item?.at || null, url: item?.url || null, items: item?.items || null,
     });
   }

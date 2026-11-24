@@ -379,7 +379,9 @@ export default {
   "asOfShort": "Kursy: {d}, opóźnione o ok. 15 minut",
   "themesShort": {
    "ai": "AI"
-  }
+  },
+  "sinceNews": "od publikacji",
+  "sinceNote": "Przy wiadomości: zmiana kursu od publikacji, liczona od ostatniego kursu zamknięcia przed nią (z handlem przed sesją i po sesji). Przy dużym ruchu kursu: ruch z danego dnia, przed sesją lub po sesji."
  },
  "screens": {
   "top": {

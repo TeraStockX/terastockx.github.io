@@ -379,7 +379,9 @@ export default {
   "asOfShort": "Fiyatlar: {d}, yaklaşık 15 dakika gecikmeli",
   "themesShort": {
    "ai": "YZ"
-  }
+  },
+  "sinceNews": "haberden bu yana",
+  "sinceNote": "Haberin yanında: hisse fiyatının haberden bu yana değişimi, haberden önceki son kapanış fiyatına göre (seans öncesi ve seans sonrası işlemler dahil). Büyük fiyat hareketinin yanında: günün, seans öncesinin veya seans sonrasının hareketi."
  },
  "screens": {
   "top": {

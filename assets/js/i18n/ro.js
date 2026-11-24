@@ -379,7 +379,9 @@ export default {
   "asOfShort": "Prețuri: {d}, întârziate cu aproximativ 15 minute",
   "themesShort": {
    "ai": "AI"
-  }
+  },
+  "sinceNews": "de la știre",
+  "sinceNote": "Lângă o știre: variația prețului acțiunii de la știre, față de ultimul preț de închidere dinaintea ei (inclusiv tranzacțiile dinainte de deschidere și de după închidere). Lângă o mișcare mare de preț: mișcarea zilei, dinainte de deschidere sau de după închidere."
  },
  "screens": {
   "top": {

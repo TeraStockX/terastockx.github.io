@@ -379,7 +379,9 @@ export default {
   "asOfShort": "Hinnat: {d}, noin 15 minuutin viiveellä",
   "themesShort": {
    "ai": "Tekoäly"
-  }
+  },
+  "sinceNews": "uutisen jälkeen",
+  "sinceNote": "Uutisen vieressä: osakekurssin muutos uutisen jälkeen, laskettuna viimeisimmästä uutista edeltävästä päätöskurssista (kaupankäynti ennen avausta ja jälkimarkkinoilla mukaan lukien). Suuren kurssiliikkeen vieressä: päivän liike, ennen avausta tai jälkimarkkinoilla."
  },
  "screens": {
   "top": {

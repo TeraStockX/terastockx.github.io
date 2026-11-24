@@ -568,6 +568,7 @@ h1, h2, h3 { overflow-wrap: break-word; hyphens: auto; }
 .hp-story:hover { text-decoration: none; border-color: var(--border-strong); color: var(--text); }
 .hp-story > b:first-child { color: var(--text); }
 .hp-kind { color: var(--text-3); }
+.hp-when { color: var(--text-3); font-size: 11px; margin-inline-start: -2px; }
 .pulse-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; margin: 8px 0 12px; }
 .index-strip { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); gap: 10px; }
 .index-chip { padding: 10px 14px; }
@@ -628,7 +629,7 @@ td .dq-partial { display: flex; width: max-content; margin-left: auto; }
 .cname-row { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .cname-row .cname { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* Right-to-left pages: Latin company names keep their own direction, so a long name is cut at its end ("DECKERS OU…"), not its start. */
-[dir="rtl"] .cname, [dir="rtl"] .nrow-name, [dir="rtl"] .ac-list .ac-n { unicode-bidi: plaintext; text-align: right; }
+[dir="rtl"] .cname, [dir="rtl"] .nrow-name, [dir="rtl"] .nrow-title, [dir="rtl"] .ac-list .ac-n { unicode-bidi: plaintext; text-align: right; }
 .cname-row .dq-chip { margin-left: auto; }
 .dq-chip { display: inline-flex; align-items: center; gap: 4px; flex: none; padding: 2px 7px; border-radius: 999px; font-size: 11px; font-weight: 800; white-space: nowrap; cursor: help; }
 .dq-chip-partial { background: rgba(250,178,25,.16); border: 1px solid rgba(250,178,25,.4); color: var(--warning-ink); }

@@ -850,10 +850,19 @@ const cap1 = (s) => (s ? s.charAt(0).toLocaleUpperCase(locale()) + s.slice(1) : 
 // A small "i" that opens an explanation (a tap is enough on phones).
 const infoTip = (text) => `<details class="info-tip"><summary aria-label="Info">ⓘ</summary><p class="small">${esc(text)}</p></details>`;
 
+// The number next to a story, with what it measures: next to news the change since the news (from the last
+// close before it); next to a big price move the move itself, with its session (today, before the open,
+// after the close, the last session).
+function storyMove(s) {
+  if (s.kind !== "move") return isNum(s.since) ? { v: s.since, label: t("pulse.sinceNews") } : null;
+  return isNum(s.move) ? { v: s.move, label: t(`pulse.when.${s.when || "day"}`) } : null;
+}
+
 // One line per story: company, move, kind and time, then the headline (three lines at most).
 function storyRow(s) {
   const row = fullRow(s);
   const when = s.at || (s.date ? `${s.date}T12:00:00` : null);
+  const m = storyMove(s);
   return `<div class="nrow story-row">
     ${starBtn(s.t, getWatch().includes(s.t))}
     <a class="nrow-logo" href="#/c/${encodeURIComponent(s.t)}" tabindex="-1" aria-hidden="true">${logo(row)}</a>
@@ -862,12 +871,12 @@ function storyRow(s) {
         <span class="pill tone-${KIND_TONE[s.kind] || "none"} nrow-kind"><span class="dot"></span>${esc(t(`pulse.kind.${s.kind}`))}</span>${when && s.kind !== "move" ? `<span class="small muted">${esc(updatedWhen(when))}</span>` : ""}</div>
       ${s.title ? `<div class="nrow-title clamp3" lang="en" title="${esc(s.title)}">${esc(s.title)}${s.url ? ` <a class="nrow-src" href="${esc(s.url)}" target="_blank" rel="noopener" title="${esc(t("pulse.readMore"))}">SEC ↗</a>` : ""}</div>` : ""}
     </div>
-    ${isNum(s.move) ? `<div class="nrow-move">${dayChange(s.move)}<span class="small muted">${esc(t(`pulse.when.${s.when || "day"}`))}</span></div>` : ""}
+    ${m ? `<div class="nrow-move">${dayChange(m.v)}<span class="small muted">${esc(m.label)}</span></div>` : ""}
   </div>`;
 }
 function storiesView(p, { limit = 8 } = {}) {
   const list = (p?.stories || []).slice(0, limit);
-  return `<h2 class="section-title news-sec">${esc(t("pulse.storiesTitle"))} ${infoTip(t("pulse.storiesNote"))}</h2>
+  return `<h2 class="section-title news-sec">${esc(t("pulse.storiesTitle"))} ${infoTip(`${t("pulse.storiesNote")} ${t("pulse.sinceNote")}`)}</h2>
     ${list.length ? `<div class="glass nlist">${list.map(storyRow).join("")}</div>` : `<div class="glass empty small">${esc(t("pulse.storiesNone"))}</div>`}`;
 }
 
@@ -935,10 +944,15 @@ function homePulse(p) {
   const chg = (v) => `<b class="${v > 0 ? "up" : v < 0 ? "down" : ""}">${ltr(`${v > 0 ? "+" : ""}${num(v, 2)}%`)}</b>`;
   const market = (p.indices || []).filter((e) => isNum(pre ? e.xc : e.dc)).slice(0, 2).map((e) => `<span class="hp-item">${esc(INDEX_NAMES[e.t] || e.t)} ${chg(pre ? e.xc : e.dc)}</span>`);
   if (ai && isNum(ai.change)) market.push(`<span class="hp-item">${esc(t("pulse.themesShort.ai"))} ${chg(ai.change)}</span>`);
-  const stories = (p.stories || []).slice(0, 6).map((s) => `<a class="hp-story" href="#/c/${encodeURIComponent(s.t)}" title="${esc(`${t(`pulse.kind.${s.kind}`)}${s.title ? `: ${s.title}` : ""}`)}"><b>${esc(s.t)}</b>${isNum(s.move) ? chg(s.move) : ""}<span class="hp-kind">${esc(t(`pulse.kind.${s.kind}`))}</span></a>`);
+  const stories = (p.stories || []).slice(0, 6).map((s) => {
+    const m = storyMove(s);
+    return `<a class="hp-story" href="#/c/${encodeURIComponent(s.t)}" title="${esc(`${t(`pulse.kind.${s.kind}`)}${s.title ? `: ${s.title}` : ""}`)}"><b>${esc(s.t)}</b><span class="hp-kind">${esc(t(`pulse.kind.${s.kind}`))}</span>${m ? `${chg(m.v)}<span class="hp-when">${esc(m.label)}</span>` : ""}</a>`;
+  });
   if (!market.length && !stories.length) return "";
+  // Before the open the pre-market changes are shown; when the market is closed, the last session's.
+  const session = pre ? t("pulse.when.pre") : p.session === "closed" ? t("pulse.when.last") : "";
   return `<div class="glass home-pulse">
-    <a class="hp-title" href="#/news"><span>${esc(t("ui.marketToday"))}${pre ? ` <span class="muted">· ${esc(t("pulse.when.pre"))}</span>` : ""}</span><span class="hp-more" aria-hidden="true">›</span></a>
+    <a class="hp-title" href="#/news"><span>${esc(t("ui.marketToday"))}${session ? ` <span class="muted">· ${esc(session)}</span>` : ""}</span><span class="hp-more" aria-hidden="true">›</span></a>
     ${market.length ? `<div class="hp-items hp-market">${market.join("")}</div>` : ""}
     ${stories.length ? `<div class="hp-line"><a class="hp-label" href="#/news">${esc(t("pulse.storiesTitle"))}</a><div class="hp-items scroll">${stories.join("")}</div></div>` : ""}
   </div>`;

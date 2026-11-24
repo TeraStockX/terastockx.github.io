@@ -379,7 +379,9 @@ export default {
   "asOfShort": "Mga presyo: {d}, naantala nang mga 15 minuto",
   "themesShort": {
    "ai": "AI"
-  }
+  },
+  "sinceNews": "mula sa balita",
+  "sinceNote": "Katabi ng balita: ang pagbabago ng presyo ng share mula sa balita, mula sa huling closing bago nito (kasama ang kalakalan sa pre-market at after hours). Katabi ng malaking galaw ng presyo: ang galaw sa araw, sa pre-market o sa after hours."
  },
  "screens": {
   "top": {
