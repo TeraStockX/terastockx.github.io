@@ -18,7 +18,7 @@ jobs:
         run: |
           mkdir -p out
           for i in $(seq 1 60); do
-            id=$(gh run list --repo TeraStockX/terastockx.github.io --workflow intraday.yml --limit 10 --json databaseId,headSha,status -q '[.[] | select(.headSha | startswith("dcb9f844")) | select(.status == "completed")][0].databaseId')
+            id=$(gh run list --repo TeraStockX/terastockx.github.io --workflow intraday.yml --limit 10 --json databaseId,headSha,status -q '[.[] | select(.headSha | startswith("9e56e402")) | select(.status == "completed")][0].databaseId')
             if [ -n "$id" ]; then break; fi
             sleep 20
           done
@@ -40,4 +40,4 @@ jobs:
         if: always()
         run: |
           git config user.name diag; git config user.email diag@users.noreply.github.com
-          git add out && git commit -qm "diag: since-news live check" && git push -q origin HEAD:diag
+          git add out && git commit -qm "diag: news age live check" && git push -q origin HEAD:diag
