@@ -200,7 +200,7 @@ export default {
   "alertCritical": "{t}: ny kritisk signal – {flag}",
   "fxNote": "rapporter i {cur}, omräknade till 1 {cur} = {rate} USD",
   "navTrend": "TeraScore-förändringar",
-  "tabTrend": "Förändringar",
+  "tabTrend": "Trend",
   "trendIntro": "Hur bolagens TeraScore förändras över tid. Vyn per räkenskapsår poängsätter varje bolag vid slutet av varje räkenskapsår med enbart det som var känt då (årsredovisningar, 8-K-händelser under de föregående 12 månaderna och aktiekursen det datumet). Veckovisa ögonblicksbilder läggs till vid varje måndagsuppdatering, så förändringar över 4 och 13 veckor visas efter de första veckorna.",
   "trendPeriod": "Period",
   "trendPeriodFy": "Förändring mot föregående räkenskapsår",
