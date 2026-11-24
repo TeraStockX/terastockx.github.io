@@ -1,0 +1,12 @@
+deploy 45467712799: completed success
+build 2026-11-24T19:12:25.1706959Z ^[[36;1m  echo "Data loaded from the data branch: $(ls data/companies | wc -l) companies"^[[0m
+build 2026-11-24T19:12:26.9358503Z Data loaded from the data branch: 5880 companies
+build 2026-11-24T19:12:28.4988749Z # Subtest: Unit errors fixed; genuine dilution is not mistaken for a split
+build 2026-11-24T19:12:28.4989898Z ok 15 - Unit errors fixed; genuine dilution is not mistaken for a split
+build 2026-11-24T19:12:28.9433764Z ^[[36;1m    echo "Data of intraday run $id ($created): $(ls data/companies | wc -l) companies"^[[0m
+build 2026-11-24T19:12:32.4372119Z Data of intraday run 45466292108 (2026-11-24T19:04:21Z): 5880 companies
+build 2026-11-24T19:12:51.7926983Z   if-no-files-found: error
+build 2026-11-24T19:12:52.7527949Z (node:2557) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not is
+deploy 2026-11-24T19:13:08.4282544Z   error_count: 10
+live etfs quotesAt 2026-11-24T19:06:26.682Z {"t":"SPY","n":"State Street SPDR S&P 500 ETF Trust","ex":"NYSE Arca","px":716.985,"r1y":0.0803,"er":0.0009,"aum":766431872000,"dc":-0.73}
+pf-hu-phone-1d {"overflow":false,"tabs":"Cégek|Portfólió|Hírek|Változás|Összevet|Adatok|Módszer","nav":"Vállalatok|Portfólió|Piac és események|TeraScore-változások|Összehasonlítás|Pénzügyi adatok|Módszertan","kpis":["Értékváltozás −26 465 Ft −0,38% ma","TeraScore-változás −0,7 pont 74,4 → 73,7"],"rows":8,"charts":0,"bars":"Technológia 44,9% / Alapvető fogyasztási cikkek 14,5% / Egészségügy 11,0% / ETF-ek 10,7% / Energia 9,4% / Pénzügy 9,4%","notes":["Tételenként az árváltozás, annak hatása a portfólió értékére és a TeraScore változása az időszakban."]} no errors
