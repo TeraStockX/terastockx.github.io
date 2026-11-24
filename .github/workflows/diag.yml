@@ -22,7 +22,7 @@ jobs:
           seen=""
           for round in 1 2 3; do
             for i in $(seq 1 45); do
-              id=$(gh run list --repo TeraStockX/terastockx.github.io --workflow intraday.yml --limit 15 --json databaseId,headSha,status -q '[.[] | select(.headSha | startswith("af951e12")) | select(.status == "completed")] | map(.databaseId) | join(" ")')
+              id=$(gh run list --repo TeraStockX/terastockx.github.io --workflow intraday.yml --limit 15 --json databaseId,headSha,status -q '[.[] | select(.headSha | startswith("af951e12")) | select(.status == "completed")] | map(.databaseId | tostring) | join(" ")')
               n=$(echo "$id" | wc -w)
               if [ "$n" -ge "$round" ]; then break; fi
               sleep 20
