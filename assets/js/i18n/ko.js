@@ -310,7 +310,18 @@ export default {
   "contact": "문의",
   "marketToday": "오늘의 시장",
   "marketMore": "시장 및 이벤트",
-  "eventsTitle": "기업 주요 이벤트(8-K)"
+  "eventsTitle": "기업 주요 이벤트(8-K)",
+  "pfMax": "전체",
+  "pfSince": "{d} 이후",
+  "pfMoveValue": "평가액 변화",
+  "pfMoveScore": "TeraScore 변화",
+  "pfMoveNoScore": "아직 기록이 충분하지 않습니다: 현재 방법의 주간 TeraScore는 {d}부터 기록됩니다.",
+  "pfMoveFy": "최근 회계연도와 그 전 회계연도 비교(당시 알려진 데이터 기준).",
+  "pfMoveFyRange": "회계연도 {a} → {b}(당시 알려진 데이터 기준).",
+  "pfMoveChartSub": "{c} 기준, 해외 가격은 오늘 환율로 환산.",
+  "pfMoveTop": "포트폴리오를 움직인 요인",
+  "pfMoveTopSub": "보유 종목별 기간 중 가격 변화, 포트폴리오 평가액에 미친 영향, TeraScore 변화.",
+  "pfMoveMonthly": "월말 가격 사용(아직 일별 종가 없음): {list}."
  },
  "pulse": {
   "themes": {

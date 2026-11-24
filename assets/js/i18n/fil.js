@@ -310,7 +310,18 @@ export default {
   "contact": "Makipag-ugnayan",
   "marketToday": "Merkado ngayon",
   "marketMore": "Merkado at kaganapan",
-  "eventsTitle": "Malalaking kaganapan ng kumpanya (8-K)"
+  "eventsTitle": "Malalaking kaganapan ng kumpanya (8-K)",
+  "pfMax": "Max",
+  "pfSince": "mula {d}",
+  "pfMoveValue": "Pagbabago ng halaga",
+  "pfMoveScore": "Pagbabago ng TeraScore",
+  "pfMoveNoScore": "Kulang pa ang kasaysayan: itinatala ang lingguhang TeraScore ng kasalukuyang pamamaraan mula {d}.",
+  "pfMoveFy": "Pinakahuling taon ng pananalapi kumpara sa nauna (gamit ang datos na alam noon).",
+  "pfMoveFyRange": "Mga taon ng pananalapi {a} → {b} (gamit ang datos na alam noon).",
+  "pfMoveChartSub": "Sa {c}; ang mga dayuhang presyo ay sa palitan ngayong araw.",
+  "pfMoveTop": "Ano ang nagpagalaw sa portfolio",
+  "pfMoveTopSub": "Bawat hawak: pagbabago ng presyo, epekto nito sa halaga ng portfolio at pagbabago ng TeraScore sa panahong iyon.",
+  "pfMoveMonthly": "Gamit ang presyo sa katapusan ng buwan (wala pang pang-araw-araw na closing): {list}."
  },
  "pulse": {
   "themes": {

@@ -310,7 +310,18 @@ export default {
   "contact": "Contact",
   "marketToday": "Markt vandaag",
   "marketMore": "Markt en gebeurtenissen",
-  "eventsTitle": "Grote bedrijfsgebeurtenissen (8-K)"
+  "eventsTitle": "Grote bedrijfsgebeurtenissen (8-K)",
+  "pfMax": "Max",
+  "pfSince": "sinds {d}",
+  "pfMoveValue": "Waardeverandering",
+  "pfMoveScore": "TeraScore-verandering",
+  "pfMoveNoScore": "Nog niet genoeg historie: de wekelijkse TeraScores volgens de huidige methode worden sinds {d} vastgelegd.",
+  "pfMoveFy": "Laatste boekjaar ten opzichte van het jaar ervoor (met de gegevens die toen bekend waren).",
+  "pfMoveFyRange": "Boekjaren {a} → {b} (met de gegevens die toen bekend waren).",
+  "pfMoveChartSub": "In {c}; buitenlandse koersen tegen de wisselkoers van vandaag.",
+  "pfMoveTop": "Wat de portefeuille bewoog",
+  "pfMoveTopSub": "Per positie: koersverandering, het effect op de portefeuillewaarde en de TeraScore-verandering in de periode.",
+  "pfMoveMonthly": "Met slotkoersen aan het einde van de maand (nog geen dagelijkse slotkoersen): {list}."
  },
  "pulse": {
   "themes": {

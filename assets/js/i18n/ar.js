@@ -310,7 +310,18 @@ export default {
   "contact": "تواصل",
   "marketToday": "السوق اليوم",
   "marketMore": "السوق والأحداث",
-  "eventsTitle": "أحداث الشركات الكبرى (8-K)"
+  "eventsTitle": "أحداث الشركات الكبرى (8-K)",
+  "pfMax": "الكل",
+  "pfSince": "منذ {d}",
+  "pfMoveValue": "تغير القيمة",
+  "pfMoveScore": "تغير TeraScore",
+  "pfMoveNoScore": "لا يوجد سجل كافٍ بعد: تُسجَّل درجات TeraScore الأسبوعية للمنهجية الحالية منذ {d}.",
+  "pfMoveFy": "آخر سنة مالية مقارنة بالسابقة (بالبيانات المعروفة آنذاك).",
+  "pfMoveFyRange": "السنوات المالية من {a} إلى {b} (بالبيانات المعروفة آنذاك).",
+  "pfMoveChartSub": "بعملة {c}؛ الأسعار الأجنبية بسعر صرف اليوم.",
+  "pfMoveTop": "ما الذي حرّك المحفظة",
+  "pfMoveTopSub": "لكل مركز: تغير السعر وأثره في قيمة المحفظة وتغير TeraScore خلال الفترة.",
+  "pfMoveMonthly": "بأسعار نهاية الشهر (لا إغلاقات يومية بعد): {list}."
  },
  "pulse": {
   "themes": {

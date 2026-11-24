@@ -386,6 +386,95 @@ test("Portfolio with ETFs: no TeraScore for funds, no concentration warning for 
   assert.deepEqual(p.missingYield, []);
 });
 
+test("Portfolio moves: period starts, closes on or before a day, month-end stand-ins", async () => {
+  const { periodStart, closeOnOrBefore, monthEndNear } = await import("../assets/js/portfolio.js");
+  assert.equal(periodStart("1w", "2026-11-24"), "2026-11-17");
+  assert.equal(periodStart("1m", "2026-03-31"), "2026-02-28", "month end clamped");
+  assert.equal(periodStart("3m", "2026-05-31"), "2026-02-28");
+  assert.equal(periodStart("6m", "2026-11-24"), "2026-05-24");
+  assert.equal(periodStart("1y", "2024-02-29"), "2023-02-28");
+  assert.equal(periodStart("1d", "2026-11-24"), null);
+  const daily = [["2026-11-13", 10], ["2026-11-14", 11], ["2026-11-17", 12], ["2026-11-18", 13]];
+  assert.deepEqual(closeOnOrBefore(daily, "2026-11-16"), { day: "2026-11-14", v: 11 }, "weekend: Friday's close");
+  assert.equal(closeOnOrBefore(daily, "2026-11-01"), null, "series starts later");
+  assert.equal(closeOnOrBefore(daily, "2026-11-30"), null, "series stopped more than 6 days before");
+  const monthly = [["2026-07", 90], ["2026-08", 95], ["2026-09", 100], ["2026-11", 120]];
+  assert.deepEqual(monthEndNear(monthly, "2026-08-24", "2026-11-24"), { day: "2026-08-31", v: 95 });
+  assert.equal(monthEndNear(monthly, "2026-11-10", "2026-11-24"), null, "the current month is not a month end");
+});
+
+test("Portfolio moves: value change by period with today's shares, contributions, missing history", async () => {
+  const { periodMove, movePoints } = await import("../assets/js/portfolio.js");
+  const days = (from, n, p0, step) => Array.from({ length: n }, (_, i) => [new Date(Date.parse(from) + i * 86400000).toISOString().slice(0, 10), p0 + i * step]);
+  const holdings = [
+    { t: "A", shares: 10, row: { dc: 2 } },
+    { t: "B", shares: 4, row: { dc: -1 } },
+    { t: "E:LSE", shares: 5, row: { dc: 0.5 } },
+    { t: "N", shares: 1, row: {} },
+  ];
+  const series = new Map([
+    ["A", { now: 102, fx: 1, daily: days("2026-10-01", 54, 80, 0.4), monthly: [["2025-11", 60], ["2026-10", 90]] }],
+    ["B", { now: 99, fx: 1, daily: days("2026-10-01", 54, 120, -0.2), monthly: [["2025-11", 150], ["2026-10", 110]] }],
+    ["E:LSE", { now: 20, fx: 1.25, daily: [], monthly: [["2026-07", 16], ["2026-08", 17], ["2026-09", 18], ["2026-10", 19]] }],
+    ["N", { now: 5, fx: 1 }],
+  ]);
+  const today = "2026-11-24";
+  const d1 = periodMove("1d", holdings, series, { today });
+  assert.equal(d1.items.length, 3);
+  assert.deepEqual(d1.missing, ["N"]);
+  const a = d1.items.find((x) => x.t === "A");
+  assert.ok(Math.abs(a.pct - 0.02) < 1e-12 && Math.abs(a.change - (1020 - 1020 / 1.02)) < 1e-9);
+  assert.ok(Math.abs(d1.end - (1020 + 396 + 5 * 20 * 1.25)) < 1e-9, "today's value in dollars (pounds converted)");
+  const w = periodMove("1w", holdings, series, { today });
+  assert.equal(w.from, "2026-11-17");
+  assert.deepEqual(w.missing.sort(), ["E:LSE", "N"], "no daily closes: not in a week's move");
+  const closeA = 80 + 47 * 0.4, closeB = 120 - 47 * 0.2; // 17 Nov is day 47 of the series
+  assert.ok(Math.abs(w.start - (10 * closeA + 4 * closeB)) < 1e-9);
+  assert.ok(Math.abs(w.pct - ((1020 + 396) / (10 * closeA + 4 * closeB) - 1)) < 1e-12);
+  assert.equal(w.items[0].t, "B", "largest contribution first (a loss of 46.4 before a gain of 32)");
+  const pts = movePoints(w, holdings, series, { today });
+  assert.equal(pts[0][0], "2026-11-17");
+  assert.equal(pts.at(-1)[0], today);
+  assert.ok(Math.abs(pts.at(-1)[1] - w.end) < 1e-9);
+  const m1 = periodMove("1m", holdings, series, { today });
+  assert.deepEqual(m1.approx, ["E:LSE"], "a month back: the 31 Oct close, 7 days from 24 Oct");
+  const q = periodMove("3m", holdings, series, { today });
+  assert.deepEqual(q.approx, ["E:LSE"], "month-end price stands in over three months");
+  assert.ok(q.items.some((x) => x.t === "E:LSE" && Math.abs(x.pct - (20 / 17 - 1)) < 1e-12), "31 Aug close for 24 Aug");
+  assert.ok(movePoints(q, holdings, series, { today }).every(([k]) => k.length === 7 || k === today), "monthly points then today");
+});
+
+test("Portfolio moves: weighted TeraScore change from daily, weekly and fiscal-year history", async () => {
+  const { scoreMove } = await import("../assets/js/portfolio.js");
+  const today = "2026-12-10";
+  const va = 2300, vb = 1700, tot = va + vb; // A is 57.5% of the value
+  const scored = [
+    { t: "A", value: va, score: 70, d1: 2, ch: 4, weekly: [["2026-11-24", 66], ["2026-12-01", 68]], fy: [[2023, 50], [2024, 60], [2025, 65]] },
+    { t: "B", value: vb, score: 40, d1: -1, ch: -2, weekly: [["2026-11-24", 44], ["2026-12-01", 42]], fy: [[2024, 45], [2025, 42]] },
+  ];
+  const near = (a, b) => Math.abs(a - b) < 1e-12;
+  const d = scoreMove("1d", scored, { today });
+  assert.equal(d.basis, "day");
+  assert.ok(near(d.change, (2 * va - 1 * vb) / tot));
+  assert.ok(near(d.to, (70 * va + 40 * vb) / tot) && near(d.from, d.to - d.change));
+  const w = scoreMove("1w", scored, { today });
+  assert.equal(w.since, "2026-12-01");
+  assert.ok(near(w.change, ((70 - 68) * va + (40 - 42) * vb) / tot));
+  assert.equal(w.byT.get("B"), -2);
+  assert.equal(w.points.at(-1)[0], today);
+  const m = scoreMove("1m", scored, { today });
+  assert.equal(m.change, null, "no snapshot a month old yet");
+  assert.equal(m.first, "2026-11-24");
+  const y = scoreMove("1y", scored, { today });
+  assert.equal(y.basis, "fyLast", "a year back: latest fiscal year against the one before");
+  assert.ok(near(y.change, (4 * va - 2 * vb) / tot));
+  const x = scoreMove("max", scored, { today });
+  assert.deepEqual(x.years, [2024, 2025], "2023 covers less than 60% of the value");
+  assert.ok(near(x.change, ((65 - 60) * va + (42 - 45) * vb) / tot));
+  assert.deepEqual(x.points.map((p) => p[0]), ["2024", "2025"]);
+  assert.equal(scoreMove("1d", [], { today }), null);
+});
+
 test("ETF listings: funds of both directories, NYSE Arca included", async () => {
   const { parseEtfs } = await import("../scripts/listings.mjs");
   const nasdaq = "Symbol|Security Name|Market Category|Test Issue|Financial Status|Round Lot Size|ETF|NextShares\nQQQ|Invesco QQQ Trust, Series 1|G|N|N|100|Y|N\nAAPL|Apple Inc. - Common Stock|Q|N|N|100|N|N\nFile Creation Time: 1108202600:00|||||||";

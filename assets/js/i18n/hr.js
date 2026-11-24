@@ -310,7 +310,18 @@ export default {
   "contact": "Kontakt",
   "marketToday": "Tržište danas",
   "marketMore": "Tržište i događaji",
-  "eventsTitle": "Važni korporativni događaji (8-K)"
+  "eventsTitle": "Važni korporativni događaji (8-K)",
+  "pfMax": "Maks.",
+  "pfSince": "od {d}",
+  "pfMoveValue": "Promjena vrijednosti",
+  "pfMoveScore": "Promjena TeraScorea",
+  "pfMoveNoScore": "Još nema dovoljno povijesti: tjedni TeraScore po sadašnjoj metodi bilježi se od {d}.",
+  "pfMoveFy": "Posljednja poslovna godina u odnosu na prethodnu (prema podacima poznatima u to vrijeme).",
+  "pfMoveFyRange": "Poslovne godine {a} → {b} (prema podacima poznatima u to vrijeme).",
+  "pfMoveChartSub": "U {c}; strane cijene po današnjem tečaju.",
+  "pfMoveTop": "Što je pokrenulo portfelj",
+  "pfMoveTopSub": "Za svaku poziciju: promjena cijene, njezin utjecaj na vrijednost portfelja i promjena TeraScorea u razdoblju.",
+  "pfMoveMonthly": "S cijenama na kraju mjeseca (još nema dnevnih cijena zatvaranja): {list}."
  },
  "pulse": {
   "themes": {

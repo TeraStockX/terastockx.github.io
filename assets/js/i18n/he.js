@@ -310,7 +310,18 @@ export default {
   "contact": "צור קשר",
   "marketToday": "השוק היום",
   "marketMore": "שוק ואירועים",
-  "eventsTitle": "אירועי חברות גדולים (8-K)"
+  "eventsTitle": "אירועי חברות גדולים (8-K)",
+  "pfMax": "הכול",
+  "pfSince": "מאז {d}",
+  "pfMoveValue": "שינוי בשווי",
+  "pfMoveScore": "שינוי ב-TeraScore",
+  "pfMoveNoScore": "עדיין אין מספיק היסטוריה: ציוני TeraScore השבועיים לפי השיטה הנוכחית נרשמים מאז {d}.",
+  "pfMoveFy": "שנת הכספים האחרונה לעומת הקודמת (לפי הנתונים שהיו ידועים אז).",
+  "pfMoveFyRange": "שנות כספים {a} עד {b} (לפי הנתונים שהיו ידועים אז).",
+  "pfMoveChartSub": "ב-{c}; מחירים זרים לפי שער החליפין של היום.",
+  "pfMoveTop": "מה הזיז את התיק",
+  "pfMoveTopSub": "לכל החזקה: שינוי המחיר, השפעתו על שווי התיק והשינוי ב-TeraScore בתקופה.",
+  "pfMoveMonthly": "לפי מחירי סוף חודש (עדיין אין מחירי סגירה יומיים): {list}."
  },
  "pulse": {
   "themes": {

@@ -310,7 +310,18 @@ export default {
   "contact": "Kontakt",
   "marketToday": "Marknaden i dag",
   "marketMore": "Marknad och händelser",
-  "eventsTitle": "Större bolagshändelser (8-K)"
+  "eventsTitle": "Större bolagshändelser (8-K)",
+  "pfMax": "Max",
+  "pfSince": "sedan {d}",
+  "pfMoveValue": "Värdeförändring",
+  "pfMoveScore": "TeraScore-förändring",
+  "pfMoveNoScore": "Ännu för kort historik: veckovisa TeraScore enligt den nuvarande metoden registreras sedan {d}.",
+  "pfMoveFy": "Senaste räkenskapsåret mot året före (med de uppgifter som var kända då).",
+  "pfMoveFyRange": "Räkenskapsår {a} → {b} (med de uppgifter som var kända då).",
+  "pfMoveChartSub": "I {c}; utländska priser till dagens växelkurs.",
+  "pfMoveTop": "Vad som rörde portföljen",
+  "pfMoveTopSub": "Per innehav: kursförändring, dess effekt på portföljens värde och TeraScore-förändringen under perioden.",
+  "pfMoveMonthly": "Med månadsslutskurser (inga dagliga stängningskurser ännu): {list}."
  },
  "pulse": {
   "themes": {

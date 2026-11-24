@@ -22,7 +22,7 @@ import { fileURLToPath } from "node:url";
 import { parseCompanyFacts } from "./sec-parse.mjs";
 import { sectorFromSic, sectorFromNasdaq, profileFor } from "./sectors.mjs";
 import { nasdaqScreener, nasdaqEtfScreener, etfSummary, priceHistory, priceBudgetLeft, fxToUsd, marketSession, extendedQuotes, browserJson, dailyCloses } from "./market.mjs";
-import { UCITS, ucitsQuote, ucitsHistory, nasdaqMonthlyRows } from "./ucits.mjs";
+import { UCITS, ucitsQuote, ucitsHistory, nasdaqMonthlyRows, nasdaqDailyCloses } from "./ucits.mjs";
 import { majorEvents, recentFilings } from "./events.mjs";
 import { headlineFor, classifyNews, tidyTitle } from "./news-headline.mjs";
 import { fillMissingFilings } from "./xbrl-instance.mjs";
@@ -295,13 +295,15 @@ async function updateUcits({ history = false } = {}) {
     const p = prev.get(e.t) || {};
     const q = await ucitsQuote(e, browserJson).catch(() => null);
     await sleep(250);
-    let h = p.h;
+    let h = p.h, hd = null;
     if (history) {
       const hh = await ucitsHistory(e, browserJson).catch(() => null);
       await sleep(250);
-      if (hh?.length) h = hh;
+      if (hh?.monthly?.length) h = hh.monthly;
+      if (hh?.daily?.length) hd = hh.daily;
     }
     if (q) ok++;
+    if (history && (h?.length || hd?.length)) writeFundPrices(e.t, hd, h);
     etfs.push({ ...e, px: q?.px ?? p.px ?? null, dc: q ? q.dc : p.dc ?? null, date: q?.date ?? p.date ?? null, h });
   }
   const out = { generated: now.toISOString(), quotesAt: ok ? now.toISOString() : old.quotesAt || null, etfs };
@@ -310,23 +312,42 @@ async function updateUcits({ history = false } = {}) {
   console.log(`  European ETFs: ${ok} of ${UCITS.length} prices${history ? ", monthly closes" : ""}`);
 }
 
-// Monthly closes of the largest US-listed ETFs (by assets) for the portfolio charts.
-const ETF_HISTORY_TOP = 300;
+// Price history of a fund for the portfolio's moves, one small file per fund (data/etf-prices/<key>.json, the
+// ":" of a European listing as "_"): daily closes of the last 13 months and month-end closes.
+const FUND_PRICES = join(DATA, "etf-prices");
+function writeFundPrices(key, daily, monthly) {
+  const name = String(key).replace(":", "_");
+  if (!/^[A-Za-z0-9._-]+$/.test(name)) return;
+  mkdirSync(FUND_PRICES, { recursive: true });
+  writeFileSync(join(FUND_PRICES, `${name}.json`), JSON.stringify({ t: key, daily: daily || [], monthly: monthly || [] }) + "\n");
+}
+
+// Monthly closes of the largest US-listed ETFs (by assets) for the portfolio charts (etf-history.json, two years),
+// and each fund's own price file (six years of month ends, 13 months of daily closes) for the portfolio's moves.
+const ETF_HISTORY_TOP = 600;
 async function updateEtfHistory() {
   const ef = join(DATA, "etfs.json");
   if (!existsSync(ef)) return;
   const top = readJson(ef).etfs.filter((x) => x.aum > 0).sort((a, b) => b.aum - a.aum).slice(0, ETF_HISTORY_TOP);
-  const to = new Date(), from = new Date(to.getFullYear(), to.getMonth() - 26, 1);
+  const to = new Date(), from = new Date(to.getFullYear() - 6, to.getMonth(), 1);
   const d = (x) => x.toISOString().slice(0, 10);
   const h = {};
-  for (const x of top) {
-    const j = await browserJson(`https://api.nasdaq.com/api/quote/${encodeURIComponent(x.t)}/historical?assetclass=etf&fromdate=${d(from)}&todate=${d(to)}&limit=9999`);
-    const m = nasdaqMonthlyRows(j?.data?.tradesTable?.rows);
-    if (m.length) h[x.t] = m;
-    await sleep(150);
-  }
+  let next = 0, files = 0;
+  const worker = async () => {
+    while (next < top.length) {
+      const x = top[next++];
+      const j = await browserJson(`https://api.nasdaq.com/api/quote/${encodeURIComponent(x.t)}/historical?assetclass=etf&fromdate=${d(from)}&todate=${d(to)}&limit=9999`);
+      const rows = j?.data?.tradesTable?.rows;
+      const m = nasdaqMonthlyRows(rows, 72);
+      if (m.length) h[x.t] = m.slice(-26);
+      const dd = nasdaqDailyCloses(rows, to);
+      if (m.length || dd.length) { writeFundPrices(x.t, dd, m); files++; }
+      await sleep(150);
+    }
+  };
+  await Promise.all(Array.from({ length: 4 }, worker));
   if (Object.keys(h).length) writeFileSync(join(DATA, "etf-history.json"), JSON.stringify({ generated: new Date().toISOString(), h }) + "\n");
-  console.log(`  ETF price history: ${Object.keys(h).length} of ${top.length}`);
+  console.log(`  ETF price history: ${Object.keys(h).length} of ${top.length} (price files: ${files})`);
 }
 
 // Large companies whose recent news has not been read yet (when this was introduced, or a company that grew
@@ -676,7 +697,7 @@ async function updatePriceHistories(tickers) {
       const { f, c } = companies[next++];
       const hist = await priceHistory(c.ticker);
       if (!hist) continue;
-      c.prices = { interval: "1mo", adjusted: true, source: hist.source, data: hist.data };
+      c.prices = { interval: "1mo", adjusted: true, source: hist.source, data: hist.data, ...(hist.daily?.length ? { daily: hist.daily } : {}) };
       if (c.market && !c.market.price && hist.price) c.market.price = hist.price;
       writeFileSync(f, JSON.stringify(c) + "\n");
       if (++updated % 500 === 0) console.log(`  ${updated} price histories`);

@@ -310,7 +310,18 @@ export default {
   "contact": "Kontakt",
   "marketToday": "Trh dnes",
   "marketMore": "Trh a události",
-  "eventsTitle": "Velké firemní události (8-K)"
+  "eventsTitle": "Velké firemní události (8-K)",
+  "pfMax": "Max",
+  "pfSince": "od {d}",
+  "pfMoveValue": "Změna hodnoty",
+  "pfMoveScore": "Změna TeraScore",
+  "pfMoveNoScore": "Zatím málo historie: týdenní TeraScore podle současné metody zaznamenáváme od {d}.",
+  "pfMoveFy": "Poslední účetní rok oproti předchozímu (podle údajů známých v té době).",
+  "pfMoveFyRange": "Účetní roky {a} → {b} (podle údajů známých v té době).",
+  "pfMoveChartSub": "V {c}; zahraniční ceny podle dnešního kurzu.",
+  "pfMoveTop": "Co pohnulo portfoliem",
+  "pfMoveTopSub": "U každé pozice: změna ceny, její vliv na hodnotu portfolia a změna TeraScore za období.",
+  "pfMoveMonthly": "S cenami ke konci měsíce (zatím bez denních uzavíracích cen): {list}."
  },
  "pulse": {
   "themes": {

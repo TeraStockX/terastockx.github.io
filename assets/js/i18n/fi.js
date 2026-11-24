@@ -310,7 +310,18 @@ export default {
   "contact": "Yhteystiedot",
   "marketToday": "Markkinat tänään",
   "marketMore": "Markkinat ja tapahtumat",
-  "eventsTitle": "Merkittävät yhtiötapahtumat (8-K)"
+  "eventsTitle": "Merkittävät yhtiötapahtumat (8-K)",
+  "pfMax": "Maks.",
+  "pfSince": "{d} alkaen",
+  "pfMoveValue": "Arvon muutos",
+  "pfMoveScore": "TeraScoren muutos",
+  "pfMoveNoScore": "Historiaa ei ole vielä tarpeeksi: nykyisen menetelmän viikoittaisia TeraScoreja on tallennettu {d} alkaen.",
+  "pfMoveFy": "Viimeisin tilikausi edelliseen verrattuna (silloin tiedossa olleilla tiedoilla).",
+  "pfMoveFyRange": "Tilikaudet {a} → {b} (silloin tiedossa olleilla tiedoilla).",
+  "pfMoveChartSub": "Valuutta {c}; ulkomaiset hinnat tämän päivän kurssilla.",
+  "pfMoveTop": "Mikä liikutti salkkua",
+  "pfMoveTopSub": "Omistuksittain: hinnanmuutos, sen vaikutus salkun arvoon ja TeraScoren muutos jakson aikana.",
+  "pfMoveMonthly": "Kuukauden lopun hinnoilla (päivittäisiä päätöskursseja ei vielä ole): {list}."
  },
  "pulse": {
   "themes": {

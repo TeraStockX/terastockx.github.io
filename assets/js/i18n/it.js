@@ -310,7 +310,18 @@ export default {
   "contact": "Contatti",
   "marketToday": "Mercato oggi",
   "marketMore": "Mercato ed eventi",
-  "eventsTitle": "Eventi societari rilevanti (8-K)"
+  "eventsTitle": "Eventi societari rilevanti (8-K)",
+  "pfMax": "Max",
+  "pfSince": "dal {d}",
+  "pfMoveValue": "Variazione del valore",
+  "pfMoveScore": "Variazione del TeraScore",
+  "pfMoveNoScore": "Storico ancora insufficiente: i TeraScore settimanali del metodo attuale sono registrati dal {d}.",
+  "pfMoveFy": "Ultimo esercizio rispetto al precedente (con i dati noti allora).",
+  "pfMoveFyRange": "Esercizi {a} → {b} (con i dati noti allora).",
+  "pfMoveChartSub": "In {c}; prezzi esteri al cambio di oggi.",
+  "pfMoveTop": "Cosa ha mosso il portafoglio",
+  "pfMoveTopSub": "Per ogni posizione: variazione del prezzo, effetto sul valore del portafoglio e variazione del TeraScore nel periodo.",
+  "pfMoveMonthly": "Con prezzi di fine mese (ancora senza chiusure giornaliere): {list}."
  },
  "pulse": {
   "themes": {

@@ -172,20 +172,32 @@ export async function dailyCloses(ticker, days = 21) {
   return rows.map((r) => [usDay(r.date), num(r.close)]).filter(([day, c]) => day && Number.isFinite(c) && c > 0).sort((a, b) => (a[0] < b[0] ? -1 : 1));
 }
 
-// Nasdaq.com daily history (split-adjusted closes), reduced to the last close of each month.
+// Daily closes of the last 13 months (a year back from any day of the last month), for the portfolio's
+// moves over a week, a month, three months, half a year and a year.
+export const DAILY_DAYS = 400;
+export const recentDaily = (closes, now = Date.now()) => {
+  const cut = new Date(now - DAILY_DAYS * 86400000).toISOString().slice(0, 10);
+  return closes.filter(([day]) => day >= cut);
+};
+
+// Nasdaq.com daily history (split-adjusted closes), reduced to the last close of each month; the daily
+// closes of the last 13 months are kept as well.
 async function nasdaqMonthly(ticker) {
   const rows = await nasdaqDailyRows(ticker, new Date(Date.now() - 6 * 365.25 * 86400000));
   const months = new Map();
+  const days = [];
   for (const row of rows) {
     const day = usDay(row.date);
     const close = num(row.close);
     if (!day || !Number.isFinite(close)) continue;
+    days.push([day, close]);
     const key = day.slice(0, 7);
     const prev = months.get(key);
     if (!prev || day > prev.day) months.set(key, { day, close });
   }
   const data = [...months].map(([k, v]) => [k, v.close]).sort((a, b) => (a[0] < b[0] ? -1 : 1));
-  return { data, price: data.length ? data[data.length - 1][1] : null, source: "Nasdaq" };
+  const daily = recentDaily(days.sort((a, b) => (a[0] < b[0] ? -1 : 1)));
+  return { data, daily, price: data.length ? data[data.length - 1][1] : null, source: "Nasdaq" };
 }
 
 async function yahooMonthly(ticker) {

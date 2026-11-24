@@ -310,7 +310,18 @@ export default {
   "contact": "Liên hệ",
   "marketToday": "Thị trường hôm nay",
   "marketMore": "Thị trường & sự kiện",
-  "eventsTitle": "Sự kiện doanh nghiệp lớn (8-K)"
+  "eventsTitle": "Sự kiện doanh nghiệp lớn (8-K)",
+  "pfMax": "Tối đa",
+  "pfSince": "từ {d}",
+  "pfMoveValue": "Thay đổi giá trị",
+  "pfMoveScore": "Thay đổi TeraScore",
+  "pfMoveNoScore": "Chưa đủ lịch sử: TeraScore hằng tuần theo phương pháp hiện tại được ghi nhận từ {d}.",
+  "pfMoveFy": "Năm tài chính gần nhất so với năm trước đó (theo dữ liệu đã biết vào lúc đó).",
+  "pfMoveFyRange": "Năm tài chính {a} → {b} (theo dữ liệu đã biết vào lúc đó).",
+  "pfMoveChartSub": "Tính bằng {c}; giá nước ngoài theo tỷ giá hôm nay.",
+  "pfMoveTop": "Điều gì đã làm danh mục biến động",
+  "pfMoveTopSub": "Theo từng khoản nắm giữ: thay đổi giá, tác động lên giá trị danh mục và thay đổi TeraScore trong kỳ.",
+  "pfMoveMonthly": "Dùng giá cuối tháng (chưa có giá đóng cửa hằng ngày): {list}."
  },
  "pulse": {
   "themes": {

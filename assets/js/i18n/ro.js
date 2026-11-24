@@ -310,7 +310,18 @@ export default {
   "contact": "Contact",
   "marketToday": "Piața azi",
   "marketMore": "Piață și evenimente",
-  "eventsTitle": "Evenimente corporative majore (8-K)"
+  "eventsTitle": "Evenimente corporative majore (8-K)",
+  "pfMax": "Max",
+  "pfSince": "din {d}",
+  "pfMoveValue": "Variația valorii",
+  "pfMoveScore": "Variația TeraScore",
+  "pfMoveNoScore": "Încă nu există suficient istoric: TeraScore-urile săptămânale ale metodei actuale sunt înregistrate din {d}.",
+  "pfMoveFy": "Ultimul an financiar față de cel anterior (cu datele cunoscute atunci).",
+  "pfMoveFyRange": "Ani financiari {a} → {b} (cu datele cunoscute atunci).",
+  "pfMoveChartSub": "În {c}; prețurile străine la cursul de schimb de azi.",
+  "pfMoveTop": "Ce a mișcat portofoliul",
+  "pfMoveTopSub": "Pentru fiecare poziție: variația prețului, efectul asupra valorii portofoliului și variația TeraScore în perioadă.",
+  "pfMoveMonthly": "Cu prețuri de sfârșit de lună (încă fără închideri zilnice): {list}."
  },
  "pulse": {
   "themes": {

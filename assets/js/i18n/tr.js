@@ -310,7 +310,18 @@ export default {
   "contact": "İletişim",
   "marketToday": "Bugün piyasa",
   "marketMore": "Piyasa ve olaylar",
-  "eventsTitle": "Büyük şirket olayları (8-K)"
+  "eventsTitle": "Büyük şirket olayları (8-K)",
+  "pfMax": "Maks.",
+  "pfSince": "{d} tarihinden beri",
+  "pfMoveValue": "Değer değişimi",
+  "pfMoveScore": "TeraScore değişimi",
+  "pfMoveNoScore": "Henüz yeterli geçmiş yok: mevcut yöntemin haftalık TeraScore'ları {d} tarihinden beri kaydediliyor.",
+  "pfMoveFy": "Son mali yıl bir öncekiyle karşılaştırmalı (o zaman bilinen verilerle).",
+  "pfMoveFyRange": "Mali yıllar {a} → {b} (o zaman bilinen verilerle).",
+  "pfMoveChartSub": "{c} cinsinden; yabancı fiyatlar bugünkü kurla.",
+  "pfMoveTop": "Portföyü ne hareket ettirdi",
+  "pfMoveTopSub": "Her varlık için dönemdeki fiyat değişimi, portföy değerine etkisi ve TeraScore değişimi.",
+  "pfMoveMonthly": "Ay sonu fiyatlarıyla (henüz günlük kapanış yok): {list}."
  },
  "pulse": {
   "themes": {

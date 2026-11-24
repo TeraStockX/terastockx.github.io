@@ -310,7 +310,18 @@ export default {
   "contact": "تماس",
   "marketToday": "بازار امروز",
   "marketMore": "بازار و رویدادها",
-  "eventsTitle": "رویدادهای مهم شرکتی (8-K)"
+  "eventsTitle": "رویدادهای مهم شرکتی (8-K)",
+  "pfMax": "همه",
+  "pfSince": "از {d}",
+  "pfMoveValue": "تغییر ارزش",
+  "pfMoveScore": "تغییر TeraScore",
+  "pfMoveNoScore": "هنوز سابقهٔ کافی وجود ندارد: TeraScoreهای هفتگی روش فعلی از {d} ثبت می‌شوند.",
+  "pfMoveFy": "آخرین سال مالی در برابر سال پیش از آن (با داده‌های معلوم در آن زمان).",
+  "pfMoveFyRange": "سال‌های مالی {a} تا {b} (با داده‌های معلوم در آن زمان).",
+  "pfMoveChartSub": "به {c}؛ قیمت‌های خارجی با نرخ ارز امروز.",
+  "pfMoveTop": "چه چیزی سبد را حرکت داد",
+  "pfMoveTopSub": "برای هر دارایی: تغییر قیمت، اثر آن بر ارزش سبد و تغییر TeraScore در این دوره.",
+  "pfMoveMonthly": "با قیمت‌های پایان ماه (هنوز قیمت پایانی روزانه نیست): {list}."
  },
  "pulse": {
   "themes": {

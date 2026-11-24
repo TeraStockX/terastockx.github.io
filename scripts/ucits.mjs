@@ -55,11 +55,36 @@ export function monthlyCloses(series, months = 26) {
   return [...byMonth].sort((a, b) => (a[0] < b[0] ? -1 : 1)).slice(-months).map(([m, v]) => [m, +v.toFixed(4)]);
 }
 
+// The chart's points of the last 13 months (YYYY-MM-DD, value), for the portfolio's moves over shorter periods.
+export function recentCloses(series, now = new Date(), days = 400) {
+  const cut = new Date(now - days * 86400000).toISOString().slice(0, 10);
+  const out = [];
+  for (const p of series || []) {
+    const v = raw(p?.value);
+    if (p?.date && v && p.date >= cut) out.push([p.date.slice(0, 10), +v.toFixed(4)]);
+  }
+  return out.sort((a, b) => (a[0] < b[0] ? -1 : 1));
+}
+
+// Month-end closes of the last `months` months and the chart's points of the last 13 months.
 export async function ucitsHistory(e, get, { now = new Date(), months = 26 } = {}) {
   const from = new Date(now.getFullYear(), now.getMonth() - months, 1).toISOString().slice(0, 10);
   const to = now.toISOString().slice(0, 10);
   const j = await get(`${BASE}/${e.isin}/performance-chart?locale=en&currency=${e.cur}&valuesType=MARKET_VALUE&reduceData=true&includeDividends=false&dateFrom=${from}&dateTo=${to}`);
-  return monthlyCloses(j?.series, months);
+  return { monthly: monthlyCloses(j?.series, months), daily: recentCloses(j?.series, now) };
+}
+
+// Daily closes of the last 13 months of a US-listed ETF from Nasdaq's price history (daily rows, newest first).
+export function nasdaqDailyCloses(rows, now = new Date(), days = 400) {
+  const cut = new Date(now - days * 86400000).toISOString().slice(0, 10);
+  const out = [];
+  for (const r of rows || []) {
+    const m = String(r?.date || "").match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    const v = Number(String(r?.close || "").replace(/[$,]/g, ""));
+    const day = m ? `${m[3]}-${m[1]}-${m[2]}` : null;
+    if (day && v > 0 && day >= cut) out.push([day, +v.toFixed(4)]);
+  }
+  return out.sort((a, b) => (a[0] < b[0] ? -1 : 1));
 }
 
 // Monthly closes of a US-listed ETF from Nasdaq's price history (daily rows, newest first).

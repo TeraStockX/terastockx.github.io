@@ -1,5 +1,5 @@
 import { analyze, scoreHistory, gradeKey, GRADE_TONE, DIMENSIONS, METRIC_FORMAT, ENGINE_VERSION, ENGINE_SERIES, PROFILES, OVERALL_WEIGHTS, RISK_WEIGHTS, MARKET_RISK_SHARE, FLAG_PENALTY, MISSING_DIMENSION_SCORE, SMOOTH_PRIOR_WEIGHT, RUNWAY_BAD, RUNWAY_GOOD, NET_CASH_LOSS_SCORE, dividendProfile, DIVIDEND_TONE, DIVIDEND_WEIGHTS, findPeers } from "./scoring.js";
-import { portfolioSummary, PORTFOLIO_LIMITS } from "./portfolio.js";
+import { portfolioSummary, PORTFOLIO_LIMITS, PERIODS, periodMove, movePoints, scoreMove } from "./portfolio.js";
 import { SCREENS, screenById } from "./screens.js";
 import { LANG_LIST, EN, langMeta, ready, lang, setLang, t, fill, fmt, money, date, num, dict, locale, ltr } from "./i18n/index.js";
 import { barChart, lineChart, wireCharts, donutChart } from "./charts.js";
@@ -315,11 +315,11 @@ function renderChrome() {
   const icon = (d) => `<svg class="nav-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="${d}"/></svg>`;
 const links = (short) => `
     <a href="#/" data-nav="list" title="${esc(t("ui.navCompanies"))}">${icon("M4 6h16M4 12h16M4 18h10")}<span class="nav-label">${esc(t(short ? "ui.tabCompanies" : "ui.navCompanies"))}</span></a>
-    <a href="#/trend" data-nav="trend" title="${esc(t("ui.navTrend"))}">${icon("M3 17l6-6 4 4 8-8M15 7h6v6")}<span class="nav-label">${esc(t(short ? "ui.tabTrend" : "ui.navTrend"))}</span></a>
     <a href="#/portfolio" data-nav="portfolio" title="${esc(t("ui.navPortfolio"))}">${icon("M12 3v9h9M12 3a9 9 0 1 0 9 9")}<span class="nav-label">${esc(t(short ? "ui.tabPortfolio" : "ui.navPortfolio"))}</span></a>
     <a href="#/news" data-nav="news" title="${esc(t("ui.navNews"))}">${icon("M5 4h11v16H5zM16 8h3v10a2 2 0 0 1-2 2M8 8h5M8 12h5M8 16h3")}<span class="nav-label">${esc(t(short ? "ui.tabNews" : "ui.navNews"))}</span></a>
-    <a href="#/data" data-nav="data" title="${esc(t("ui.navData"))}">${icon("M4 5h16v14H4zM4 10h16M10 10v9")}<span class="nav-label">${esc(t(short ? "ui.tabData" : "ui.navData"))}</span></a>
+    <a href="#/trend" data-nav="trend" title="${esc(t("ui.navTrend"))}">${icon("M3 17l6-6 4 4 8-8M15 7h6v6")}<span class="nav-label">${esc(t(short ? "ui.tabTrend" : "ui.navTrend"))}</span></a>
     <a href="#/compare" data-nav="compare" title="${esc(t("ui.navCompare"))}">${icon("M8 4v16M16 4v16M4 8h8M12 16h8")}<span class="nav-label">${esc(t(short ? "ui.tabCompare" : "ui.navCompare"))}</span></a>
+    <a href="#/data" data-nav="data" title="${esc(t("ui.navData"))}">${icon("M4 5h16v14H4zM4 10h16M10 10v9")}<span class="nav-label">${esc(t(short ? "ui.tabData" : "ui.navData"))}</span></a>
     <a href="#/methodology" data-nav="method" title="${esc(t("ui.navMethod"))}">${icon("M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16zM12 11v5M12 8h.01")}<span class="nav-label">${esc(t(short ? "ui.tabMethod" : "ui.navMethod"))}</span></a>
 `;
   document.getElementById("nav").innerHTML = links(false);
@@ -1659,6 +1659,35 @@ async function renderPortfolio(prefill = "") {
   const stat = (k, v, sub = "") => `<div class="hero-stat"><div class="v">${v}</div><div class="k">${esc(t(k))}${sub ? ` <span class="muted">${sub}</span>` : ""}</div></div>`;
   const tone = { critical: "critical", warning: "warning", info: "none" };
 
+  // 1. The figures, with the sector split under them as bars.
+  const sectorBars = p.sectors.length ? `<div class="pf-sectors"><div class="pf-subtitle">${esc(t("ui.pfSectors"))}</div><div class="pf-bars">${p.sectors.map((x) => {
+    const over = x.s !== "other" && x.s !== "etf" && x.weight > PORTFOLIO_LIMITS.sector;
+    const label = x.s === "other" ? t("ui.pfOther") : x.s === "etf" ? t("ui.pfEtfs") : sectorName(x.s);
+    return `<div class="pf-bar${over ? " over" : ""}${x.s === "etf" ? " etf" : ""}"><span class="pb-l">${esc(label)}</span><span class="pb-v">${esc(pct(x.weight))}</span><div class="bar"><span style="width:${Math.max(0.8, x.weight * 100).toFixed(1)}%"></span></div></div>`;
+  }).join("")}</div></div>` : "";
+  // 3. The holdings: a table-like grid on wide screens, a card per holding on tablets and phones.
+  const cell = (cls, label, inner) => `<div class="ph ${cls}"><span class="ph-l">${esc(label)}</span><div class="ph-v">${inner}</div></div>`;
+  const holding = (h) => `<div class="pf-row">
+      <div class="ph ph-co">${h.row?.etf
+        ? `<div class="co">${letterLogo({ t: tickerOf(h), n: h.row.n })}<div class="co-txt"><div class="tick">${esc(tickerOf(h))} <span class="badge">ETF</span>${h.row.ex ? `<span class="badge ex">${esc(h.row.ex)} · ${esc(h.row.cur || "USD")}</span>` : ""}</div><div class="cname">${esc(h.row.n)}</div>${isNum(h.row.er) ? `<div class="small muted">${esc(t("ui.etfExpense", { v: `${num(h.row.er * 100, 2)}%` }))}${h.row.ucits ? ` · ${esc(t(h.row.acc ? "ui.etfAcc" : "ui.etfDist"))}` : ""}</div>` : ""}</div></div>`
+        : `<a class="co" href="#/c/${encodeURIComponent(h.t)}">${logo(h.row || { t: h.t })}<div class="co-txt"><div class="tick">${esc(h.t)}</div><div class="cname">${esc(h.row ? coName(h.row) : t("ui.notFound", { t: h.t }))}</div></div></a>`}</div>
+      ${cell("ph-sh", t("ui.pfShares"), `<input class="pf-shares" type="number" min="0" step="any" inputmode="decimal" value="${esc(h.shares)}" data-t="${esc(h.t)}" aria-label="${esc(t("ui.pfShares"))} ${esc(h.t)}">`)}
+      ${cell("ph-px num", t("ui.pfPrice"), h.row?.ucits ? fullMoney(h.row.pxLocal, h.row.cur) : isNum(h.price) ? fmt(h.price, "usd") : "–")}
+      ${cell("ph-val num", t("ui.pfValueCol"), isNum(h.value) ? fullMoney(inCur(h.value), cur) : "–")}
+      ${cell("ph-w num", t("ui.pfWeight"), isNum(h.weight) ? fmt(h.weight, "pct") : "–")}
+      ${cell("ph-sc num", t("ui.overallScore"), h.row?.etf ? `<span class="small muted" title="${esc(t("ui.etfNoScore"))}">–</span>` : h.row ? overallCell(h.row) : "–")}
+      ${cell("ph-rk num", t("ui.risk"), h.row?.etf ? "–" : scorePill(h.row?.sc?.risk, true))}
+      ${cell("ph-dy num", t("ui.dividendYieldShort"), h.row?.etf
+        ? `<input class="pf-shares pf-dy" type="number" min="0" max="100" step="any" inputmode="decimal" data-t="${esc(h.t)}" value="${isNum(h.dy) ? +(h.dy * 100).toFixed(4) : ""}" placeholder="${isNum(h.row.dy) ? num(h.row.dy * 100, 2) : "%"}" aria-label="${esc(t("ui.etfYieldInput"))} ${esc(h.t)}">`
+        : isNum(h.row?.dy) ? fmt(h.row.dy, "pct") : "–")}
+      ${cell("ph-ds num", t("ui.dividendSafety"), isNum(h.row?.ds) ? `<span class="pill tone-${DIVIDEND_TONE[dividendLevelOf(h.row.ds)]}"><span class="dot"></span>${h.row.ds}</span>` : "–")}
+      <div class="ph ph-rm"><button class="icon-btn" data-rm="${esc(h.t)}" aria-label="${esc(t("ui.remove"))} ${esc(h.t)}">×</button></div>
+    </div>`;
+  const head = `<div class="pf-row pf-head" aria-hidden="true"><span>${esc(t("ui.company"))}</span><span>${esc(t("ui.pfShares"))}</span><span class="num">${esc(t("ui.pfPrice"))}</span><span class="num">${esc(t("ui.pfValueCol"))}</span><span class="num">${esc(t("ui.pfWeight"))}</span><span class="num">${esc(t("ui.overallScore"))}</span><span class="num">${esc(t("ui.risk"))}</span><span class="num">${esc(t("ui.dividendYieldShort"))}</span><span class="num">${esc(t("ui.dividendSafety"))}</span><span></span></div>`;
+  // 5. Allocation: by holding (the largest seven) and by trading currency.
+  const byHolding = (() => { const xs = p.positions.filter((h) => isNum(h.weight)).sort((a, b) => b.weight - a.weight); const top = xs.slice(0, 7).map((h) => ({ label: tickerOf(h), value: h.weight })); const rest = xs.slice(7).reduce((a, h) => a + h.weight, 0); return rest > 0 ? [...top, { label: t("ui.pfOther"), value: rest }] : top; })();
+  const byCurrency = (() => { const m = new Map(); for (const h of p.positions) if (isNum(h.weight)) { const c = h.row?.cur || "USD"; m.set(c, (m.get(c) || 0) + h.weight); } return [...m].sort((a, b) => b[1] - a[1]).map(([label, value]) => ({ label, value })); })();
+
   const summary = list.length ? `
     <div class="glass pad pf-summary">
       <div class="hero-stats">
@@ -1669,44 +1698,27 @@ async function renderPortfolio(prefill = "") {
         ${stat("ui.pfPe", isNum(p.pe) ? `${num(p.pe, 1)}×` : "–")}
         ${stat("ui.pfHoldings", String(list.length))}
       </div>
+      ${sectorBars}
+    </div>
+    <div class="glass pad pf-checks">
+      <div class="score-name" style="margin-bottom:12px">${esc(t("ui.pfChecks"))}</div>
+      ${p.warnings.length ? `<ul class="pf-warn">${p.warnings.map((w) => `<li><span class="pill tone-${tone[w.level]}"><span class="dot"></span>${esc(t(w.level === "critical" ? "ui.critical" : w.level === "warning" ? "ui.warningTag" : "ui.pfInfo"))}</span> ${esc(PW_TEXT[w.id](w))}</li>`).join("")}</ul>`
+        : `<p class="small" style="margin:0"><span class="pill tone-good"><span class="dot"></span>${esc(t("ui.pfOk"))}</span></p>`}
+    </div>
+    <h2 class="section-title">${esc(t("ui.pfHoldings"))} <span class="muted">(${list.length})</span></h2>
+    <div class="glass pf-hold">${head}${p.positions.map(holding).join("")}</div>
+    <p class="small muted" style="margin-top:12px">${esc(t("ui.pfNote", { d: updatedWhen(idx.generated, { lower: true }), c: cur }))}${p.etfWeight > 0 ? ` ${esc(t("ui.etfNote"))}` : ""}</p>
+    ${p.missingYield.length ? `<div class="notice" style="margin-top:10px"><span>ℹ️</span><span>${esc(t("ui.etfYieldMissing", { list: p.missingYield.map(dispT).join(", ") }))}</span></div>` : ""}
+    <h2 class="section-title">${esc(t("ui.pfHistTitle"))}</h2>
+    <div class="pf-move" id="pf-move">
+      <div class="pf-periods" role="group" aria-label="${esc(t("ui.period"))}">${PERIODS.map((id) => `<button type="button" class="chip-toggle" data-period="${id}" aria-pressed="false">${esc(periodLabel(id))}</button>`).join("")}</div>
+      <div id="pf-move-body"><div class="empty small">${esc(t("ui.pfHistLoading"))}</div></div>
     </div>
     <h2 class="section-title">${esc(t("ui.pfAllocTitle"))}</h2>
     <div class="donut-grid">
-      ${donutChart(t("ui.pfByHolding"), (() => { const xs = p.positions.filter((h) => isNum(h.weight)).sort((a, b) => b.weight - a.weight); const top = xs.slice(0, 7).map((h) => ({ label: tickerOf(h), value: h.weight })); const rest = xs.slice(7).reduce((a, h) => a + h.weight, 0); return rest > 0 ? [...top, { label: t("ui.pfOther"), value: rest }] : top; })(), pct, String(p.positions.length))}
-      ${donutChart(t("ui.pfSectors"), p.sectors.map((x) => ({ label: x.s === "other" ? t("ui.pfOther") : x.s === "etf" ? t("ui.pfEtfs") : sectorName(x.s), value: x.weight })), pct)}
-      ${donutChart(t("ui.pfByCurrency"), (() => { const m = new Map(); for (const h of p.positions) if (isNum(h.weight)) { const c = h.row?.cur || "USD"; m.set(c, (m.get(c) || 0) + h.weight); } return [...m].sort((a, b) => b[1] - a[1]).map(([label, value]) => ({ label, value })); })(), pct)}
-    </div>
-    <div class="pf-grid">
-      <div class="glass pad">
-        <div class="score-name" style="margin-bottom:12px">${esc(t("ui.pfChecks"))}</div>
-        ${p.warnings.length ? `<ul class="pf-warn">${p.warnings.map((w) => `<li><span class="pill tone-${tone[w.level]}"><span class="dot"></span>${esc(t(w.level === "critical" ? "ui.critical" : w.level === "warning" ? "ui.warningTag" : "ui.pfInfo"))}</span> ${esc(PW_TEXT[w.id](w))}</li>`).join("")}</ul>`
-          : `<p class="small"><span class="pill tone-good"><span class="dot"></span>${esc(t("ui.pfOk"))}</span></p>`}
-      </div>
-    </div>
-    <div class="glass table-wrap"><table class="list pf-table">
-      <thead><tr><th>${esc(t("ui.company"))}</th><th class="num">${esc(t("ui.pfShares"))}</th><th class="num col-md">${esc(t("ui.pfPrice"))}</th><th class="num">${esc(t("ui.pfValueCol"))}</th>
-        <th class="num col-md">${esc(t("ui.pfWeight"))}</th><th class="num">${esc(t("ui.overallScore"))}</th><th class="num col-lg">${esc(t("ui.risk"))}</th>
-        <th class="num">${esc(t("ui.dividendYieldShort"))}</th><th class="num col-xl">${esc(t("ui.dividendSafety"))}</th><th></th></tr></thead>
-      <tbody>${p.positions.map((h) => `<tr>
-        <td>${h.row?.etf
-          ? `<div class="co">${letterLogo({ t: tickerOf(h), n: h.row.n })}<div class="co-txt"><div class="tick">${esc(tickerOf(h))} <span class="badge">ETF</span>${h.row.ex ? `<span class="badge ex">${esc(h.row.ex)} · ${esc(h.row.cur || "USD")}</span>` : ""}</div><div class="cname">${esc(h.row.n)}</div>${isNum(h.row.er) ? `<div class="small muted">${esc(t("ui.etfExpense", { v: `${num(h.row.er * 100, 2)}%` }))}${h.row.ucits ? ` · ${esc(t(h.row.acc ? "ui.etfAcc" : "ui.etfDist"))}` : ""}</div>` : ""}</div></div>`
-          : `<a class="co" href="#/c/${encodeURIComponent(h.t)}">${logo(h.row || { t: h.t })}<div class="co-txt"><div class="tick">${esc(h.t)}</div><div class="cname">${esc(h.row ? coName(h.row) : t("ui.notFound", { t: h.t }))}</div></div></a>`}</td>
-        <td class="num"><input class="pf-shares" type="number" min="0" step="any" inputmode="decimal" value="${esc(h.shares)}" data-t="${esc(h.t)}" aria-label="${esc(t("ui.pfShares"))} ${esc(h.t)}"></td>
-        <td class="num col-md">${h.row?.ucits ? fullMoney(h.row.pxLocal, h.row.cur) : isNum(h.price) ? fmt(h.price, "usd") : "–"}</td>
-        <td class="num">${isNum(h.value) ? fullMoney(inCur(h.value), cur) : "–"}</td>
-        <td class="num col-md">${isNum(h.weight) ? fmt(h.weight, "pct") : "–"}</td>
-        <td class="num">${h.row?.etf ? `<span class="small muted" title="${esc(t("ui.etfNoScore"))}">–</span>` : h.row ? overallCell(h.row) : "–"}</td>
-        <td class="num col-lg">${h.row?.etf ? "–" : scorePill(h.row?.sc?.risk, true)}</td>
-        <td class="num">${h.row?.etf
-          ? `<input class="pf-shares pf-dy" type="number" min="0" max="100" step="any" inputmode="decimal" data-t="${esc(h.t)}" value="${isNum(h.dy) ? +(h.dy * 100).toFixed(4) : ""}" placeholder="${isNum(h.row.dy) ? num(h.row.dy * 100, 2) : "%"}" aria-label="${esc(t("ui.etfYieldInput"))} ${esc(h.t)}">`
-          : isNum(h.row?.dy) ? fmt(h.row.dy, "pct") : "–"}</td>
-        <td class="num col-xl">${isNum(h.row?.ds) ? `<span class="pill tone-${DIVIDEND_TONE[dividendLevelOf(h.row.ds)]}"><span class="dot"></span>${h.row.ds}</span>` : "–"}</td>
-        <td><button class="icon-btn" data-rm="${esc(h.t)}" aria-label="${esc(t("ui.remove"))} ${esc(h.t)}">×</button></td></tr>`).join("")}</tbody>
-    </table></div>
-    <p class="small muted" style="margin-top:12px">${esc(t("ui.pfNote", { d: updatedWhen(idx.generated, { lower: true }), c: cur }))}${p.etfWeight > 0 ? ` ${esc(t("ui.etfNote"))}` : ""}</p>
-    <h2 class="section-title">${esc(t("ui.pfHistTitle"))}</h2>
-    <div id="pf-history"><div class="glass empty small">${esc(t("ui.pfHistLoading"))}</div></div>
-    ${p.missingYield.length ? `<div class="notice" style="margin-top:10px"><span>ℹ️</span><span>${esc(t("ui.etfYieldMissing", { list: p.missingYield.map(dispT).join(", ") }))}</span></div>` : ""}` : `<div class="glass empty">${esc(t("ui.pfEmpty"))}</div>`;
+      ${donutChart(t("ui.pfByHolding"), byHolding, pct, String(p.positions.length))}
+      ${donutChart(t("ui.pfByCurrency"), byCurrency, pct)}
+    </div>` : `<div class="glass empty">${esc(t("ui.pfEmpty"))}</div>`;
 
   app.innerHTML = `
     <div class="pf-title"><div class="prose" style="max-width:none;margin-top:8px"><h1>${esc(t("ui.navPortfolio"))}</h1><p style="max-width:820px">${esc(t("ui.pfIntro"))}</p></div>
@@ -1767,66 +1779,140 @@ async function renderPortfolio(prefill = "") {
   }));
   app.querySelectorAll("[data-rm]").forEach((b) => b.addEventListener("click", () => save(getPortfolio().filter((h) => h.t !== b.dataset.rm))));
   document.getElementById("pf-cur")?.addEventListener("change", (e) => { try { localStorage.setItem("tsx-pf-cur", e.target.value); } catch {} renderPortfolio(); });
-  if (list.length) portfolioHistoryView(p, fx, cur, rate).then((html) => {
-    const el = document.getElementById("pf-history");
-    if (el) { el.innerHTML = html; wireCharts(el); }
-  }).catch(() => { const el = document.getElementById("pf-history"); if (el) el.innerHTML = `<div class="glass empty small">${esc(t("ui.notEnough"))}</div>`; });
+  if (list.length) wireMovement(p, fx, cur, rate);
 }
 
-// How the current holdings would have moved: their value month by month over the last two years (in the chosen
-// currency; foreign prices at today's exchange rates) and their value-weighted TeraScore week by week, or by
-// fiscal year while there are only a few weekly snapshots.
-async function portfolioHistoryView(p, fx, cur, rate) {
+// ---------- Portfolio: how it moved ----------
+
+// Period buttons: localized lengths ("1 day", "3 months") and "Max".
+const PERIOD_UNITS = { "1d": ["day", 1], "1w": ["week", 1], "1m": ["month", 1], "3m": ["month", 3], "6m": ["month", 6], "1y": ["year", 1] };
+function periodLabel(id) {
+  if (id === "max") return t("ui.pfMax");
+  const [unit, n] = PERIOD_UNITS[id];
+  try { return new Intl.NumberFormat(locale(), { style: "unit", unit, unitDisplay: "long" }).format(n); } catch { return id.toUpperCase(); }
+}
+const dayLabel = (day, year = false) => { try { return new Intl.DateTimeFormat(locale(), { month: "short", day: "numeric", ...(year ? { year: "numeric" } : {}), timeZone: "UTC" }).format(new Date(`${day}T12:00:00Z`)); } catch { return day; } };
+const monthLabel = (ym) => { try { return new Intl.DateTimeFormat(locale(), { month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(`${ym}-15T12:00:00Z`)); } catch { return ym; } };
+const keyLabel = (k, today) => (k.length === 10 ? dayLabel(k, k.slice(0, 4) !== today.slice(0, 4)) : k.length === 7 ? monthLabel(k) : k);
+// Today in New York (the trading day the closes are dated by).
+const nyToday = () => new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+const compactMoney = (v, cur) => { try { return new Intl.NumberFormat(locale(), { style: "currency", currency: cur, notation: "compact", maximumSignificantDigits: 3 }).format(v); } catch { return money(v, cur); } };
+const signOf = (v) => (v > 0 ? "+" : v < 0 ? "−" : "");
+const toneOf = (v) => (v > 0 ? "pos" : v < 0 ? "neg" : "");
+
+// The price history of a held fund (data/etf-prices/<key>.json); null without one.
+const fundPriceCache = new Map();
+function loadFundPrices(key) {
+  if (!fundPriceCache.has(key)) fundPriceCache.set(key, fetch(`data/etf-prices/${encodeURIComponent(String(key).replace(":", "_"))}.json`, { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).catch(() => null));
+  return fundPriceCache.get(key);
+}
+
+// The movement section: every period is computed once the price and score histories are loaded; the buttons
+// switch between them (the choice is remembered in this browser).
+async function wireMovement(p, fx, cur, rate) {
+  const box = document.getElementById("pf-move");
+  let sel = "1d";
+  try { const s = localStorage.getItem("tsx-pf-period"); if (PERIODS.includes(s)) sel = s; } catch {}
+  let data = null;
+  const show = () => {
+    box.querySelectorAll("[data-period]").forEach((b) => { const on = b.dataset.period === sel; b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on)); });
+    const body = document.getElementById("pf-move-body");
+    if (!data || !body) return;
+    body.innerHTML = movementView(sel, data, cur, rate, box.clientWidth);
+    wireCharts(body);
+  };
+  box.querySelectorAll("[data-period]").forEach((b) => b.addEventListener("click", () => { sel = b.dataset.period; try { localStorage.setItem("tsx-pf-period", sel); } catch {} show(); }));
+  show();
+  try { data = await movementData(p, fx); } catch { data = null; }
+  if (!document.body.contains(box)) return;
+  if (!data) { document.getElementById("pf-move-body").innerHTML = `<div class="empty small">${esc(t("ui.notEnough"))}</div>`; return; }
+  show();
+}
+
+async function movementData(p, fx) {
   const held = p.positions.filter((h) => h.row && isNum(h.shares) && h.shares > 0);
-  const stocks = held.filter((h) => !h.row.etf);
-  const [comps, eh] = await Promise.all([Promise.all(stocks.map((h) => loadCompany(h.t).catch(() => null))), held.some((h) => h.row.etf && !h.row.ucits) ? loadEtfHistory() : { h: {} }]);
+  const stocks = held.filter((h) => !h.row.etf), funds = held.filter((h) => h.row.etf);
+  const [comps, files, eh, pulse, bm] = await Promise.all([
+    Promise.all(stocks.map((h) => loadCompany(h.t).catch(() => null))),
+    Promise.all(funds.map((h) => loadFundPrices(h.t))),
+    funds.some((h) => !h.row.ucits) ? loadEtfHistory() : { h: {} },
+    loadPulse(),
+    loadBenchmarks(),
+  ]);
   const series = new Map();
-  stocks.forEach((h, i) => { const d = comps[i]?.prices?.data; if (d?.length) series.set(h.t, new Map(d)); });
-  for (const h of held.filter((x) => x.row.etf)) { const d = h.row.ucits ? h.row.h : eh.h?.[h.t]; if (d?.length) series.set(h.t, new Map(d)); }
-  const now = new Date();
-  const months = Array.from({ length: 24 }, (_, k) => { const d = new Date(now.getFullYear(), now.getMonth() - 23 + k, 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; });
-  // Closes carried forward over gaps; the current month is today's price.
-  const closes = new Map();
-  for (const h of held) {
-    const s = series.get(h.t);
-    if (!s) continue;
-    let last = null;
-    const firstKnown = [...s.keys()].sort()[0];
-    if (firstKnown > months[0] && s.size < 12) continue;
-    closes.set(h.t, months.map((m, i) => { if (i === months.length - 1) return h.row.ucits ? h.row.pxLocal : h.row.px; if (s.has(m)) last = s.get(m); else if (m < firstKnown) return null; return last; }));
-  }
-  const incl = held.filter((h) => closes.has(h.t));
-  const toUsd = (h) => (h.row.ucits && h.row.cur !== "USD" ? fx[h.row.cur] || null : 1);
-  const start = months.findIndex((_, i) => incl.every((h) => isNum(closes.get(h.t)[i])));
-  const valuePts = incl.length && start >= 0 ? months.slice(start).map((m, j) => [m, incl.reduce((a, h) => a + h.shares * closes.get(h.t)[start + j] * toUsd(h), 0) / rate]) : [];
-  const missing = held.filter((h) => !closes.has(h.t)).map((h) => h.row.dt || h.t);
-  const valueSub = `${t("ui.pfHistValueSub", { c: cur })}${missing.length ? ` ${t("ui.pfHistMissing", { list: missing.join(", ") })}` : ""}`;
-  const valueChart = lineChart(t("ui.pfHistValue"), valueSub, valuePts, (v) => fullMoney(v, cur), t("ui.notEnough"));
-  // TeraScore: weekly snapshots weighted by today's value.
-  const scored = stocks.map((h, i) => ({ h, c: comps[i] })).filter((x) => x.c && isNum(x.h.value));
-  const weekly = [...new Set(scored.flatMap((x) => weeklyOf(x.c).map((w) => w[0])))].sort();
-  let scorePts = weekly.map((d) => {
-    let s = 0, w = 0;
-    for (const x of scored) { const snap = weeklyOf(x.c).filter((q) => q[0] <= d && isNum(q[1])).pop(); if (snap) { s += snap[1] * x.h.value; w += x.h.value; } }
-    return [d, w ? +(s / w).toFixed(1) : null];
+  stocks.forEach((h, i) => series.set(h.t, { now: h.row.px, fx: 1, daily: comps[i]?.prices?.daily || [], monthly: comps[i]?.prices?.data || [] }));
+  funds.forEach((h, i) => {
+    const f = files[i];
+    series.set(h.t, { now: h.row.ucits ? h.row.pxLocal : h.row.px, fx: h.row.ucits ? (h.row.cur === "USD" ? 1 : fx[h.row.cur] || null) : 1,
+      daily: f?.daily || [], monthly: f?.monthly?.length ? f.monthly : (h.row.ucits ? h.row.h : eh.h?.[h.t]) || [] });
   });
-  if (isNum(p.score)) scorePts.push([now.toISOString().slice(0, 10), p.score]);
-  let scoreTitle = t("ui.pfHistScoreWeekly");
-  if (scorePts.filter(([, v]) => isNum(v)).length < 3) {
-    // Few weekly snapshots yet: the point-in-time TeraScore of each fiscal year.
-    const bm = await loadBenchmarks();
-    const byYear = new Map();
-    for (const x of scored) for (const y of scoreHistory(x.c, { benchmarks: bm })) {
-      if (!isNum(y.overall)) continue;
-      const e = byYear.get(y.year) || { s: 0, w: 0 };
-      e.s += y.overall * x.h.value; e.w += x.h.value; byYear.set(y.year, e);
+  const scored = stocks.map((h, i) => ({ t: h.t, value: h.value, score: h.row.sc?.overall, d1: h.row.d1, ch: h.row.ch,
+    weekly: comps[i] ? weeklyOf(comps[i]).map((w) => [w[0], w[1]]) : [], fy: null }));
+  const today = nyToday();
+  // Each period is worked out when it is first shown; the point-in-time scores by fiscal year only for "max".
+  const periods = new Map();
+  const get = (id) => {
+    if (!periods.has(id)) {
+      if (id === "max") scored.forEach((x, i) => { x.fy ??= comps[i] ? scoreHistory(comps[i], { benchmarks: bm }).map((y) => [y.year, y.overall]) : []; });
+      const move = periodMove(id, held, series, { today });
+      periods.set(id, { move, points: movePoints(move, held, series, { today }), score: scoreMove(id, scored, { today }) });
     }
-    const totalW = scored.reduce((a, x) => a + x.h.value, 0);
-    scorePts = [...byYear].sort((a, b) => a[0] - b[0]).filter(([, e]) => e.w >= 0.6 * totalW).slice(-8).map(([y, e]) => [String(y), +(e.s / e.w).toFixed(1)]);
-    scoreTitle = t("ui.pfHistScoreYearly");
+    return periods.get(id);
+  };
+  const names = new Map(held.map((h) => [h.t, h.row.dt || h.t]));
+  return { get, today, names, session: pulse?.session || null, hasStocks: stocks.length > 0 };
+}
+
+function movementView(id, data, cur, rate, width) {
+  const { move, points, score } = data.get(id);
+  const { today } = data;
+  const pctText = (v) => ltr(`${signOf(v)}${num(Math.abs(v * 100), 2)}%`);
+  const since = id === "1d" ? t(data.session === "open" || data.session === "post" ? "pulse.when.day" : "pulse.when.last")
+    : move.from ? t("ui.pfSince", { d: id === "max" ? monthLabel(move.from.slice(0, 7)) : dayLabel(move.from, move.from.slice(0, 4) !== today.slice(0, 4)) }) : "";
+  const valueKpi = `<div class="pf-kpi"><div class="k">${esc(t("ui.pfMoveValue"))}</div>
+      ${isNum(move.change) ? `<div class="v ${toneOf(move.change)}">${ltr(signOf(move.change) + fullMoney(Math.abs(move.change / rate), cur))} <span class="pct">${pctText(move.pct)}</span></div>` : `<div class="v">–</div>`}
+      <div class="s">${esc(since)}</div></div>`;
+  let sv = "–", ss = "";
+  if (!score) ss = data.hasStocks ? t("ui.notEnough") : t("ui.etfNoScore");
+  else if (!isNum(score.change)) ss = score.first && id !== "1d" && id !== "max" ? t("ui.pfMoveNoScore", { d: dayLabel(score.first, true) }) : t("ui.notEnough");
+  else {
+    // Rounded to tenths, and the "from → to" pair rounded the same way, so the figures add up.
+    const c = Math.round(score.change * 10) / 10, to = isNum(score.to) ? Math.round(score.to * 10) / 10 : null;
+    sv = `<span class="${toneOf(c)}">${ltr(`${signOf(c)}${num(Math.abs(c), 1)}`)}</span> <span class="unit">${esc(t("ui.points"))}</span>`;
+    ss = score.basis === "fy" ? t("ui.pfMoveFyRange", { a: score.years[0], b: score.years[1] })
+      : score.basis === "fyLast" ? t("ui.pfMoveFy")
+      : `${ltr(`${num(to - c, 1)} → ${num(to, 1)}`)}${score.basis === "weekly" && score.since ? ` · ${t("ui.pfSince", { d: dayLabel(score.since, score.since.slice(0, 4) !== today.slice(0, 4)) })}` : ""}`;
   }
-  const scoreChart = lineChart(scoreTitle, t("ui.pfHistScoreSub"), scorePts, (v) => num(v, 0), t("ui.notEnough"));
-  return `<div class="charts pf-charts">${valueChart}${scoreChart}</div>`;
+  const scoreKpi = `<div class="pf-kpi"><div class="k">${esc(t("ui.pfMoveScore"))}</div><div class="v">${sv}</div><div class="s">${esc(ss)}</div></div>`;
+  // Charts drawn at their on-screen width (two side by side from 900 px), so the labels keep their size.
+  const two = width >= 900 && points.length >= 2 && score?.points?.length >= 2;
+  const W = Math.max(260, Math.round((two ? (width - 14) / 2 : width) - 38)), H = 200;
+  // Evenly spaced dates on the x axis, as many as fit (about 90 px each).
+  const ticks = (keys) => {
+    const n = keys.length, k = Math.min(n, Math.max(2, Math.floor(W / (keys[0].length === 4 ? 48 : 90))));
+    return [...new Set(Array.from({ length: k }, (_, j) => Math.round((j * (n - 1)) / (k - 1))))].map((i) => [i, keys[i].length === 4 ? keys[i] : keyLabel(keys[i], today)]);
+  };
+  const opts = { W, H, label: (k) => keyLabel(k, today), ticks };
+  const valueChart = points.length >= 2 ? lineChart(t("ui.pfHistValue"), t("ui.pfMoveChartSub", { c: cur }), points.map(([k, v]) => [k, v / rate]), (v) => fullMoney(v, cur), t("ui.notEnough"), opts) : "";
+  const scoreChart = score?.points?.length >= 2 ? lineChart(score.basis === "fy" ? t("ui.pfHistScoreYearly") : t("ui.pfHistScoreWeekly"), t("ui.pfHistScoreSub"), score.points, (v) => num(v, 1), t("ui.notEnough"), opts) : "";
+  // What moved it: each holding's price change, its effect on the value and its TeraScore change.
+  const max = Math.max(1e-9, ...move.items.map((x) => Math.abs(x.change)));
+  const rows = move.items.map((x) => {
+    const ts = score?.byT?.get(x.t);
+    const w = ((Math.abs(x.change) / max) * 50).toFixed(1);
+    return `<div class="pc-row"><span class="pc-t">${esc(data.names.get(x.t) || x.t)}</span>
+      <span class="pc-bar" aria-hidden="true"><span class="${x.change >= 0 ? "pos" : "neg"}" style="${x.change >= 0 ? "left" : "right"}:50%;width:${w}%"></span></span>
+      <span class="pc-p ${toneOf(x.pct)}">${pctText(x.pct)}</span>
+      <span class="pc-m ${toneOf(x.change)}">${ltr(signOf(x.change) + compactMoney(Math.abs(x.change / rate), cur))}</span>
+      <span class="pc-s">${isNum(ts) ? (ts === 0 ? `<span class="small muted">±0</span>` : changePill(ts)) : ""}</span></div>`;
+  }).join("");
+  const notes = [move.missing.length ? t("ui.pfHistMissing", { list: move.missing.map((k) => data.names.get(k) || k).join(", ") }) : "",
+    move.approx.length ? t("ui.pfMoveMonthly", { list: move.approx.map((k) => data.names.get(k) || k).join(", ") }) : ""].filter(Boolean);
+  return `<div class="pf-kpis">${valueKpi}${scoreKpi}</div>
+    ${valueChart || scoreChart ? `<div class="charts pf-charts${two ? "" : " one"}">${valueChart}${scoreChart}</div>` : ""}
+    ${rows || notes.length ? `<div class="glass pad pf-contrib-card">
+      ${rows ? `<div class="pf-subtitle">${esc(t("ui.pfMoveTop"))}</div><p class="small muted pc-sub">${esc(t("ui.pfMoveTopSub"))}</p><div class="pf-contrib">${rows}</div>` : ""}
+      ${notes.length ? `<p class="small muted" style="margin:${rows ? "14px" : "0"} 0 0">${esc(notes.join(" "))}</p>` : ""}</div>` : ""}`;
 }
 
 // Exchange rates (USD per unit of a currency), for screenshots that show values in forints or euros.

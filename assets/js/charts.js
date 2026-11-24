@@ -37,12 +37,15 @@ export function barChart(title, sub, points, f, emptyText) {
     </svg></div>`;
 }
 
-export function lineChart(title, sub, points, f, emptyText) {
+// opts: W/H (viewBox size: the drawn width in pixels keeps the labels at their CSS size), label(key) for the
+// tooltip, ticks(keys) → [[index, text]] for the x axis (default: the year at each January of "YYYY-MM" keys).
+export function lineChart(title, sub, points, f, emptyText, { W = 900, H = 220, label = (k) => k, ticks: xTicks = null } = {}) {
   const pts = points.filter(([, v]) => isNum(v));
   if (pts.length < 2) return `<div class="glass chart wide"><h3>${esc(title)}</h3><div class="chart-sub">${esc(sub)}</div><div class="empty small">${esc(emptyText)}</div></div>`;
-  const W = 900, H = 220, padT = 14, padB = 22, padR = 54;
   const vals = pts.map(([, v]) => v);
   const max = Math.max(...vals), min = Math.min(...vals);
+  // Room on the right for the longest value label ("6 877 818 Ft", "344,63 USD").
+  const padT = 14, padB = 22, padR = Math.min(120, Math.max(54, 12 + 6.3 * Math.max(...[max, (max + min) / 2, min].map((v) => String(f(v)).length))));
   const range = max - min || 1;
   const x = (i) => (i / (pts.length - 1)) * (W - padR);
   const y = (v) => padT + ((max - v) / range) * (H - padT - padB);
@@ -50,8 +53,9 @@ export function lineChart(title, sub, points, f, emptyText) {
   const area = `${path} L${x(pts.length - 1)},${H - padB} L0,${H - padB} Z`;
   const ticks = [max, (max + min) / 2, min].map((v) => `<line class="gridline" x1="0" x2="${W - padR}" y1="${y(v)}" y2="${y(v)}"/><text class="axis-label" x="${W - padR + 6}" y="${y(v) + 4}">${esc(f(v))}</text>`).join("");
   const years = [];
-  pts.forEach(([label], i) => { if (label.endsWith("-01") && i > 0) years.push(`<text class="axis-label" x="${x(i)}" y="${H - 5}" text-anchor="middle">${label.slice(0, 4)}</text>`); });
-  const data = esc(JSON.stringify(pts.map(([l, v]) => [l, f(v)])));
+  if (xTicks) for (const [i, text] of xTicks(pts.map(([k]) => k))) years.push(`<text class="axis-label" x="${x(i)}" y="${H - 5}" text-anchor="${i === 0 ? "start" : i === pts.length - 1 ? "end" : "middle"}">${esc(text)}</text>`);
+  else pts.forEach(([k], i) => { if (k.endsWith("-01") && i > 0) years.push(`<text class="axis-label" x="${x(i)}" y="${H - 5}" text-anchor="middle">${k.slice(0, 4)}</text>`); });
+  const data = esc(JSON.stringify(pts.map(([l, v]) => [label(l), f(v)])));
   return `<div class="glass chart wide" data-line="${data}" data-w="${W - padR}" data-n="${pts.length}"><h3>${esc(title)}</h3><div class="chart-sub">${esc(sub)}</div>
     <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(title)}">
       <defs><linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5ea2ff" stop-opacity=".35"/><stop offset="1" stop-color="#5ea2ff" stop-opacity="0"/></linearGradient></defs>

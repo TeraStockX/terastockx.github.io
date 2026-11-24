@@ -310,7 +310,18 @@ export default {
   "contact": "Hubungi",
   "marketToday": "Pasaran hari ini",
   "marketMore": "Pasaran & peristiwa",
-  "eventsTitle": "Peristiwa korporat besar (8-K)"
+  "eventsTitle": "Peristiwa korporat besar (8-K)",
+  "pfMax": "Maks",
+  "pfSince": "sejak {d}",
+  "pfMoveValue": "Perubahan nilai",
+  "pfMoveScore": "Perubahan TeraScore",
+  "pfMoveNoScore": "Sejarah belum mencukupi: TeraScore mingguan kaedah semasa direkodkan sejak {d}.",
+  "pfMoveFy": "Tahun kewangan terkini berbanding tahun sebelumnya (dengan data yang diketahui ketika itu).",
+  "pfMoveFyRange": "Tahun kewangan {a} → {b} (dengan data yang diketahui ketika itu).",
+  "pfMoveChartSub": "Dalam {c}; harga asing pada kadar pertukaran hari ini.",
+  "pfMoveTop": "Apa yang menggerakkan portfolio",
+  "pfMoveTopSub": "Bagi setiap pegangan: perubahan harga, kesannya pada nilai portfolio dan perubahan TeraScore dalam tempoh itu.",
+  "pfMoveMonthly": "Dengan harga akhir bulan (belum ada harga tutup harian): {list}."
  },
  "pulse": {
   "themes": {

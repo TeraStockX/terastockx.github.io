@@ -310,7 +310,18 @@ export default {
   "contact": "お問い合わせ",
   "marketToday": "今日のマーケット",
   "marketMore": "マーケットとイベント",
-  "eventsTitle": "企業の主要イベント（8-K）"
+  "eventsTitle": "企業の主要イベント（8-K）",
+  "pfMax": "全期間",
+  "pfSince": "{d}以降",
+  "pfMoveValue": "評価額の変化",
+  "pfMoveScore": "TeraScoreの変化",
+  "pfMoveNoScore": "まだ十分な履歴がありません：現行手法の週次TeraScoreは{d}から記録しています。",
+  "pfMoveFy": "直近の会計年度と前年度の比較（当時判明していたデータに基づく）。",
+  "pfMoveFyRange": "会計年度 {a} → {b}（当時判明していたデータに基づく）。",
+  "pfMoveChartSub": "{c}建て。外国の価格は本日の為替レートで換算。",
+  "pfMoveTop": "ポートフォリオを動かした要因",
+  "pfMoveTopSub": "各保有銘柄の期間中の価格変化、ポートフォリオ評価額への影響、TeraScoreの変化。",
+  "pfMoveMonthly": "月末価格を使用（日次終値はまだありません）：{list}。"
  },
  "pulse": {
   "themes": {
