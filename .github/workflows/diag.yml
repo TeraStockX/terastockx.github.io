@@ -14,14 +14,25 @@ jobs:
         with: { ref: diag }
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
-      - name: Final live screenshots
+      - name: Live company page order after the deploy of 71c00095
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p out
+          repo=TeraStockX/terastockx.github.io
+          for i in $(seq 1 60); do
+            id=$(gh run list --repo $repo --workflow deploy.yml --limit 5 --json databaseId,headSha -q '[.[] | select(.headSha | startswith("71c00095"))][0].databaseId')
+            st=$(gh run view $id --repo $repo --json status,conclusion -q '.status + " " + .conclusion' 2>/dev/null)
+            case "$st" in completed*) break;; esac
+            sleep 15
+          done
+          echo "deploy $id: $st" | tee out/company.txt
+          sleep 40
           npm install --no-save --no-audit --no-fund playwright@1.49.1 >/dev/null 2>&1
           npx playwright install --with-deps chromium >/dev/null 2>&1
-          node finalshots.cjs 2>&1 | tee out/final.txt
+          node livecompany.cjs 2>&1 | tee -a out/company.txt
       - name: Save results to the diag branch
         if: always()
         run: |
           git config user.name diag; git config user.email diag@users.noreply.github.com
-          git add out && git commit -qm "diag: final screenshots" && git push -q origin HEAD:diag
+          git add out && git commit -qm "diag: company page order" && git push -q origin HEAD:diag
