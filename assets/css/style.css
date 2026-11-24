@@ -831,7 +831,7 @@ table.ocr-table td.num .ocr-note { font-size: 11px; line-height: 1.3; margin-top
   .pf-row { grid-column: 1 / -1; grid-template-columns: minmax(170px, 1fr) 96px 92px 112px 56px 92px 70px 96px 120px 32px; grid-template-columns: subgrid; padding: 10px 16px; border-top: 1px solid var(--border); }
   .pf-row.pf-head { border-top: 0; padding-top: 12px; padding-bottom: 8px; font-size: 12px; font-weight: 700; color: var(--text-3); white-space: nowrap; }
   .pf-row .num { text-align: right; }
-  .pf-row .ph-rm { justify-self: end; padding-inline-start: 6px; }
+  .pf-row .ph-rm { justify-self: end; padding-inline-start: 12px; }
 }
 /* Tablets and phones: a card per holding; the figures as label–value pairs in two columns. */
 @media (max-width: 1199px) {

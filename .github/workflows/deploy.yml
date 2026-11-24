@@ -1,5 +1,5 @@
 # Publishes the website on GitHub Pages and refreshes the data every day.
-# - push to main: tests, then publish (with the latest data from the `data` branch)
+# - push to main: tests, then publish (with the latest data: the newest intraday run's, else the `data` branch)
 # - daily runs and manual runs (Actions → Run workflow): download all US-listed companies, save the
 #   result to the `data` branch, then publish.
 # The `data` branch always holds a single commit with the latest snapshot, so the repository does not
@@ -22,6 +22,7 @@ permissions:
   contents: write
   pages: write
   id-token: write
+  actions: read
 
 concurrency:
   group: pages
@@ -50,6 +51,26 @@ jobs:
 
       - name: Tesztek
         run: npm test
+
+      # A code change is published with the newest prices: the data of the latest intraday run (from its Pages
+      # artifact) when that run is newer than the data branch; otherwise the data branch stays.
+      - name: Legfrissebb napközbeni adatok (kódváltozás esetén)
+        if: github.event_name == 'push'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          dataAt=$(git log -1 --format=%cI FETCH_HEAD 2>/dev/null || true)
+          for id in $(gh run list --repo "$GITHUB_REPOSITORY" --workflow intraday.yml --status success --limit 6 --json databaseId -q '.[].databaseId'); do
+            created=$(gh run view "$id" --repo "$GITHUB_REPOSITORY" --json createdAt -q .createdAt) || continue
+            if [ -n "$dataAt" ] && [ "$(date -d "$created" +%s)" -le "$(date -d "$dataAt" +%s)" ]; then break; fi
+            live="$RUNNER_TEMP/live"; rm -rf "$live"; mkdir -p "$live"
+            if gh run download "$id" --repo "$GITHUB_REPOSITORY" -n github-pages -D "$live" && tar -xf "$live/artifact.tar" -C "$live" ./data && [ -f "$live/data/index.json" ]; then
+              mv data "$RUNNER_TEMP/data-branch" && { mv "$live/data" data || mv "$RUNNER_TEMP/data-branch" data; }
+              echo "Data of intraday run $id ($created): $(ls data/companies | wc -l) companies"
+              break
+            fi
+          done
 
       # The site's address (used in the sitemap and in the search pages' canonical links).
       - id: pages
