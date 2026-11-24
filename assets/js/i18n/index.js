@@ -4,7 +4,8 @@
 import en from "./en.js";
 
 // Every language: code, native name, English name, short label, locale for numbers and dates, writing direction.
-// Arabic-script languages and Bengali keep Latin digits, so prices, tickers and charts read the same everywhere.
+// Arabic-script languages and Bengali keep Latin digits, and Thai the Gregorian calendar, so prices, tickers,
+// fiscal years and charts read the same everywhere.
 const ALL_LANGS = [
   { code: "en", name: "English", english: "English", short: "EN", locale: "en-US" },
   { code: "hu", name: "Magyar", english: "Hungarian", short: "HU", locale: "hu-HU" },
@@ -24,7 +25,7 @@ const ALL_LANGS = [
   { code: "tr", name: "Türkçe", english: "Turkish", short: "TR", locale: "tr-TR" },
   { code: "fa", name: "فارسی", english: "Persian", short: "FA", locale: "fa-IR-u-nu-latn", dir: "rtl" },
   { code: "ko", name: "한국어", english: "Korean", short: "KO", locale: "ko-KR" },
-  { code: "th", name: "ไทย", english: "Thai", short: "TH", locale: "th-TH" },
+  { code: "th", name: "ไทย", english: "Thai", short: "TH", locale: "th-TH-u-ca-gregory" },
   { code: "it", name: "Italiano", english: "Italian", short: "IT", locale: "it-IT" },
   { code: "sv", name: "Svenska", english: "Swedish", short: "SV", locale: "sv-SE" },
   { code: "fi", name: "Suomi", english: "Finnish", short: "FI", locale: "fi-FI" },
@@ -43,7 +44,7 @@ const ALL_LANGS = [
   { code: "hr", name: "Hrvatski", english: "Croatian", short: "HR", locale: "hr-HR" },
 ];
 // Languages whose dictionary is ready (the others are being translated).
-const AVAILABLE = new Set(["en", "hu", "de", "fr", "es", "zh", "hi", "ar", "bn", "pt", "id", "ur", "ru", "ja", "vi", "tr", "fa", "ko"]);
+const AVAILABLE = new Set(["en", "hu", "de", "fr", "es", "zh", "hi", "ar", "bn", "pt", "id", "ur", "ru", "ja", "vi", "tr", "fa", "ko", "th"]);
 export const LANG_LIST = ALL_LANGS.filter((l) => AVAILABLE.has(l.code));
 const META = Object.fromEntries(LANG_LIST.map((l) => [l.code, l]));
 export const langMeta = (code) => META[code] || META.en;
