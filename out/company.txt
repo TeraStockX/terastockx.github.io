@@ -1,0 +1,3 @@
+deploy 45491792855: completed success
+co-hu-phone ["Értékelés","Kockázati jelzések és erősségek","Hasonló vállalatok","TeraScore-változások","Mi emeli és mi húzza le a TeraScore-t?","Jelentős események (utolsó 12 hónap)","Osztalék","Kulcsmutatók","Történeti teljesítmény","Bennfentes ügyletek"] no errors
+co-en-desktop ["Scorecard","Red flags & strengths","Similar companies","TeraScore Changes","What lifts and what lowers the TeraScore?","Major events (last 12 months)","Dividend","Key metrics","Historical performance","Insider transactions"] no errors
