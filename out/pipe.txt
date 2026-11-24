@@ -1,0 +1,26 @@
+AAPL source Nasdaq monthly 73 [["2026-10",344.63],["2026-11",349.08]] daily 276 [["2025-10-20",262.24]] [["2026-11-20",342.56],["2026-11-23",349.08]] gap median 1 max 4 json bytes 6038
+BRK.B source Nasdaq monthly 73 [["2026-10",542.49],["2026-11",572.36]] daily 276 [["2025-10-20",494.08]] [["2026-11-20",570],["2026-11-23",572.36]] gap median 1 max 4 json bytes 6028
+NVDA source Nasdaq monthly 73 [["2026-10",204.64],["2026-11",165.05]] daily 276 [["2025-10-20",182.64]] [["2026-11-20",125.53],["2026-11-23",165.05]] gap median 1 max 4 json bytes 6040
+SPY rows 1522 monthly 72 [["2020-12",373.88]] [["2026-11",722.29]] daily 276 [["2026-11-20",689.81],["2026-11-23",722.29]] gap median 1 max 4
+VOO rows 1522 monthly 72 [["2020-12",343.69]] [["2026-11",663.91]] daily 276 [["2026-11-20",635.54],["2026-11-23",663.91]] gap median 1 max 4
+SCHD rows 1522 monthly 72 [["2020-12",21.38]] [["2026-11",34.39]] daily 276 [["2026-11-20",33.94],["2026-11-23",34.39]] gap median 1 max 4
+VUAA:LSE USD monthly 26 [["2026-11",138.75]] daily 401 [["2025-10-20",129.12]] [["2026-11-23",140.58],["2026-11-24",138.75]] gap median 1 max 1
+VUAG:LSE GBP monthly 26 [["2026-11",105.79]] daily 401 [["2025-10-20",96.29]] [["2026-11-23",107.98],["2026-11-24",105.79]] gap median 1 max 1
+VUAA:XETRA EUR monthly 26 [["2026-11",126.48]] daily 401 [["2025-10-20",110.79]] [["2026-11-23",129],["2026-11-24",126.48]] gap median 1 max 1
+--- daily run 45332971134
+build 2026-11-24T05:23:35.9356862Z # Subtest: European ETFs: listings with currency, month-end closes from justETF and Nasdaq, search by ticker
+build 2026-11-24T05:23:35.9358317Z ok 41 - European ETFs: listings with currency, month-end closes from justETF and Nasdaq, search by ticker
+build 2026-11-24T06:18:05.0061119Z   500 price histories
+build 2026-11-24T06:21:22.0022876Z   1000 price histories
+build 2026-11-24T06:24:30.9619757Z   1500 price histories
+build 2026-11-24T06:27:41.8968974Z   2000 price histories
+build 2026-11-24T06:30:47.4882268Z   2500 price histories
+build 2026-11-24T06:33:55.7300114Z   3000 price histories
+build 2026-11-24T06:37:00.7434644Z   3500 price histories
+build 2026-11-24T06:40:03.1829888Z   4000 price histories
+build 2026-11-24T06:43:06.5489636Z   4500 price histories
+build 2026-11-24T06:46:13.3499521Z   5000 price histories
+build 2026-11-24T06:47:07.5950996Z   price histories: 5099/5124 updated
+build 2026-11-24T06:47:07.5952194Z Done: 5119 with financials, 761 without data, 0 errors, 310 filled from filings missing in companyfacts, 5099 price histories updated.
+build 2026-11-24T06:47:31.5601865Z   European ETFs: 26 of 26 prices, monthly closes
+build 2026-11-24T06:58:44.0096009Z   ETF price history: 300 of 300
