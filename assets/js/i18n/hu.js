@@ -15,7 +15,7 @@ export default {
     pfHistScoreSub: "A cégek a mai értékükkel súlyozva (az ETF-eknek nincs TeraScore-ja).",
     etfAcc: "felhalmozó",
     etfDist: "osztalékfizető",
-    cmpPartialNote: "Ezeknek a cégeknek a jelentéseiből hiányzik adat, ezért az elemzésük részleges, a pontszámuk kevésbé biztos: {list}. A „nincs adat” jelölésű területek kimaradnak a TeraScore-ból (nem számítanak 0 pontnak).",
+    cmpPartialNote: "Ezeknek a cégeknek a jelentéseiből hiányzik adat, ezért az elemzésük részleges, a pontszámuk kevésbé biztos: {list}. A „nincs adat” jelölésű területek legfeljebb semleges 50 ponttal számítanak, így a hiányzó adat sosem javít a TeraScore-on.",
     showMore: "Továbbiak",
     tagline: "Fundamentális részvényelemzés, átláthatóan.",
     heroText: "A Nasdaq, NYSE, NYSE American és Cboe tőzsdén jegyzett vállalatok tíz befektetési szempont szerint pontozva – jövedelmezőség, cash flow minősége, mérlegerő, növekedés, értékeltség és kockázat – auditált SEC-jelentések alapján, a szektortársakhoz viszonyítva.",

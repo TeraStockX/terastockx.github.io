@@ -15,7 +15,7 @@ export default {
     pfHistScoreSub: "Entreprises pondérées par leur valeur actuelle (les ETF n'ont pas de TeraScore).",
     etfAcc: "capitalisant",
     etfDist: "distribuant",
-    cmpPartialNote: "Des données manquent dans les rapports de ces entreprises : leur analyse est partielle et leurs notes moins sûres : {list}. Les domaines marqués « pas de données » sont exclus du TeraScore (ils ne comptent pas pour zéro).",
+    cmpPartialNote: "Des données manquent dans les rapports de ces entreprises : leur analyse est partielle et leurs notes moins sûres : {list}. Les domaines marqués « pas de données » comptent au plus pour une valeur neutre de 50 ; des données manquantes ne relèvent donc jamais le TeraScore.",
     showMore: "Afficher plus",
     tagline: "L'analyse fondamentale, en toute clarté.",
     heroText: "Toutes les sociétés cotées au Nasdaq, au NYSE, au NYSE American et sur Cboe, notées selon dix dimensions d'investissement – rentabilité, qualité des flux, solidité du bilan, croissance, valorisation et risque – à partir des rapports audités de la SEC et comparées à leurs pairs sectoriels.",

@@ -35,7 +35,8 @@ assets/js/app.js              felület: lista, cégoldal, trend, hírek, nyers a
 assets/js/scoring.js          elemzőmotor (böngészőben és Node-ban is fut)
 assets/js/portfolio.js        portfólió-elemzés
 assets/js/charts.js           grafikonok
-assets/js/i18n/               nyelvi fájlok: en (alapértelmezett), hu, de, fr, es, zh (egyszerűsített kínai)
+assets/js/i18n/               nyelvi fájlok (en az alapértelmezett); a nyelvek listája és adatai az index.js-ben (ALL_LANGS, AVAILABLE),
+                              egy nyelv fájlja csak akkor töltődik le, amikor a látogató kiválasztja
 data/                         adatok – a data ágon tárolva (mindig csak a legfrissebb állapot):
                               index.json, news.json, benchmarks.json, backtest.json, companies/*.json
 scripts/update-data.mjs       adatletöltő (SEC EDGAR + Nasdaq + árfolyam-előzmények)

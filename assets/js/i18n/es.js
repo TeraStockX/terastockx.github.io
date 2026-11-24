@@ -15,7 +15,7 @@ export default {
     pfHistScoreSub: "Empresas ponderadas por su valor actual (los ETF no tienen TeraScore).",
     etfAcc: "de acumulación",
     etfDist: "de distribución",
-    cmpPartialNote: "Faltan datos en los informes de estas empresas, por lo que su análisis es parcial y sus puntuaciones menos seguras: {list}. Las áreas marcadas como «sin datos» quedan fuera del TeraScore (no cuentan como cero).",
+    cmpPartialNote: "Faltan datos en los informes de estas empresas, por lo que su análisis es parcial y sus puntuaciones menos seguras: {list}. Las áreas marcadas como «sin datos» cuentan como mucho como un 50 neutral, así que los datos que faltan nunca suben el TeraScore.",
     showMore: "Mostrar más",
     tagline: "Análisis fundamental, con claridad.",
     heroText: "Todas las empresas cotizadas en Nasdaq, NYSE, NYSE American y Cboe evaluadas en diez dimensiones de inversión – rentabilidad, calidad del flujo de caja, solidez del balance, crecimiento, valoración y riesgo – a partir de informes auditados de la SEC y comparadas con su sector.",

@@ -5,12 +5,13 @@ import { readFileSync, readdirSync } from "node:fs";
 import { parseCompanyFacts, normalizeShares, splitEvidence } from "../scripts/sec-parse.mjs";
 import { sectorFromSic, profileFor } from "../scripts/sectors.mjs";
 import { analyze, scale, DIMENSIONS, METRIC_FORMAT, PROFILES, FLAG_IDS, marketStats } from "../assets/js/scoring.js";
-import { LANGS } from "../assets/js/i18n/index.js";
+import { loadAllLangs } from "../assets/js/i18n/index.js";
 import { EVENT_SEVERITY, majorEvents } from "../scripts/events.mjs";
 import { parseNasdaqListed, parseOtherListed, cleanName } from "../scripts/listings.mjs";
 import { aggregateQuarter, finalize, isoDate, recentQuarters } from "../scripts/insider.mjs";
 import { reportingCurrency } from "../scripts/sec-parse.mjs";
 import { computeBenchmarks, scoreHistory } from "../assets/js/scoring.js";
+const LANGS = await loadAllLangs();
 
 const load = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), "utf8"));
 const fixture = () => parseCompanyFacts(load("./fixtures/companyfacts-mini.json"));
@@ -104,6 +105,21 @@ test("Every language has every key used by the engine", () => {
     for (const k of Object.keys(LANGS.en.sectors)) assert.ok(d.sectors[k], `${code}: sectors.${k}`);
     for (const k of Object.keys(EVENT_SEVERITY)) assert.ok(d.events[k], `${code}: events.${k}`);
   }
+});
+
+test("Every language: every English text, same {placeholders}, ◐ kept", () => {
+  const ph = (s) => [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort().join(",");
+  const walk = (src, d, path, code) => {
+    if (typeof src === "string") {
+      assert.equal(typeof d, "string", `${code}: ${path} missing`);
+      if (src) assert.ok(d.trim(), `${code}: ${path} empty`);
+      assert.equal(ph(d), ph(src), `${code}: ${path} placeholders`);
+      if (src.includes("◐")) assert.ok(d.includes("◐"), `${code}: ${path} ◐`);
+      return;
+    }
+    if (src && typeof src === "object") for (const k of Object.keys(src)) if (!(path === "" && k === "meta")) walk(src[k], d?.[k], path ? `${path}.${k}` : k, code);
+  };
+  for (const [code, d] of Object.entries(LANGS)) if (code !== "en") walk(LANGS.en, d, "", code);
 });
 
 test("8-K events: only significant items, last 12 months, flags raised", () => {

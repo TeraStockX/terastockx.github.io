@@ -15,7 +15,7 @@ export default {
     pfHistScoreSub: "Companies weighted by today's value (ETFs have no TeraScore).",
     etfAcc: "accumulating",
     etfDist: "distributing",
-    cmpPartialNote: "Data is missing from the filings of these companies, so their analysis is partial and their scores are less certain: {list}. Areas marked “no data” are left out of the TeraScore (they do not count as zero).",
+    cmpPartialNote: "Data is missing from the filings of these companies, so their analysis is partial and their scores are less certain: {list}. Areas marked “no data” count as a neutral 50 at most, so missing data never lifts the TeraScore.",
     showMore: "Show more",
     tagline: "Fundamental equity analysis, made clear.",
     heroText: "Every company listed on Nasdaq, NYSE, NYSE American and Cboe scored across ten investment dimensions — profitability, cash-flow quality, balance-sheet strength, growth, valuation and risk — based on audited SEC filings and compared with sector peers.",

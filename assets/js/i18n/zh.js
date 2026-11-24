@@ -20,7 +20,7 @@ export default {
   "pfHistScoreSub": "公司按今日市值加权（ETF 没有 TeraScore）。",
   "etfAcc": "累积型",
   "etfDist": "分派型",
-  "cmpPartialNote": "这些公司的财报缺少部分数据，因此分析不完整，评分的可靠性较低：{list}。标为“无数据”的维度不计入 TeraScore（不按零分计算）。",
+  "cmpPartialNote": "这些公司的财报缺少部分数据，因此分析不完整，评分的可靠性较低：{list}。标为“无数据”的领域最多按中性的 50 分计算，因此缺失数据永远不会抬高 TeraScore。",
   "showMore": "显示更多",
   "tagline": "清晰透明的基本面股票分析。",
   "heroText": "在纳斯达克、纽约证券交易所、NYSE American 和 Cboe 上市的每家公司，都依据经审计的 SEC 财报，从盈利能力、现金流质量、资产负债表实力、增长、估值和风险等十个投资维度进行评分，并与同行业公司比较。",

@@ -1,7 +1,7 @@
 import { analyze, scoreHistory, gradeKey, GRADE_TONE, DIMENSIONS, METRIC_FORMAT, ENGINE_VERSION, ENGINE_SERIES, PROFILES, OVERALL_WEIGHTS, RISK_WEIGHTS, MARKET_RISK_SHARE, FLAG_PENALTY, MISSING_DIMENSION_SCORE, SMOOTH_PRIOR_WEIGHT, RUNWAY_BAD, RUNWAY_GOOD, NET_CASH_LOSS_SCORE, dividendProfile, DIVIDEND_TONE, DIVIDEND_WEIGHTS, findPeers } from "./scoring.js";
 import { portfolioSummary, PORTFOLIO_LIMITS } from "./portfolio.js";
 import { SCREENS, screenById } from "./screens.js";
-import { LANGS, lang, setLang, t, fill, fmt, money, date, num, dict } from "./i18n/index.js";
+import { LANG_LIST, EN, langMeta, ready, lang, setLang, t, fill, fmt, money, date, num, dict, locale, ltr } from "./i18n/index.js";
 import { barChart, lineChart, wireCharts, donutChart } from "./charts.js";
 import { prepareSearch, searchCompanies, scoreAll, STRONG, popularity } from "./search.js";
 
@@ -248,7 +248,7 @@ function pfCurrency(fx) {
 function fullMoney(v, cur = "USD") {
   if (!isNum(v)) return "–";
   const whole = ["HUF", "JPY", "KRW", "ISK", "CLP", "IDR"].includes(cur) || Math.abs(v) >= 1e6;
-  try { return new Intl.NumberFormat(dict().meta.locale, { style: "currency", currency: cur, maximumFractionDigits: whole ? 0 : 2, minimumFractionDigits: whole ? 0 : 2 }).format(v); } catch { return `${num(v, 2)} ${cur}`; }
+  try { return new Intl.NumberFormat(locale(), { style: "currency", currency: cur, maximumFractionDigits: whole ? 0 : 2, minimumFractionDigits: whole ? 0 : 2 }).format(v); } catch { return `${num(v, 2)} ${cur}`; }
 }
 
 function getPortfolio() { try { return JSON.parse(localStorage.getItem("tsx-portfolio") || "[]").filter((h) => h && h.t); } catch { return []; } }
@@ -324,13 +324,34 @@ const links = (short) => `
 `;
   document.getElementById("nav").innerHTML = links(false);
   document.getElementById("tabbar").innerHTML = links(true);
-  document.getElementById("lang-wrap").innerHTML = `<select class="lang-select" id="lang" aria-label="${esc(t("ui.language"))}">
-      ${Object.entries(LANGS).map(([code, d]) => `<option value="${code}" ${code === lang() ? "selected" : ""}>${d.meta.short}</option>`).join("")}
-    </select>`;
-  document.getElementById("lang").addEventListener("change", (e) => { setLang(e.target.value); renderChrome(); route(false); });
+  const cur = langMeta(lang());
+  const options = [...LANG_LIST].sort((a, b) => a.english.localeCompare(b.english)).map((l) => `<button type="button" role="option" class="lang-opt${l.code === lang() ? " on" : ""}" aria-selected="${l.code === lang()}" data-lang="${l.code}"><span class="ln" lang="${l.code}" dir="${l.dir || "ltr"}">${esc(l.name)}</span><span class="le">${esc(l.english)}</span></button>`).join("");
+  document.getElementById("lang-wrap").innerHTML = `<div class="lang-pick">
+      <button type="button" class="lang-btn" id="lang-btn" aria-haspopup="listbox" aria-expanded="false" aria-controls="lang-menu" aria-label="${esc(t("ui.language"))}: ${esc(cur.name)}">${esc(cur.short)}<svg viewBox="0 0 10 6" width="10" height="6" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></button>
+      <div class="lang-menu" id="lang-menu" role="listbox" aria-label="${esc(t("ui.language"))}" hidden>${options}</div>
+    </div>`;
+  document.getElementById("lang-btn").addEventListener("click", () => toggleLangMenu());
+  document.getElementById("lang-menu").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-lang]");
+    if (!b) return;
+    toggleLangMenu(false);
+    if (b.dataset.lang !== lang()) setLang(b.dataset.lang).then(() => { renderChrome(); route(false); }).catch(() => {});
+  });
   document.getElementById("footer-text").innerHTML = `${esc(t("ui.footer"))} <a href="#/methodology">${esc(t("ui.navMethod"))} ›</a> · <a href="#/install">${esc(t("ui.installFooter"))} ›</a> · ${esc(t("ui.contact"))}: <a href="mailto:${CONTACT_EMAIL}">${CONTACT_EMAIL}</a>`;
   markNav();
 }
+
+// Language menu: a list of every language by its own name, opened from the header button.
+function toggleLangMenu(open) {
+  const menu = document.getElementById("lang-menu"), btn = document.getElementById("lang-btn");
+  if (!menu || !btn) return;
+  const show = open ?? menu.hidden;
+  menu.hidden = !show;
+  btn.setAttribute("aria-expanded", String(show));
+  if (show) (menu.querySelector(".lang-opt.on") || menu.querySelector(".lang-opt"))?.focus();
+}
+document.addEventListener("click", (e) => { if (!e.target.closest(".lang-pick")) toggleLangMenu(false); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") toggleLangMenu(false); });
 
 function markNav() {
   const page = location.hash.replace(/^#\/?/, "").split("/")[0];
@@ -450,7 +471,7 @@ function updatedWhen(iso, { lower = false } = {}) {
   const days = Math.round((dayStart(now) - dayStart(d)) / 86400000);
   const word = days <= 0 ? t(now - d < 15 * 60000 ? "ui.now" : "ui.today") : days === 1 ? t("ui.yesterday") : null;
   if (!word) return date(iso);
-  return lower ? word.toLocaleLowerCase(dict().meta.locale) : word;
+  return lower ? word.toLocaleLowerCase(locale()) : word;
 }
 
 const LIST_COLS = [
@@ -741,7 +762,7 @@ function filtersActive() {
 
 // ---------- TeraScore Changes ----------
 
-const changePill = (v) => (isNum(v) ? `<span class="pill tone-${v > 0 ? "good" : v < 0 ? "critical" : "none"}"><span class="dot"></span>${v > 0 ? "+" : ""}${v}</span>` : "–");
+const changePill = (v) => (isNum(v) ? `<span class="pill tone-${v > 0 ? "good" : v < 0 ? "critical" : "none"}"><span class="dot"></span>${ltr(`${v > 0 ? "+" : ""}${v}`)}</span>` : "–");
 const TREND_PERIODS = { ch: "ui.trendPeriodFy", c4: "ui.trendPeriod4w", c13: "ui.trendPeriod13w" };
 const trendState = { period: "ch", sector: "", minCap: 2e9 };
 
@@ -801,7 +822,7 @@ function trendView(c, history, row) {
 // ---------- Major events ----------
 
 // Event item codes contain a dot ("3.01"), so they are looked up directly rather than via a t() path.
-const eventName = (item) => dict().events?.[item] ?? LANGS.en.events[item] ?? item;
+const eventName = (item) => dict().events?.[item] ?? EN.events[item] ?? item;
 // "Most important": critical events of any company, major events of companies above $1 billion.
 const isTopEvent = (e) => e.severity >= 5 || (e.severity >= 4 && (e.mc ?? 0) >= 1e9);
 const SEV_TONE = { 5: "critical", 4: "serious", 3: "warning", 2: "none" };
@@ -824,7 +845,7 @@ function eventCard(e, withCompany = true) {
 // Big news of large companies: the kind of news, the move of the share price (also before the open and after
 // the close) and the headline of the company's own press release, in its original English.
 const KIND_TONE = { critical: "critical", cyber: "serious", major: "serious", restructuring: "warning" };
-const cap1 = (s) => (s ? s.charAt(0).toLocaleUpperCase(dict().meta.locale) + s.slice(1) : s);
+const cap1 = (s) => (s ? s.charAt(0).toLocaleUpperCase(locale()) + s.slice(1) : s);
 // A small "i" that opens an explanation (a tap is enough on phones).
 const infoTip = (text) => `<details class="info-tip"><summary aria-label="Info">ⓘ</summary><p class="small">${esc(text)}</p></details>`;
 
@@ -899,7 +920,7 @@ async function renderNews() {
 
 // ---------- Market today ----------
 
-const dayChange = (v) => (isNum(v) ? `<span class="pill tone-${v > 0 ? "good" : v < 0 ? "critical" : "none"} daychg"><span class="dot"></span>${v > 0 ? "+" : ""}${num(v, 2)}%</span>` : "");
+const dayChange = (v) => (isNum(v) ? `<span class="pill tone-${v > 0 ? "good" : v < 0 ? "critical" : "none"} daychg"><span class="dot"></span>${ltr(`${v > 0 ? "+" : ""}${num(v, 2)}%`)}</span>` : "");
 const INDEX_EN = { SPY: "S&P 500", QQQ: "Nasdaq 100", DIA: "Dow Jones", IWM: "Russell 2000" };
 // Index names in the page's language ("标普500" in Chinese), else the usual English ones.
 const INDEX_NAMES = new Proxy(INDEX_EN, { get: (o, k) => dict().pulse?.indexNames?.[k] ?? o[k] });
@@ -910,7 +931,7 @@ function homePulse(p) {
   // Before the open the regular changes are the previous day's: the pre-market changes are shown instead.
   const pre = p.session === "pre" && (p.indices || []).some((e) => isNum(e.xc));
   const ai = pre ? null : (p.themes || []).find((x) => x.id === "ai");
-  const chg = (v) => `<b class="${v > 0 ? "up" : v < 0 ? "down" : ""}">${v > 0 ? "+" : ""}${num(v, 2)}%</b>`;
+  const chg = (v) => `<b class="${v > 0 ? "up" : v < 0 ? "down" : ""}">${ltr(`${v > 0 ? "+" : ""}${num(v, 2)}%`)}</b>`;
   const market = (p.indices || []).filter((e) => isNum(pre ? e.xc : e.dc)).slice(0, 2).map((e) => `<span class="hp-item">${esc(INDEX_NAMES[e.t] || e.t)} ${chg(pre ? e.xc : e.dc)}</span>`);
   if (ai && isNum(ai.change)) market.push(`<span class="hp-item">${esc(t("pulse.themesShort.ai"))} ${chg(ai.change)}</span>`);
   const stories = (p.stories || []).slice(0, 6).map((s) => `<a class="hp-story" href="#/c/${encodeURIComponent(s.t)}" title="${esc(`${t(`pulse.kind.${s.kind}`)}${s.title ? `: ${s.title}` : ""}`)}"><b>${esc(s.t)}</b>${isNum(s.move) ? chg(s.move) : ""}<span class="hp-kind">${esc(t(`pulse.kind.${s.kind}`))}</span></a>`);
@@ -939,10 +960,10 @@ function pulseTable(title, list, head, extra, first = 5) {
 // The market: indices, themes and sectors in a small space, then the biggest moves.
 function marketView(p) {
   if (!p || !(p.indices?.length || p.themes?.length || p.gainers?.length)) return `<div class="glass empty small">${esc(t("pulse.notYet"))}</div>`;
-  const pct1 = (v) => `${v > 0 ? "+" : ""}${num(v, 1)}%`;
+  const pct1 = (v) => ltr(`${v > 0 ? "+" : ""}${num(v, 1)}%`);
   const themes = (p.themes || []).map((x) => `<span class="theme-chip" title="${esc(t("pulse.bestWorst", { b: `${x.best.t} ${pct1(x.best.dc)}`, w: `${x.worst.t} ${pct1(x.worst.dc)}` }))}">${esc(t(`pulse.themes.${x.id}`))} ${dayChange(x.change)}</span>`).join("");
   const maxAbs = Math.max(0.5, ...(p.sectors || []).map((x) => Math.abs(x.change)));
-  const sectorBars = (p.sectors || []).map((x) => `<div class="sec-row"><span>${esc(sectorName(x.s))}</span><span class="sec-bar"><span class="${x.change >= 0 ? "up" : "down"}" style="width:${Math.round((Math.abs(x.change) / maxAbs) * 50)}%"></span></span><span class="num">${x.change > 0 ? "+" : ""}${num(x.change, 2)}%</span></div>`).join("");
+  const sectorBars = (p.sectors || []).map((x) => `<div class="sec-row"><span>${esc(sectorName(x.s))}</span><span class="sec-bar"><span class="${x.change >= 0 ? "up" : "down"}" style="width:${Math.round((Math.abs(x.change) / maxAbs) * 50)}%"></span></span><span class="num">${ltr(`${x.change > 0 ? "+" : ""}${num(x.change, 2)}%`)}</span></div>`).join("");
   return `
     <div class="pulse-head news-sec">
       <h2 class="section-title" style="margin:0">${esc(t("ui.marketToday"))}</h2>
@@ -1114,7 +1135,7 @@ function partNote(p, cur) {
 }
 
 // What lifts and what lowers the TeraScore: each area's weight × (score − 50), from a neutral 50.
-const signed = (v) => `${v >= 0 ? "+" : "−"}${num(Math.abs(v), 1)}`;
+const signed = (v) => ltr(`${v >= 0 ? "+" : "−"}${num(Math.abs(v), 1)}`);
 function breakdownView(a) {
   const items = a.breakdown;
   if (!items?.length || !isNum(a.scores.overall)) return "";
@@ -1527,7 +1548,7 @@ async function renderCompare(tickers) {
       return row(esc(d === "overall" ? t("ui.overallScore") : t(`dims.${d}.name`)), vals, vals.map((v, i) => (isNum(v) || !as[i].ok ? scorePill(v, d === "risk") : noData)), d === "risk");
     }).join("");
     const partial = rowsOf.filter((r) => isPartial(r) || (r.sc && !isNum(r.sc.overall)));
-    var cmpNote = partial.length ? `<div class="notice dq-notice cmp-note"><span>${DQ_HALF}</span><span>${esc(t("ui.cmpPartialNote", { list: partial.map((r) => (isNum(r.cm) && isNum(r.sc?.overall) ? `${r.t} (${r.cm}%)` : `${r.t} (${t("dq.little").toLocaleLowerCase(dict().meta.locale)})`)).join(", ") }))}</span></div>` : "";
+    var cmpNote = partial.length ? `<div class="notice dq-notice cmp-note"><span>${DQ_HALF}</span><span>${esc(t("ui.cmpPartialNote", { list: partial.map((r) => (isNum(r.cm) && isNum(r.sc?.overall) ? `${r.t} (${r.cm}%)` : `${r.t} (${t("dq.little").toLocaleLowerCase(locale())})`)).join(", ") }))}</span></div>` : "";
     const mRows = CMP_METRICS.map((k) => {
       const vals = as.map((a) => (a.ok ? a.metrics[k] : null));
       if (vals.every((v) => v === null || v === undefined)) return "";
@@ -2067,7 +2088,7 @@ async function loadBacktest() {
 // Methodology page: how the TeraScore of the time compared with the next 12 months (scripts/backtest.mjs).
 function backtestView(b) {
   if (!b || b.engineVersion !== ENGINE_VERSION || !b.quintiles?.length) return `<p class="small muted">${esc(t("method.btPending"))}</p>`;
-  const month = (ym) => (ym ? new Date(`${ym}-15T00:00:00Z`).toLocaleDateString(dict().meta?.locale, { year: "numeric", month: "short" }) : "–");
+  const month = (ym) => (ym ? new Date(`${ym}-15T00:00:00Z`).toLocaleDateString(locale(), { year: "numeric", month: "short" }) : "–");
   const p0 = (v) => fmt(v, "pct0");
   const rows = [...b.quintiles].reverse().map((q, i, arr) => `<tr><td>${q.q}${i === 0 ? ` <span class="small muted">(${esc(t("method.btBest"))})</span>` : i === arr.length - 1 ? ` <span class="small muted">(${esc(t("method.btWorst"))})</span>` : ""}</td>
       <td class="n">${q.avgScore}</td><td class="n ${q.excess >= 0 ? "pos" : "neg"}">${fmt(q.excess, "spct")}</td><td class="n">${p0(q.bigLoss)}</td><td class="n">${p0(q.drawdown)}</td></tr>`).join("");
@@ -2084,5 +2105,4 @@ function backtestView(b) {
     <p class="small muted">${esc(t("method.btCaveats"))}</p>`;
 }
 
-renderChrome();
-route();
+ready.then(() => { renderChrome(); route(); });

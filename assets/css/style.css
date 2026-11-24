@@ -82,8 +82,18 @@ button, input, select { font: inherit; color: inherit; }
 .nav a { color: var(--text-2); padding: 8px 12px; border-radius: 10px; font-weight: 500; font-size: 14px; white-space: nowrap; }
 .nav a:hover { background: var(--glass-hover); color: var(--text); text-decoration: none; }
 .nav a.active { color: var(--text); background: var(--glass-strong); }
-.lang-select { appearance: none; -webkit-appearance: none; background: var(--glass) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23b4c0d8' stroke-width='1.5' fill='none'/%3E%3C/svg%3E") no-repeat right 10px center / 10px; border: 1px solid var(--border); border-radius: 10px; padding: 7px 28px 7px 10px; font-size: 13px; font-weight: 600; cursor: pointer; margin-left: 6px; }
-.lang-select option { background: #0b1324; color: var(--text); }
+.lang-pick { position: relative; margin-left: 6px; }
+.lang-btn { display: inline-flex; align-items: center; gap: 8px; background: var(--glass); border: 1px solid var(--border); border-radius: 10px; padding: 7px 10px; font-size: 13px; font-weight: 600; color: var(--text); cursor: pointer; }
+.lang-btn svg { color: var(--text-2); }
+.lang-btn:hover, .lang-btn[aria-expanded="true"] { background: var(--glass-hover); }
+.lang-menu { position: absolute; inset-inline-end: 0; top: calc(100% + 8px); z-index: 60; width: min(560px, calc(100vw - 24px)); max-height: min(70vh, 560px); overflow: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 4px; padding: 10px; background: #0b1324; border: 1px solid var(--border-strong); border-radius: 14px; box-shadow: 0 18px 50px rgba(0, 0, 0, .55); }
+.lang-menu[hidden] { display: none; }
+.lang-opt { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 8px 10px; border-radius: 10px; background: none; border: 1px solid transparent; color: var(--text); cursor: pointer; text-align: start; }
+.lang-opt:hover, .lang-opt:focus-visible { background: var(--glass-hover); outline: none; }
+.lang-opt.on { background: var(--accent-soft); border-color: rgba(94, 162, 255, .35); }
+.lang-opt .ln { font-size: 14px; font-weight: 600; }
+.lang-opt .le { font-size: 11px; color: var(--text-3); }
+@media (max-width: 640px) { .lang-menu { position: fixed; left: 12px; right: 12px; top: 64px; width: auto; grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .nav-icon { display: none; }
 @media (max-width: 1199px) {
   .nav a .nav-label { display: none; }

@@ -6,6 +6,7 @@ import { MIN_DIMENSIONS, RELATIVE_METRICS, MIN_SECTOR_PEERS, PROFILES, OVERALL_W
   MARKET_RISK_SHARE, PENALTY_SCALE, MISSING_DIMENSION_SCORE, SMOOTH_PRIOR_WEIGHT, SMOOTHED_METRICS, RUNWAY_BAD, RUNWAY_GOOD, NET_CASH_LOSS_SCORE } from "../assets/js/scoring.js";
 import { FLOW, INSTANT } from "./sec-parse.mjs";
 import hu from "../assets/js/i18n/hu.js";
+import { LANG_LIST } from "../assets/js/i18n/index.js";
 const fill = (s, v) => s.replace(/\{(\w+)\}/g, (m, k) => (k in v ? v[k] : m));
 
 const pctf = (v, d = 0) => `${(v * 100).toFixed(d).replace(".", ",")}%`;
@@ -44,7 +45,7 @@ const md = `# TeraStockX adatsablon és elemzési módszertan (v${ENGINE_VERSION
 
 \`\`\`
 SEC EDGAR (10-K, 10-Q, 20-F)  ─┐
-Nasdaq Trader (tőzsdelisták)   ├─▶  sablon JSON  ─▶  elemzőmotor  ─▶  weboldal (5 nyelv)
+Nasdaq Trader (tőzsdelisták)   ├─▶  sablon JSON  ─▶  elemzőmotor  ─▶  weboldal (${LANG_LIST.length} nyelv)
 Nasdaq, ECB (árfolyam, deviza) ┘    data/companies/   assets/js/scoring.js
 \`\`\`
 

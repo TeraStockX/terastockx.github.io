@@ -15,7 +15,7 @@ export default {
     pfHistScoreSub: "Unternehmen nach heutigem Wert gewichtet (ETFs haben keinen TeraScore).",
     etfAcc: "thesaurierend",
     etfDist: "ausschüttend",
-    cmpPartialNote: "In den Berichten dieser Unternehmen fehlen Daten, daher ist ihre Analyse unvollständig und ihre Bewertung weniger sicher: {list}. Bereiche mit „keine Daten“ bleiben im TeraScore unberücksichtigt (sie zählen nicht als null).",
+    cmpPartialNote: "In den Berichten dieser Unternehmen fehlen Daten, daher ist ihre Analyse unvollständig und ihre Bewertung weniger sicher: {list}. Bereiche mit „keine Daten“ zählen höchstens neutral mit 50 Punkten, fehlende Daten heben den TeraScore also nie.",
     showMore: "Mehr anzeigen",
     tagline: "Fundamentale Aktienanalyse, klar aufbereitet.",
     heroText: "Alle an Nasdaq, NYSE, NYSE American und Cboe notierten Unternehmen, bewertet in zehn Anlagedimensionen – Rentabilität, Cashflow-Qualität, Bilanzstärke, Wachstum, Bewertung und Risiko – auf Basis geprüfter SEC-Berichte und im Vergleich zu Sektorkollegen.",
