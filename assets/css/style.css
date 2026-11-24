@@ -878,3 +878,4 @@ table.ocr-table td.num .ocr-note { font-size: 11px; line-height: 1.3; margin-top
   .pf-contrib { gap: 12px; }
 }
 .pf-row .badge { white-space: nowrap; }
+.section-title + .breakdown { margin-top: 0; }

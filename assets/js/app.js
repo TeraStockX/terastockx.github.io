@@ -1181,7 +1181,7 @@ function partNote(p, cur) {
 
 // What lifts and what lowers the TeraScore: each area's weight × (score − 50), from a neutral 50.
 const signed = (v) => ltr(`${v >= 0 ? "+" : "−"}${num(Math.abs(v), 1)}`);
-function breakdownView(a) {
+function breakdownView(a, { titled = true } = {}) {
   const items = a.breakdown;
   if (!items?.length || !isNum(a.scores.overall)) return "";
   const rows = [...items].sort((x, y) => y.contribution - x.contribution);
@@ -1190,7 +1190,7 @@ function breakdownView(a) {
   const low = rows.filter((x) => x.contribution <= -0.5).slice(-2).reverse().map((x) => t(`dims.${x.key}.name`));
   const line = [top.length ? `${t("ui.bdLifts")}: ${top.join(", ")}` : "", low.length ? `${t("ui.bdLowers")}: ${low.join(", ")}` : ""].filter(Boolean).join(" · ");
   return `<div class="glass pad breakdown">
-    <div class="bd-head"><h3>${esc(t("ui.bdTitle"))}</h3>${line ? `<span class="small muted">${esc(line)}</span>` : ""}</div>
+    ${titled || line ? `<div class="bd-head">${titled ? `<h3>${esc(t("ui.bdTitle"))}</h3>` : ""}${line ? `<span class="small muted">${esc(line)}</span>` : ""}</div>` : ""}
     <div class="bd-rows">${rows.map((x) => {
       const w = (Math.abs(x.contribution) / max) * 50;
       const tone = x.contribution >= 0 ? "pos" : "neg";
@@ -1260,8 +1260,8 @@ function analysisView(c, a, idx, history = []) {
       </div>
     </div>
     ${dataQualityNotice(a)}
-    ${profileNote ? `<div class="notice" style="margin-top:14px"><span>ℹ️</span><span>${esc(profileNote)}</span></div>` : ""}
-    ${breakdownView(a)}`;
+    ${profileNote ? `<div class="notice" style="margin-top:14px"><span>ℹ️</span><span>${esc(profileNote)}</span></div>` : ""}`;
+  const breakdown = breakdownView(a, { titled: false });
 
   const cards = DIMENSIONS.map((d) => {
     const inverse = d === "risk";
@@ -1317,26 +1317,29 @@ function analysisView(c, a, idx, history = []) {
 
   let basis = a.valuationBasis === "ttm" ? t("ui.ttmBasis", { d: date(c.ttm?.periodEnd) }) : t("ui.annualBasis");
   if (cur !== "USD") basis += ` · ${t("ui.fxNote", { cur, rate: isNum(c.market?.fxToUsd) ? num(c.market.fxToUsd, 4) : "–" })}`;
+  // Order of the page: the TeraScore, its areas, red flags and strengths, similar companies, the TeraScore's
+  // changes and what lifts or lowers it, then events, dividend, key metrics, history and insider trades.
   return `
     ${summary}
-    <h2 class="section-title">${esc(t("ui.sectionKey"))} <span class="small muted">${esc(basis)}</span></h2>
-    ${keyGrid}
     <h2 class="section-title">${esc(t("ui.sectionScores"))}</h2>
     <div class="score-grid">${cards}</div>
+    <h2 class="section-title">${esc(t("ui.sectionFlags"))}</h2>
+    ${flagsHtml}
     <h2 class="section-title">${esc(t("ui.peersTitle"))}</h2>
     ${peersView(c, idx)}
     <h2 class="section-title">${esc(t("ui.navTrend"))} <a class="small" href="#/trend">${esc(t("ui.trendAll"))} ›</a></h2>
     ${trendView(c, history, idx?.companies.find((x) => x.t === c.ticker))}
-    <h2 class="section-title">${esc(t("ui.sectionFlags"))}</h2>
-    ${flagsHtml}
+    ${breakdown ? `<h2 class="section-title">${esc(t("ui.bdTitle"))}</h2>${breakdown}` : ""}
     <h2 class="section-title">${esc(t("ui.sectionEvents"))}</h2>
     ${(c.events || []).length ? `<div class="events">${c.events.map((e) => eventCard(e, false)).join("")}</div>` : `<div class="glass empty small">${esc(c.events ? t("ui.eventsNone") : t("ui.notEnough"))}</div>`}
     <h2 class="section-title">${esc(t("ui.dividendTitle"))}</h2>
     ${dividendView(c, a)}
-    <h2 class="section-title">${esc(t("ui.insiderTitle"))}</h2>
-    ${insiderView(c)}
+    <h2 class="section-title">${esc(t("ui.sectionKey"))} <span class="small muted">${esc(basis)}</span></h2>
+    ${keyGrid}
     <h2 class="section-title">${esc(t("ui.sectionCharts"))}</h2>
     ${charts}
+    <h2 class="section-title">${esc(t("ui.insiderTitle"))}</h2>
+    ${insiderView(c)}
     <p class="small muted" style="margin-top:22px">${esc(t("ui.engine", { v: ENGINE_VERSION }))}</p>`;
 }
 
