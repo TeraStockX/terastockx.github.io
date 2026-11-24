@@ -1,0 +1,4 @@
+s-home-hu-phone ["INSM Felvásárlás vagy egyesülés +14,28% a hír óta","ADI Gyorsjelentés -16,79% a hír óta","NVDA Vezetőváltás +21,04% a hír óta","HPE Gyorsjelentés -15,73% a hír óta","DKS Gyorsjelentés +14,37% a hír óta","DLTR Gyorsjelentés +10,69% a hír óta"] no errors
+s-news-hu-phone ["+14,28% a hír óta","-16,79% a hír óta","+21,04% a hír óta","-15,73% a hír óta","+14,37% a hír óta","+10,69% a hír óta"] no errors
+s-news-en-desktop ["+14.28% since the news","-16.79% since the news","+21.04% since the news","-15.73% since the news","+14.37% since the news","+10.69% since the news"] no errors
+s-home-uk-phone ["INSM Злиття або поглинання +14,28% з моменту новини","ADI Результати -16,79% з моменту новини","NVDA Зміна керівництва +21,04% з моменту новини","HPE Результати -15,73% з моменту новини","DKS Результати +14,37% з моменту новини","DLTR Результати +10,69% з моменту новини"] no errors

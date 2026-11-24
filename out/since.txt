@@ -1,0 +1,22 @@
+now 2026-11-24T15:32:59Z run 45425751286
+build 2026-11-24T15:27:46.3679603Z (node:2426) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse(
+build 2026-11-24T15:28:00.7616341Z   new filings: 454 in the SEC feed, 99 companies to refresh (2 kept from earlier runs today)
+build 2026-11-24T15:28:20.5871573Z   refreshed: 3 with a new report, 96 with a new current report; 0 left for the next run
+build 2026-11-24T15:29:27.9489717Z   quotes updated: 5860 companies (1885 with a quote of the day), 0 ETFs in the screener; session: open; live quotes: 2099, kept from today's session: 2099
+build 2026-11-24T15:29:53.3384994Z   top stories: closing prices before the news read for 5 of 5 companies
+build 2026-11-24T15:29:54.3861213Z (node:2538) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse(
+build 2026-11-24T15:29:55.1976957Z   if-no-files-found: error
+build 2026-11-24T15:29:56.1093031Z (node:2565) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse(
+deploy 2026-11-24T15:30:08.7975164Z   error_count: 10
+--- pulse
+2026-11-24T15:29:38.053Z open 2026-11-23
+  INSM deal move 14.28 day since 14.28 2026-11-24T11:04:08.000Z Sanofi to Acquire Insmed in Strategic Step that Strengthens 
+  ADI results move -16.79 day since -16.79 2026-11-24T12:03:22.000Z Analog Devices Reports Record Fourth Quarter and Fiscal 2026
+  NVDA leadership move -7.94 day since 21.04 2026-11-23T13:57:54.000Z NVIDIA Board Reinstates Jensen Huang as President, CEO and B
+  HPE results move -15.73 day since -15.73 2026-11-23T21:12:08.000Z HPE reports fiscal 2026 fourth quarter results
+  DKS results move 14.37 day since 14.37 2026-11-24T12:02:02.000Z DICK'S Sporting Goods, Inc. Reports Third Quarter Results
+  DLTR results move 10.69 day since 10.69 2026-11-24T11:30:42.000Z Dollar Tree, Inc. Reports Third Quarter Results
+  BMY leadership move 1.8 day since 1.8 2026-11-23T21:20:20.000Z Bristol Myers Squibb Announces Planned Chief Financial Offic
+  BURL results move 9.71 day since 9.71 2026-11-24T11:49:27.000Z Burlington Stores Reports Third Quarter 2026 Earnings
+--- story prices
+{"updated":"2026-11-24T15:29:38.053Z","items":{"https://www.sec.gov/Archives/edgar/data/1937926/000117184326007625/f8k_112326.htm":{"t":"BAM","at":"2026-11-23T11:00:27.000Z","pb":48.94,"day":"2026-11-20"},"https://www.sec.gov/Archives/edgar/data/1535527/000110465926130785/tm2630454d1_8k.htm":{"t":"CRWD","at":"2026-11-23T11:15:28.000Z","pb":229.44,"day":"2026-11-20"},"https://www.sec.gov/Archives/edgar/data/1535527/000153552726000035/crwd-20261123.htm":{"t":"CRWD","at":"2026-11-23T11:04:51.000Z","pb":229.44,"day":"2026-11-20"},"https://www.sec.gov/Archives/edgar/data/51434/000162828026075360/ip-20261122.htm":{"t":"IP","at":"2026-11-23T12:25:41.000Z","pb":30.36,"day":"2026-11-20"},"https://www.sec.gov/Archives/edgar/data/1045810/000104581026000090/nvda-20261122.htm":{"t":"NVDA","at":"2026-11-23T13:57:54.000Z","pb":125.53,"day":"2026-11-20"},"https://www.sec.gov/Archives/edgar/data/1713683/
