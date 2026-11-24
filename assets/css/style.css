@@ -627,6 +627,8 @@ td .dq-partial { display: flex; width: max-content; margin-left: auto; }
 .co-txt { flex: 1; min-width: 0; }
 .cname-row { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .cname-row .cname { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Right-to-left pages: Latin company names keep their own direction, so a long name is cut at its end ("DECKERS OU…"), not its start. */
+[dir="rtl"] .cname, [dir="rtl"] .nrow-name, [dir="rtl"] .ac-list .ac-n { unicode-bidi: plaintext; text-align: right; }
 .cname-row .dq-chip { margin-left: auto; }
 .dq-chip { display: inline-flex; align-items: center; gap: 4px; flex: none; padding: 2px 7px; border-radius: 999px; font-size: 11px; font-weight: 800; white-space: nowrap; cursor: help; }
 .dq-chip-partial { background: rgba(250,178,25,.16); border: 1px solid rgba(250,178,25,.4); color: var(--warning-ink); }
