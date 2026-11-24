@@ -4,7 +4,7 @@
 
 ```
 SEC EDGAR (10-K, 10-Q, 20-F)  ─┐
-Nasdaq Trader (tőzsdelisták)   ├─▶  sablon JSON  ─▶  elemzőmotor  ─▶  weboldal (19 nyelv)
+Nasdaq Trader (tőzsdelisták)   ├─▶  sablon JSON  ─▶  elemzőmotor  ─▶  weboldal (21 nyelv)
 Nasdaq, ECB (árfolyam, deviza) ┘    data/companies/   assets/js/scoring.js
 ```
 
