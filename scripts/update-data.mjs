@@ -144,6 +144,18 @@ let SESSION = null;
 // companies above about $2 billion (this many, the largest first) and the largest funds; before the open and
 // after the close for the largest companies and the index funds (pre-market, after-hours).
 const LIVE_TOP = 2000, LIVE_ETFS = 100, EXT_TOP = 300;
+// The Nasdaq ETF screener returns no rows (since November 2026), so every fund's price comes from the quote
+// endpoint: the largest funds in every run during the session, the others in turns (a sixth of them in each
+// five-minute run), so no fund's price is more than about half an hour old.
+const ETF_TURNS = 6;
+// Latest quotes of funds; the few that Nasdaq files as stocks (grantor trusts such as IBIT) are asked for again
+// as stocks.
+async function fundQuotes(tickers) {
+  const out = await extendedQuotes(tickers.map((t) => ({ t, etf: true })));
+  const missing = tickers.filter((t) => !out.has(t));
+  if (missing.length && missing.length < tickers.length / 2) for (const [t, x] of await extendedQuotes(missing.map((t) => ({ t })))) out.set(t, x);
+  return out;
+}
 const etDate = (d = new Date()) => d.toLocaleDateString("en-CA", { timeZone: "America/New_York" });
 
 // The day's session quotes, kept between intraday runs (in the Actions cache, with the refreshed companies):
@@ -180,10 +192,14 @@ async function updateQuotes(screener = null) {
   const etfData = existsSync(ef) ? readJson(ef) : null;
   const byCap = [...screener.entries()].filter(([, q]) => q.marketCap > 0).sort((a, b) => b[1].marketCap - a[1].marketCap).map(([t]) => ({ t }));
   const bigFunds = (etfData?.etfs || []).filter((r) => r.aum > 0).sort((a, b) => b.aum - a.aum).slice(0, LIVE_ETFS).map((r) => r.t);
-  const funds = [...new Set([...INDEX_ETFS, ...(session === "open" ? bigFunds : [])])].map((t) => ({ t, etf: true }));
+  const funds = [...new Set([...INDEX_ETFS, ...(session === "open" ? bigFunds : [])])];
+  const every = new Set(funds);
+  const turn = Math.floor(Date.now() / 300000) % ETF_TURNS;
+  const inTurn = session === "open" ? (etfData?.etfs || []).map((r) => r.t).filter((t) => !every.has(t)).filter((_, i) => i % ETF_TURNS === turn) : [];
   let live = new Map();
-  if (session === "open") live = await extendedQuotes([...byCap.slice(0, LIVE_TOP), ...funds]);
-  else if (session === "pre" || session === "post") live = await extendedQuotes([...byCap.slice(0, EXT_TOP), ...funds]);
+  if (session === "open") live = await extendedQuotes(byCap.slice(0, LIVE_TOP));
+  else if (session === "pre" || session === "post") live = await extendedQuotes(byCap.slice(0, EXT_TOP));
+  if (session === "open" || session === "pre" || session === "post") for (const [t, x] of await fundQuotes([...funds, ...inTurn])) live.set(t, x);
   if (session === "open" && live.size) {
     for (const [t, x] of live) if (Number.isFinite(x.changePct)) day.q[t] = [x.price, x.changePct];
     day.at = new Date().toISOString();
@@ -253,7 +269,7 @@ async function updateQuotes(screener = null) {
     etfData.session = SESSION ? { session, previousTradeDate: SESSION.previousTradeDate } : null;
     writeFileSync(ef, JSON.stringify(etfData) + "\n");
   }
-  console.log(`  quotes updated: ${n} companies (${fresh} with a quote of the day), ${etfQuotes.size} ETFs in the screener; session: ${session || "unknown"}; live quotes: ${live.size}, kept from today's session: ${kept}${lastKept ? `, from the last session (${day.last.date}): ${lastKept}` : ""}`);
+  console.log(`  quotes updated: ${n} companies (${fresh} with a quote of the day), ${etfQuotes.size} ETFs in the screener, ${funds.length + inTurn.length} funds asked for (turn ${turn + 1}/${ETF_TURNS}); session: ${session || "unknown"}; live quotes: ${live.size}, kept from today's session: ${kept}${lastKept ? `, from the last session (${day.last.date}): ${lastKept}` : ""}`);
 }
 
 // ---------- ETFs for European investors and ETF price history ----------
@@ -594,6 +610,12 @@ const ETF_DETAIL_BUDGET_MS = 25 * 60000;
 async function updateEtfs() {
   const list = parseEtfs(await get("https://www.nasdaqtrader.com/dynamic/SymDir/nasdaqlisted.txt", "text"), await get("https://www.nasdaqtrader.com/dynamic/SymDir/otherlisted.txt", "text"));
   const quotes = await nasdaqEtfScreener();
+  // Without the screener's rows the funds' latest prices and changes come from the quote endpoint.
+  if (quotes.size < list.length / 2) {
+    const live = await fundQuotes(list.map((x) => x.ticker));
+    for (const [t, x] of live) quotes.set(t, { price: x.price, changePct: Number.isFinite(x.changePct) ? x.changePct : null, return1y: quotes.get(t)?.return1y ?? null });
+    console.log(`  ETF prices from the quote endpoint: ${live.size} of ${list.length} (screener: no rows)`);
+  }
   const file = join(DATA, "etfs.json");
   const prev = new Map((existsSync(file) ? readJson(file).etfs || [] : []).map((e) => [e.t, e]));
   const rows = list.map((x) => {
