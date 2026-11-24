@@ -324,6 +324,7 @@ const links = (short) => `
 `;
   document.getElementById("nav").innerHTML = links(false);
   document.getElementById("tabbar").innerHTML = links(true);
+  fitTabLabels();
   const cur = langMeta(lang());
   const options = [...LANG_LIST].sort((a, b) => a.english.localeCompare(b.english)).map((l) => `<button type="button" role="option" class="lang-opt${l.code === lang() ? " on" : ""}" aria-selected="${l.code === lang()}" data-lang="${l.code}"><span class="ln" lang="${l.code}" dir="${l.dir || "ltr"}">${esc(l.name)}</span><span class="le">${esc(l.english)}</span></button>`).join("");
   document.getElementById("lang-wrap").innerHTML = `<div class="lang-pick">
@@ -1126,8 +1127,22 @@ function fitTagline() {
   let fs = base;
   while (lines() > 2 && fs > 13) { fs -= 0.5; el.style.fontSize = `${fs}px`; }
 }
+// Bottom tab bar (phones, tablets): if a label does not fit its tab in the chosen language, all labels get the
+// same slightly smaller font (down to 8px), so every tab stays readable and the row stays even.
+const TAB_LABEL_MIN = 8;
+function fitTabLabels() {
+  const labels = [...document.querySelectorAll("#tabbar .nav-label")];
+  labels.forEach((l) => { l.style.fontSize = ""; });
+  const shown = labels.filter((l) => l.offsetParent && l.clientWidth > 0);
+  if (!shown.length) return;
+  const base = parseFloat(getComputedStyle(shown[0]).fontSize);
+  const ratio = Math.min(1, ...shown.map((l) => l.clientWidth / l.scrollWidth));
+  if (ratio >= 1) return;
+  const fs = Math.max(TAB_LABEL_MIN, Math.floor(base * ratio * 4) / 4);
+  labels.forEach((l) => { l.style.fontSize = `${fs}px`; });
+}
 let fitTimer = 0;
-window.addEventListener("resize", () => { clearTimeout(fitTimer); fitTimer = setTimeout(() => fitTagline(), 150); });
+window.addEventListener("resize", () => { clearTimeout(fitTimer); fitTimer = setTimeout(() => { fitTagline(); fitTabLabels(); }, 150); });
 
 // Extra line under a metric's value: the 3-year scoring basis, or why a special rule applied.
 function partNote(p, cur) {
@@ -2109,3 +2124,5 @@ function backtestView(b) {
 }
 
 ready.then(() => { renderChrome(); route(); });
+// Web fonts can arrive after the first render and change text widths: fit the slogan and tab labels again.
+document.fonts?.ready?.then(() => { fitTagline(); fitTabLabels(); });
