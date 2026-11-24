@@ -1,0 +1,54 @@
+--- round 1, run 45458183889
+build 2026-11-24T18:19:14.3873168Z (node:2531) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+build 2026-11-24T18:21:39.3910358Z   quotes updated: 5860 companies (1885 with a quote of the day), 0 ETFs in the screener, 1000 funds asked for (turn 4/6); session: open; live quotes: 2997, kept from today's session: 2997
+build 2026-11-24T18:21:44.6387990Z (node:2619) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+build 2026-11-24T18:21:45.8090586Z   if-no-files-found: error
+build 2026-11-24T18:21:46.8693083Z (node:2641) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+deploy 2026-11-24T18:21:59.3564758Z   error_count: 10
+2026-11-24T18:25:00.498Z live etfs.json quotesAt 2026-11-24T18:21:39.385Z: 999 of 5502 ETFs with a change of the day
+  SPY: site 717.86 (-0.61) | Nasdaq $718.58 -0.51% ETF
+  ARKK: site 67.55 (-2.61) | Nasdaq $67.66 -2.45% ETF
+  AAAP: site 25.335 (null) | Nasdaq $25.31 +0.02% ETF
+  AADR: site 71.3473 (null) | Nasdaq $73.85 +0.16% ETF
+  SOXL: site 30.92 (null) | Nasdaq $33.375 -22.76% ETF
+  KWEB: site 20.72 (null) | Nasdaq $21.055 -1.66% ETF
+  EWZ: site 28.55 (null) | Nasdaq $29.45 +0.72% ETF
+  IBIT: site 33.905 (-2.07) | Nasdaq $33.92 -2.02% STOCKS
+  SCHD: site 34.9124 (1.52) | Nasdaq $34.94 +1.60% ETF
+  TQQQ: site 46.13 (-6.05) | Nasdaq $46.38 -5.54% ETF
+--- round 2, run 45459113553
+build 2026-11-24T18:24:17.0514992Z (node:2259) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+build 2026-11-24T18:26:31.5035203Z   quotes updated: 5860 companies (1885 with a quote of the day), 0 ETFs in the screener, 1000 funds asked for (turn 5/6); session: open; live quotes: 2999, kept from today's session: 3897
+build 2026-11-24T18:26:35.5358054Z (node:2333) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+build 2026-11-24T18:26:36.5089716Z   if-no-files-found: error
+build 2026-11-24T18:26:37.4500400Z (node:2365) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+deploy 2026-11-24T18:26:50.6356406Z   error_count: 10
+2026-11-24T18:29:58.480Z live etfs.json quotesAt 2026-11-24T18:26:31.498Z: 1899 of 5502 ETFs with a change of the day
+  SPY: site 718.88 (-0.47) | Nasdaq $718.82 -0.48% ETF
+  ARKK: site 67.55 (-2.61) | Nasdaq $67.69 -2.41% ETF
+  AAAP: site 25.335 (null) | Nasdaq $25.3199 +0.06% ETF
+  AADR: site 71.3473 (null) | Nasdaq $73.85 +0.16% ETF
+  SOXL: site 30.92 (null) | Nasdaq $33.51 -22.45% ETF
+  KWEB: site 20.72 (null) | Nasdaq $21.0698 -1.59% ETF
+  EWZ: site 28.55 (null) | Nasdaq $29.4399 +0.68% ETF
+  IBIT: site 33.925 (-2.01) | Nasdaq $33.9685 -1.88% STOCKS
+  SCHD: site 34.94 (1.6) | Nasdaq $34.9517 +1.63% ETF
+  TQQQ: site 46.445 (-5.41) | Nasdaq $46.3612 -5.58% ETF
+--- round 3, run 45460025806
+build 2026-11-24T18:29:33.6445609Z (node:2424) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+build 2026-11-24T18:31:41.3859949Z   quotes updated: 5860 companies (1885 with a quote of the day), 0 ETFs in the screener, 1001 funds asked for (turn 1/6); session: open; live quotes: 2999, kept from today's session: 4797
+build 2026-11-24T18:31:44.9805095Z (node:2505) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+build 2026-11-24T18:31:46.1183104Z   if-no-files-found: error
+build 2026-11-24T18:31:47.5851885Z (node:2532) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+deploy 2026-11-24T18:32:00.7054947Z   error_count: 10
+2026-11-24T18:35:15.105Z live etfs.json quotesAt 2026-11-24T18:31:41.381Z: 2799 of 5502 ETFs with a change of the day
+  SPY: site 719.04 (-0.45) | Nasdaq $719.005 -0.45% ETF
+  ARKK: site 67.55 (-2.61) | Nasdaq $67.74 -2.34% ETF
+  AAAP: site 25.3199 (0.06) | Nasdaq $25.3199 +0.06% ETF
+  AADR: site 71.3473 (null) | Nasdaq $73.85 +0.16% ETF
+  SOXL: site 30.92 (null) | Nasdaq $33.675 -22.07% ETF
+  KWEB: site 20.72 (null) | Nasdaq $21.0618 -1.63% ETF
+  EWZ: site 28.55 (null) | Nasdaq $29.45 +0.72% ETF
+  IBIT: site 33.955 (-1.92) | Nasdaq $33.93 -1.99% STOCKS
+  SCHD: site 34.945 (1.61) | Nasdaq $34.9399 +1.60% ETF
+  TQQQ: site 46.42 (-5.46) | Nasdaq $46.4667 -5.36% ETF
