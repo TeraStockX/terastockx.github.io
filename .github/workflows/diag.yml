@@ -14,38 +14,28 @@ jobs:
         with: { ref: diag }
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
-      - name: Latest intraday data (dry run of the push-deploy step)
+      - name: Wait for the deploy of c1399962
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          mkdir -p out site/data
-          cd site
-          {
+          mkdir -p out
           repo=TeraStockX/terastockx.github.io
-          dataAt=$(git log -1 --format=%cI origin/data 2>/dev/null || true)
-          git fetch -q --depth=1 https://github.com/$repo data && dataAt=$(git log -1 --format=%cI FETCH_HEAD) || true
-          echo "data branch at $dataAt"
-          ok=""
-          for id in $(gh run list --repo $repo --workflow intraday.yml --status success --limit 6 --json databaseId -q '.[].databaseId'); do
-            created=$(gh run view $id --repo $repo --json createdAt -q .createdAt)
-            echo "run $id created $created"
-            if [ -n "$dataAt" ] && [ "$(date -d "$created" +%s)" -le "$(date -d "$dataAt" +%s)" ]; then echo "older than the data branch"; break; fi
-            rm -rf "$RUNNER_TEMP/live" && mkdir -p "$RUNNER_TEMP/live"
-            if gh run download $id --repo $repo -n github-pages -D "$RUNNER_TEMP/live" 2>&1; then
-              tar -xf "$RUNNER_TEMP/live/artifact.tar" -C "$RUNNER_TEMP/live" ./data 2>&1 || tar -xf "$RUNNER_TEMP/live/artifact.tar" -C "$RUNNER_TEMP/live" data 2>&1
-              if [ -f "$RUNNER_TEMP/live/data/index.json" ]; then ok=$id; break; fi
-            fi
+          for i in $(seq 1 60); do
+            id=$(gh run list --repo $repo --workflow deploy.yml --limit 5 --json databaseId,headSha,status -q '[.[] | select(.headSha | startswith("c1399962"))][0].databaseId')
+            st=$(gh run view $id --repo $repo --json status,conclusion -q '.status + " " + .conclusion' 2>/dev/null)
+            case "$st" in completed*) break;; esac
+            sleep 15
           done
-          echo "using run: ${ok:-none}"
-          if [ -n "$ok" ]; then
-            ls "$RUNNER_TEMP/live/data" | head -30
-            echo "companies: $(ls $RUNNER_TEMP/live/data/companies | wc -l)"
-            node -e 'const i=require(process.argv[1]+"/index.json"); console.log("index generated", i.generated, i.count); const e=require(process.argv[1]+"/etfs.json"); console.log("etfs quotesAt", e.quotesAt, JSON.stringify(e.etfs.find(x=>x.t==="SPY"))); const a=i.companies.find(c=>c.t==="AAPL"); console.log("AAPL", a.px, a.dc, a.xc, a.xs);' "$RUNNER_TEMP/live/data"
-            du -sh "$RUNNER_TEMP/live/data"
-          fi
-          } 2>&1 | tee ../out/livedata.txt
+          { echo "deploy $id: $st"; gh run view $id --repo $repo --log 2>&1 | grep -E "Data of intraday run|Data loaded from|rror" | grep -v "Node.js 20" | sed -E 's/^([a-z]+)\t[^\t]*\t/\1 /' | cut -c1-220 | head -10; } | tee out/deployfix.txt
+          sleep 45
+      - name: Live portfolio right after the deploy
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.49.1 >/dev/null 2>&1
+          npx playwright install --with-deps chromium >/dev/null 2>&1
+          curl -sL "https://terastockx.com/data/etfs.json?x=$(date +%s)" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const e=JSON.parse(s);console.log("live etfs quotesAt",e.quotesAt,JSON.stringify(e.etfs.find(x=>x.t==="SPY")))})' | tee -a out/deployfix.txt
+          node livepf.cjs 2>&1 | grep pf-hu-phone-1d | cut -c1-700 | tee -a out/deployfix.txt
       - name: Save results to the diag branch
         if: always()
         run: |
           git config user.name diag; git config user.email diag@users.noreply.github.com
-          git add out && git commit -qm "diag: latest intraday data dry run" && git push -q origin HEAD:diag
+          git add out && git commit -qm "diag: deploy fix check" && git push -q origin HEAD:diag
