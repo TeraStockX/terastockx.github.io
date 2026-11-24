@@ -552,6 +552,30 @@ test("Top stories: next to news the change since the news, not a later session's
   assert.equal(sinceNews({ px: 50, dc: 2, xc: 4.5, xs: "pre" }, { at: "2026-11-24T12:00:00Z" }, { now: new Date("2026-11-24T13:30:00Z"), session: "pre" }), 4.5);
 });
 
+test("Top stories: new developments come first; an old filing is not shown next to today's move", async () => {
+  const { buildStories, freshness } = await import("../scripts/pulse.mjs");
+  const now = new Date("2026-11-24T16:00:00Z");
+  assert.equal(Math.round(freshness({ at: "2026-11-24T16:00:00Z" }, now)), 40);
+  assert.equal(Math.round(freshness({ at: "2026-11-23T16:00:00Z" }, now)), 20);
+  assert.equal(freshness({ at: "2026-11-22T10:00:00Z" }, now), 0);
+  const rows = [{ t: "BMY", n: "Bristol", mc: 1e11, dc: 1.8 }, { t: "ADI", n: "Analog Devices", mc: 1.1e11, dc: 1.2 }, { t: "MU", n: "Micron", mc: 2e11, dc: -13.9 }];
+  const news = [
+    { t: "BMY", date: "2026-11-23", at: "2026-11-23T10:00:00Z", items: ["5.02"], kind: "leadership", title: "BMY CFO transition", url: "a" },
+    { t: "ADI", date: "2026-11-24", at: "2026-11-24T12:00:00Z", items: ["5.02"], kind: "leadership", title: "ADI names new CEO", url: "b" },
+    { t: "MU", date: "2026-11-21", at: "2026-11-21T21:00:00Z", items: ["8.01"], kind: "other", title: "Micron filing of last week", url: "c" },
+  ];
+  const st = buildStories({ rows, news, session: { session: "open" }, now });
+  assert.deepEqual(st.map((x) => x.t), ["ADI", "MU", "BMY"], "today's leadership news first, then today's big move, then yesterday's news");
+  assert.equal(st[1].kind, "move");
+  assert.equal(st[1].title, null, "a three-day-old filing is not the headline of today's move");
+  // The newest important news of a company is its story.
+  const two = buildStories({ rows: [{ t: "ADI", n: "Analog Devices", mc: 1.1e11, dc: 1.2 }], news: [
+    { t: "ADI", date: "2026-11-23", at: "2026-11-23T09:00:00Z", items: ["5.02"], kind: "leadership", title: "Old", url: "d" },
+    { t: "ADI", date: "2026-11-24", at: "2026-11-24T13:00:00Z", items: ["1.01"], kind: "deal", title: "New deal", url: "e" },
+  ], session: { session: "open" }, now });
+  assert.equal(two[0].title, "New deal");
+});
+
 test("News headlines: press-release titles, the reported item, kinds of news", async () => {
   const h = await import("../scripts/news-headline.mjs");
   const fx = (f) => readFileSync(new URL(`./fixtures/8k/${f}`, import.meta.url), "utf8");

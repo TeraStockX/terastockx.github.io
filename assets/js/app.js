@@ -475,6 +475,19 @@ function updatedWhen(iso, { lower = false } = {}) {
   return lower ? word.toLocaleLowerCase(locale()) : word;
 }
 
+// When a news item came out: "Now", "Today 14:57", "Yesterday 21:12" (local time), or the date when it is
+// older. { clock: false } leaves the time out (a filing date only), { lower: true } for use inside a text.
+function newsWhen(iso, { clock = true, lower = false } = {}) {
+  const d = new Date(iso);
+  if (isNaN(d)) return "–";
+  const word = updatedWhen(iso, { lower });
+  const now = new Date();
+  const dayStart = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const days = Math.round((dayStart(now) - dayStart(d)) / 86400000);
+  if (!clock || days < 0 || days > 1 || now - d < 15 * 60000) return word;
+  return `${word} ${ltr(d.toLocaleTimeString(locale(), { hour: "2-digit", minute: "2-digit" }))}`;
+}
+
 const LIST_COLS = [
   { key: "overall", label: () => t("ui.overallScore") },
   { key: "profitability", cls: "col-xl" },
@@ -868,7 +881,7 @@ function storyRow(s) {
     <a class="nrow-logo" href="#/c/${encodeURIComponent(s.t)}" tabindex="-1" aria-hidden="true">${logo(row)}</a>
     <div class="nrow-main">
       <div class="nrow-top"><a class="tick" href="#/c/${encodeURIComponent(s.t)}">${esc(s.t)}</a><span class="nrow-name muted">${esc(coName(s))}</span>
-        <span class="pill tone-${KIND_TONE[s.kind] || "none"} nrow-kind"><span class="dot"></span>${esc(t(`pulse.kind.${s.kind}`))}</span>${when && s.kind !== "move" ? `<span class="small muted">${esc(updatedWhen(when))}</span>` : ""}</div>
+        <span class="pill tone-${KIND_TONE[s.kind] || "none"} nrow-kind"><span class="dot"></span>${esc(t(`pulse.kind.${s.kind}`))}</span>${when && (s.kind !== "move" || s.title) ? `<span class="small muted">${esc(newsWhen(when, { clock: !!s.at }))}</span>` : ""}</div>
       ${s.title ? `<div class="nrow-title clamp3" lang="en" title="${esc(s.title)}">${esc(s.title)}${s.url ? ` <a class="nrow-src" href="${esc(s.url)}" target="_blank" rel="noopener" title="${esc(t("pulse.readMore"))}">SEC ↗</a>` : ""}</div>` : ""}
     </div>
     ${m ? `<div class="nrow-move">${dayChange(m.v)}<span class="small muted">${esc(m.label)}</span></div>` : ""}
@@ -946,7 +959,7 @@ function homePulse(p) {
   if (ai && isNum(ai.change)) market.push(`<span class="hp-item">${esc(t("pulse.themesShort.ai"))} ${chg(ai.change)}</span>`);
   const stories = (p.stories || []).slice(0, 6).map((s) => {
     const m = storyMove(s);
-    return `<a class="hp-story" href="#/c/${encodeURIComponent(s.t)}" title="${esc(`${t(`pulse.kind.${s.kind}`)}${s.title ? `: ${s.title}` : ""}`)}"><b>${esc(s.t)}</b>${m ? `${chg(m.v)}<span class="hp-when">${esc(m.label)}</span><span class="hp-when" aria-hidden="true">·</span>` : ""}<span class="hp-kind">${esc(t(`pulse.kind.${s.kind}`))}</span></a>`;
+    return `<a class="hp-story" href="#/c/${encodeURIComponent(s.t)}" title="${esc(`${t(`pulse.kind.${s.kind}`)}${s.title ? `: ${s.title}` : ""}`)}"><b>${esc(s.t)}</b>${m ? `${chg(m.v)}<span class="hp-when">${esc(m.label)}</span><span class="hp-when" aria-hidden="true">·</span>` : ""}<span class="hp-kind">${esc(t(`pulse.kind.${s.kind}`))}${s.kind !== "move" && (s.at || s.date) ? ` (${esc(newsWhen(s.at || `${s.date}T12:00:00`, { clock: false, lower: true }))})` : ""}</span></a>`;
   });
   if (!market.length && !stories.length) return "";
   // Before the open the pre-market changes are shown; when the market is closed, the last session's.

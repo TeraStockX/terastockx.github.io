@@ -70,6 +70,14 @@ export function closeOn(closes, day) {
   for (const c of closes) if (c[0] <= day) hit = c;
   return hit;
 }
+// A news item counts more the newer it is: 40 points when it comes out, falling to nothing over two days, so
+// new developments come first and older news stays among the top stories only while nothing newer is as
+// important.
+export function freshness(n, now = new Date()) {
+  const at = newsTime(n);
+  if (!at) return 0;
+  return 40 * Math.min(1, Math.max(0, 1 - (now - new Date(at)) / (48 * 3600000)));
+}
 // The latest price: the pre-market or after-hours trade of the largest companies, else the latest regular one.
 const latestPrice = (r) => (isNum(r.px) && r.px > 0 ? r.px * (isNum(r.xc) && (r.xs === "pre" || r.xs === "post") ? 1 + r.xc / 100 : 1) : null);
 // The share-price change since a news item, in percent: from the last close before the news (n.pb, read
@@ -105,13 +113,18 @@ export function buildStories({ rows, news = [], session = null, now = new Date()
     const dayBig = !!day && Math.abs(day.v) >= limit;
     const move = extBig ? ext : dayBig ? day : ext || day;
     const big = extBig || dayBig;
+    // The company's most important news, the newer the better (a new development comes before an older one).
     const items = (byCo.get(r.t) || [])
       .filter((n) => (KIND_WEIGHT[n.kind] ?? 0) > 0 && (n.kind !== "results" || mc >= 1e11 || big))
-      .map((n) => ({ ...n, w: KIND_WEIGHT[n.kind] + ((now - new Date(n.at || n.date)) / DAY <= 1 ? 15 : 0) }))
-      .sort((a, b) => b.w - a.w || ((b.at || b.date) > (a.at || a.date) ? 1 : -1));
-    const item = items[0] || (big ? (byCo.get(r.t) || []).find((n) => n.title) : null);
+      .map((n) => ({ ...n, w: KIND_WEIGHT[n.kind] + freshness(n, now) }))
+      .sort((a, b) => b.w - a.w || (newsTime(b) > newsTime(a) ? 1 : -1));
+    // A big move without such news gets the headline of the company's latest filing only if it is recent
+    // (within a day): an older one is unlikely to be behind today's move.
+    const item = items[0] || (big ? (byCo.get(r.t) || []).filter((n) => n.title && freshness(n, now) > 20).sort((a, b) => (newsTime(b) > newsTime(a) ? 1 : -1))[0] : null);
     if (!items.length && !big) continue;
-    const w = 10 * Math.log10(mc) + (big ? 3 * Math.abs(move.v) : 0) + (items[0]?.w ?? 0);
+    // A big move happening now (before, during or after the session) is as current as fresh news.
+    const live = ["pre", "open", "post"].includes(session?.session);
+    const w = 10 * Math.log10(mc) + (big ? 3 * Math.abs(move.v) : 0) + (items[0]?.w ?? 0) + (!items.length && big && live ? 25 : 0);
     out.push({
       w, t: r.t, n: r.n, mc: r.mc ?? null, dc: r.dc ?? null, o: r.o ?? null,
       move: move ? +move.v.toFixed(2) : null, when: move?.when ?? null,
