@@ -1,0 +1,7 @@
+Adatfrissítés és közzététel: completed success
+AI-segéd (Cloudflare Worker): completed success
+deploy 2026-11-24T21:45:19.2299156Z ^[[36;1melse echo "::notice::The AI helper is not set up yet (see worker/README.md): nothing to deploy."; fi^[[0m
+deploy 2026-11-24T21:45:19.2439649Z ##[notice]The AI helper is not set up yet (see worker/README.md): nothing to deploy.
+ai-hu-phone-co {"aiRoot":"none","aiModule":1,"h2":10,"kpis":0} no errors
+ai-en-desktop-method {"aiRoot":"none","aiModule":1,"h2":28,"kpis":0} no errors
+ai-hu-phone-pf {"aiRoot":"none","aiModule":1,"h2":3,"kpis":2} no errors
