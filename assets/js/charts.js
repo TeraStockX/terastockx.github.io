@@ -38,7 +38,8 @@ export function barChart(title, sub, points, f, emptyText) {
 }
 
 // opts: W/H (viewBox size: the drawn width in pixels keeps the labels at their CSS size), label(key) for the
-// tooltip, ticks(keys) → [[index, text]] for the x axis (default: the year at each January of "YYYY-MM" keys).
+// tooltip, ticks(keys, plotWidth) → [[index, text]] for the x axis (default: the year at each January of
+// "YYYY-MM" keys).
 export function lineChart(title, sub, points, f, emptyText, { W = 900, H = 220, label = (k) => k, ticks: xTicks = null } = {}) {
   const pts = points.filter(([, v]) => isNum(v));
   if (pts.length < 2) return `<div class="glass chart wide"><h3>${esc(title)}</h3><div class="chart-sub">${esc(sub)}</div><div class="empty small">${esc(emptyText)}</div></div>`;
@@ -53,7 +54,7 @@ export function lineChart(title, sub, points, f, emptyText, { W = 900, H = 220, 
   const area = `${path} L${x(pts.length - 1)},${H - padB} L0,${H - padB} Z`;
   const ticks = [max, (max + min) / 2, min].map((v) => `<line class="gridline" x1="0" x2="${W - padR}" y1="${y(v)}" y2="${y(v)}"/><text class="axis-label" x="${W - padR + 6}" y="${y(v) + 4}">${esc(f(v))}</text>`).join("");
   const years = [];
-  if (xTicks) for (const [i, text] of xTicks(pts.map(([k]) => k))) years.push(`<text class="axis-label" x="${x(i)}" y="${H - 5}" text-anchor="${i === 0 ? "start" : i === pts.length - 1 ? "end" : "middle"}">${esc(text)}</text>`);
+  if (xTicks) for (const [i, text] of xTicks(pts.map(([k]) => k), W - padR)) years.push(`<text class="axis-label" x="${x(i)}" y="${H - 5}" text-anchor="${i === 0 ? "start" : i === pts.length - 1 ? "end" : "middle"}">${esc(text)}</text>`);
   else pts.forEach(([k], i) => { if (k.endsWith("-01") && i > 0) years.push(`<text class="axis-label" x="${x(i)}" y="${H - 5}" text-anchor="middle">${k.slice(0, 4)}</text>`); });
   const data = esc(JSON.stringify(pts.map(([l, v]) => [label(l), f(v)])));
   return `<div class="glass chart wide" data-line="${data}" data-w="${W - padR}" data-n="${pts.length}"><h3>${esc(title)}</h3><div class="chart-sub">${esc(sub)}</div>

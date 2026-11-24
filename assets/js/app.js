@@ -1887,9 +1887,9 @@ function movementView(id, data, cur, rate, width) {
   // Charts drawn at their on-screen width (two side by side from 900 px), so the labels keep their size.
   const two = width >= 900 && points.length >= 2 && score?.points?.length >= 2;
   const W = Math.max(260, Math.round((two ? (width - 14) / 2 : width) - 38)), H = 200;
-  // Evenly spaced dates on the x axis, as many as fit (about 90 px each).
-  const ticks = (keys) => {
-    const n = keys.length, k = Math.min(n, Math.max(2, Math.floor(W / (keys[0].length === 4 ? 48 : 90))));
+  // Evenly spaced dates on the x axis, as many as fit the plot (about 75 px a date, 56 px a year).
+  const ticks = (keys, plotW) => {
+    const n = keys.length, k = Math.min(n, Math.max(2, Math.floor(plotW / (keys[0].length === 4 ? 56 : 75))));
     return [...new Set(Array.from({ length: k }, (_, j) => Math.round((j * (n - 1)) / (k - 1))))].map((i) => [i, keys[i].length === 4 ? keys[i] : keyLabel(keys[i], today)]);
   };
   const opts = { W, H, label: (k) => keyLabel(k, today), ticks };
