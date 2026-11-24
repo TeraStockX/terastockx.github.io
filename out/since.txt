@@ -1,13 +1,22 @@
-now 2026-11-24T16:28:26Z run 45436482319
+now 2026-11-24T16:43:32Z run 45439434267
+build 2026-11-24T16:38:20.1435096Z ^[[36;1mif [ "${n:-0}" -gt 0 ]; then echo "The daily update is running: this run is skipped, the chain goes on."; echo "skip=true" >> "$GITHUB_OUTPUT"; fi^[[0m
+build 2026-11-24T16:38:24.8256116Z (node:2533) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse(
+build 2026-11-24T16:39:00.8104820Z   new filings: 409 in the SEC feed, 1 companies to refresh (110 kept from earlier runs today)
+build 2026-11-24T16:39:00.9634122Z   refreshed: 0 with a new report, 1 with a new current report; 0 left for the next run
+build 2026-11-24T16:40:11.4768784Z   quotes updated: 5860 companies (1885 with a quote of the day), 0 ETFs in the screener; session: open; live quotes: 2099, kept from today's session: 2099
+build 2026-11-24T16:40:17.0948421Z (node:2680) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse(
+build 2026-11-24T16:40:17.9470831Z   if-no-files-found: error
+build 2026-11-24T16:40:18.9230841Z (node:2704) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse(
+deploy 2026-11-24T16:40:30.0568739Z   error_count: 10
 --- pulse
-2026-11-24T16:22:17.805Z null null
-  NVDA leadership move -12.06 day since 2.27 2026-11-23T13:57:54.000Z NVIDIA Board Reinstates Jensen Huang as President, CEO and B
-  CRWD deal move -5.76 day since 0 2026-11-23T11:15:28.000Z CrowdStrike to Acquire Zscaler, Bringing Network Security an
-  HPE results move -10.07 day since null 2026-11-23T21:12:08.000Z HPE reports fiscal 2026 fourth quarter results
-  BMY leadership move 1.05 day since null 2026-11-23T21:20:20.000Z Bristol Myers Squibb Announces Planned Chief Financial Offic
-  TPL deal move -3.66 day since null 2026-11-23T21:43:42.000Z Texas Pacific Land to Acquire EagleRock in All-Stock Transac
-  BAM deal move -2.55 day since -0.02 2026-11-23T11:00:27.000Z Brookfield to Acquire PGP Glass, a Leading Global Manufactur
-  ZS deal move -5.29 day since 0 2026-11-23T15:01:16.000Z CrowdStrike to Acquire Zscaler, Bringing Network Security an
-  MU move move -13.89 day since null null 
+2026-11-24T16:40:12.020Z open 2026-11-23
+  ADI results move -19.56 day since -19.56 2026-11-24T12:03:22.000Z Analog Devices Reports Record Fourth Quarter and Fiscal 2026
+  INSM deal move 14.2 day since 14.2 2026-11-24T11:04:08.000Z Sanofi to Acquire Insmed in Strategic Step that Strengthens 
+  NVDA leadership move -8.71 day since 20.03 2026-11-23T13:57:54.000Z NVIDIA Board Reinstates Jensen Huang as President, CEO and B
+  DKS results move 15.41 day since 15.41 2026-11-24T12:02:02.000Z DICK'S Sporting Goods, Inc. Reports Third Quarter Results
+  HPE results move -16.24 day since -16.24 2026-11-23T21:12:08.000Z HPE reports fiscal 2026 fourth quarter results
+  DLTR results move 11.35 day since 11.35 2026-11-24T11:30:42.000Z Dollar Tree, Inc. Reports Third Quarter Results
+  ANT move move -13.42 day since null null 
+  BURL results move 8.72 day since 8.72 2026-11-24T11:49:27.000Z Burlington Stores Reports Third Quarter 2026 Earnings
 --- story prices
-{"updated":"2026-11-24T16:22:17.805Z","items":{"https://www.sec.gov/Archives/edgar/data/1937926/000117184326007625/f8k_112326.htm":{"t":"BAM","at":"2026-11-23T11:00:27.000Z","pb":48.94,"day":"2026-11-20"},"https://www.sec.gov/Archives/edgar/data/1535527/000110465926130785/tm2630454d1_8k.htm":{"t":"CRWD","at":"2026-11-23T11:15:28.000Z","pb":229.44,"day":"2026-11-20"},"https://www.sec.gov/Archives/edgar/data/1535527/000153552726000035/crwd-20261123.htm":{"t":"CRWD","at":"2026-11-23T11:04:51.000Z","pb":229.44,"day":"2026-11-20"},"https://www.sec.gov/Archives/edgar/data/51434/000162828026075360/ip-20261122.htm":{"t":"IP","at":"2026-11-23T12:25:41.000Z","pb":30.36,"day":"2026-11-20"},"https://www.sec.gov/Archives/edgar/data/1045810/000104581026000090/nvda-20261122.htm":{"t":"NVDA","at":"2026-11-23T13:57:54.000Z","pb":125.53,"day":"2026-11-20"},"https://www.sec.gov/Archives/edgar/data/1713683/
+{"updated":"2026-11-24T16:40:12.020Z","items":{"https://www.sec.gov/Archives/edgar/data/1937926/000117184326007625/f8k_112326.htm":{"t":"BAM","at":"2026-11-23T11:00:27.000Z","pb":48.94,"day":"2026-11-20"},"https://www.sec.gov/Archives/edgar/data/1535527/000110465926130785/tm2630454d1_8k.htm":{"t":"CRWD","at":"2026-11-23T11:15:28.000Z","pb":229.44,"day":"2026-11-20"},"https://www.sec.gov/Archives/edgar/data/1535527/000153552726000035/crwd-20261123.htm":{"t":"CRWD","at":"2026-11-23T11:04:51.000Z","pb":229.44,"day":"2026-11-20"},"https://www.sec.gov/Archives/edgar/data/51434/000162828026075360/ip-20261122.htm":{"t":"IP","at":"2026-11-23T12:25:41.000Z","pb":30.36,"day":"2026-11-20"},"https://www.sec.gov/Archives/edgar/data/1045810/000104581026000090/nvda-20261122.htm":{"t":"NVDA","at":"2026-11-23T13:57:54.000Z","pb":125.53,"day":"2026-11-20"},"https://www.sec.gov/Archives/edgar/data/1713683/
