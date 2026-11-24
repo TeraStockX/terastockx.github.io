@@ -14,16 +14,25 @@ jobs:
         with: { ref: diag }
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
-      - name: Daily closes pipeline and the last daily run
+      - name: Wait for the deploy of a597a433
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p out
-          node pipecheck.mjs 2>&1 | tee out/pipe.txt
-          echo "--- daily run 45332971134" | tee -a out/pipe.txt
-          gh run view 45332971134 --repo TeraStockX/terastockx.github.io --log 2>&1 | grep -E "price histor|ETF price|European ETFs|budget|companies updated|weekly|snapshot" | sed -E 's/^([a-z]+)\t[^\t]*\t/\1 /' | cut -c1-260 | tail -40 | tee -a out/pipe.txt
+          for i in $(seq 1 60); do
+            st=$(gh run view 45466667825 --repo TeraStockX/terastockx.github.io --json status,conclusion -q '.status + " " + .conclusion')
+            case "$st" in completed*) break;; esac
+            sleep 15
+          done
+          echo "deploy: $st" | tee out/livepf.txt
+          sleep 60
+      - name: Live portfolio screenshots
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.49.1 >/dev/null 2>&1
+          npx playwright install --with-deps chromium >/dev/null 2>&1
+          node livepf.cjs 2>&1 | tee -a out/livepf.txt
       - name: Save results to the diag branch
         if: always()
         run: |
           git config user.name diag; git config user.email diag@users.noreply.github.com
-          git add out && git commit -qm "diag: daily closes pipeline check" && git push -q origin HEAD:diag
+          git add out && git commit -qm "diag: live portfolio check" && git push -q origin HEAD:diag
