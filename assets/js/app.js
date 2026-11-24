@@ -1101,7 +1101,10 @@ const riskExplain = () => t("ui.riskExplain", {
 
 // Home: the slogan ("…, made clear. The smart tool for investors.") is one line where it fits at a comfortable
 // size (laptops, tablets) and two balanced lines on phones, where the text shrinks a little if needed.
+// Phones: tagline and slogan on two balanced lines. Tablets and laptops: one line, shrunk to fit if needed
+// (but never below SLOGAN_ONE_LINE_MIN; a screen too narrow for that gets the two balanced lines too).
 const SLOGAN_ONE_LINE_MIN = 15;
+const PHONE_WIDTH = window.matchMedia("(max-width: 640px)");
 function fitTagline() {
   const el = document.querySelector(".hero .tagline");
   if (!el) return;
@@ -1111,7 +1114,7 @@ function fitTagline() {
   const base = parseFloat(getComputedStyle(el).fontSize);
   const avail = el.parentElement.clientWidth;
   const oneLine = el.scrollWidth > avail ? Math.floor(((base * avail) / el.scrollWidth) * 4) / 4 : base;
-  if (oneLine >= SLOGAN_ONE_LINE_MIN) {
+  if (!PHONE_WIDTH.matches && oneLine >= SLOGAN_ONE_LINE_MIN) {
     let fs = oneLine;
     el.style.fontSize = `${fs}px`;
     while (el.scrollWidth > el.parentElement.clientWidth && fs > SLOGAN_ONE_LINE_MIN) { fs -= 0.25; el.style.fontSize = `${fs}px`; }
