@@ -946,7 +946,7 @@ function homePulse(p) {
   if (ai && isNum(ai.change)) market.push(`<span class="hp-item">${esc(t("pulse.themesShort.ai"))} ${chg(ai.change)}</span>`);
   const stories = (p.stories || []).slice(0, 6).map((s) => {
     const m = storyMove(s);
-    return `<a class="hp-story" href="#/c/${encodeURIComponent(s.t)}" title="${esc(`${t(`pulse.kind.${s.kind}`)}${s.title ? `: ${s.title}` : ""}`)}"><b>${esc(s.t)}</b><span class="hp-kind">${esc(t(`pulse.kind.${s.kind}`))}</span>${m ? `${chg(m.v)}<span class="hp-when">${esc(m.label)}</span>` : ""}</a>`;
+    return `<a class="hp-story" href="#/c/${encodeURIComponent(s.t)}" title="${esc(`${t(`pulse.kind.${s.kind}`)}${s.title ? `: ${s.title}` : ""}`)}"><b>${esc(s.t)}</b>${m ? `${chg(m.v)}<span class="hp-when">${esc(m.label)}</span><span class="hp-when" aria-hidden="true">·</span>` : ""}<span class="hp-kind">${esc(t(`pulse.kind.${s.kind}`))}</span></a>`;
   });
   if (!market.length && !stories.length) return "";
   // Before the open the pre-market changes are shown; when the market is closed, the last session's.
