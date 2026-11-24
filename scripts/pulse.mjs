@@ -78,21 +78,29 @@ export function freshness(n, now = new Date()) {
   if (!at) return 0;
   return 40 * Math.min(1, Math.max(0, 1 - (now - new Date(at)) / (48 * 3600000)));
 }
-// The latest price: the pre-market or after-hours trade of the largest companies, else the latest regular one.
-const latestPrice = (r) => (isNum(r.px) && r.px > 0 ? r.px * (isNum(r.xc) && (r.xs === "pre" || r.xs === "post") ? 1 + r.xc / 100 : 1) : null);
+// The latest price for the change since a news item: the pre-market or after-hours trade of the largest
+// companies; during and right after the session the regular price; before the open, at night, at the weekend
+// (or when the session is unknown) the latest close from the daily history (n.lc), as the screener's price can
+// be days old then.
+function latestPrice(r, n, session) {
+  const ext = (r.xs === "pre" || r.xs === "post") && isNum(r.xc) ? r.xc : null;
+  if (ext !== null && isNum(r.xp) && r.xp > 0) return r.xp;
+  const close = session === "open" || session === "post" ? (isNum(r.px) && r.px > 0 ? r.px : null) : isNum(n?.lc) && n.lc > 0 ? n.lc : null;
+  if (close === null) return null;
+  return session === "open" ? close : close * (1 + (ext ?? 0) / 100);
+}
 // The share-price change since a news item, in percent: from the last close before the news (n.pb, read
-// from the daily history) to the latest price. News after the latest close: the change since that close
-// (the day's change during the session, the pre-market or after-hours change outside it; none at night,
-// when there is no trade since the news to show). Null when unknown.
+// from the daily history) to the latest price. News after the latest close: the change since that close (the
+// day's change during the session, the pre-market or after-hours change outside it; none at night without
+// an after-hours trade, as there is no trade since the news to show). Null when unknown.
 export function sinceNews(r, n, { now = new Date(), session = null } = {}) {
   const at = newsTime(n);
   if (!at) return null;
   if (closeDayBefore(at) >= closeDayBefore(now)) {
     if (session === "open") return isNum(r.dc) ? r.dc : null;
-    if ((session === "pre" || session === "post") && r.xs === session && isNum(r.xc)) return r.xc;
-    return null;
+    return (r.xs === "pre" || r.xs === "post") && isNum(r.xc) ? r.xc : null;
   }
-  const cur = latestPrice(r);
+  const cur = latestPrice(r, n, session);
   return isNum(n.pb) && n.pb > 0 && isNum(cur) ? +((cur / n.pb - 1) * 100).toFixed(2) : null;
 }
 

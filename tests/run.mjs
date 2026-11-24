@@ -550,6 +550,17 @@ test("Top stories: next to news the change since the news, not a later session's
   assert.equal(sinceNews({ px: 20, dc: -1 }, { at: "2026-11-20T13:00:00Z" }, { now, session: "open" }), null);
   // Before the open: overnight news shows the pre-market change.
   assert.equal(sinceNews({ px: 50, dc: 2, xc: 4.5, xs: "pre" }, { at: "2026-11-24T12:00:00Z" }, { now: new Date("2026-11-24T13:30:00Z"), session: "pre" }), 4.5);
+  // Outside the session the screener's price can be days old: the latest close of the daily history (lc)
+  // counts, and before the open the pre-market price (or the pre-market change on that close).
+  const stale = { px: 128.38, dc: -12.06 };
+  const older = { at: "2026-11-23T13:57:54.000Z", pb: 125.53, lc: 165.05 };
+  assert.equal(sinceNews(stale, older, { now: new Date("2026-11-25T02:00:00Z"), session: "closed" }), 31.48);
+  assert.equal(sinceNews(stale, older, { now: new Date("2026-11-25T02:00:00Z"), session: null }), 31.48, "an index rebuild (session unknown) too");
+  assert.equal(sinceNews({ ...stale, xc: 2, xs: "pre" }, older, { now: new Date("2026-11-25T12:00:00Z"), session: "pre" }), 34.11);
+  assert.equal(sinceNews({ ...stale, xc: 2, xs: "pre", xp: 170 }, older, { now: new Date("2026-11-25T12:00:00Z"), session: "pre" }), 35.43);
+  assert.equal(sinceNews(stale, { at: older.at, pb: 125.53 }, { now: new Date("2026-11-25T02:00:00Z"), session: "closed" }), null, "no close: no number");
+  // At night the after-hours quote of the evening is kept: results after the close show their reaction.
+  assert.equal(sinceNews({ px: 50, dc: 1, xc: -8, xs: "post", xp: 46 }, { at: "2026-11-24T21:10:00Z" }, { now: new Date("2026-11-25T03:00:00Z"), session: "closed" }), -8);
 });
 
 test("Top stories: new developments come first; an old filing is not shown next to today's move", async () => {

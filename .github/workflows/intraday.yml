@@ -47,13 +47,14 @@ jobs:
     outputs:
       skip: ${{ steps.busy.outputs.skip }}
     steps:
-      # While the daily update runs, this run leaves the update to it (it publishes the newest data).
+      # While the daily update runs (not a code change: that only rebuilds the index), this run leaves the
+      # update to it (it publishes the newest data).
       - id: busy
         name: Fut a napi frissítés?
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          n=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow deploy.yml --limit 5 --json status -q '[.[] | select(.status != "completed")] | length' 2>/dev/null || echo 0)
+          n=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow deploy.yml --limit 5 --json status,event -q '[.[] | select(.status != "completed" and .event != "push")] | length' 2>/dev/null || echo 0)
           if [ "${n:-0}" -gt 0 ]; then echo "The daily update is running: this run is skipped, the chain goes on."; echo "skip=true" >> "$GITHUB_OUTPUT"; fi
       - uses: actions/checkout@v4
         if: steps.busy.outputs.skip != 'true'

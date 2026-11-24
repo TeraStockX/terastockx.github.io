@@ -147,15 +147,19 @@ const LIVE_TOP = 2000, LIVE_ETFS = 100, EXT_TOP = 300;
 const etDate = (d = new Date()) => d.toLocaleDateString("en-CA", { timeZone: "America/New_York" });
 
 // The day's session quotes, kept between intraday runs (in the Actions cache, with the refreshed companies):
-// after the close they are the day's closing prices and changes while the screener still shows the previous day.
+// after the close they are the day's closing prices and changes while the screener still shows the previous
+// day. On a new day the last session's quotes stay ("last") until the new session's replace them: before the
+// open, at night and at the weekend they are the latest prices and changes (the screener's can be days old).
 function readDayQuotes() {
-  const empty = { date: etDate(), q: {} };
+  const date = etDate();
   try {
     const f = OVERLAY && join(OVERLAY, "quotes.json");
     const d = f && existsSync(f) ? readJson(f) : null;
-    return d?.date === empty.date && d.q ? d : empty;
+    if (d?.date === date && d.q) return d;
+    const last = d?.q && Object.keys(d.q).length ? { date: d.date, q: d.q, at: d.at || null } : d?.last || null;
+    return last ? { date, q: {}, last } : { date, q: {} };
   } catch {
-    return empty;
+    return { date, q: {} };
   }
 }
 function writeDayQuotes(d) {
@@ -183,17 +187,26 @@ async function updateQuotes(screener = null) {
   if (session === "open" && live.size) {
     for (const [t, x] of live) if (Number.isFinite(x.changePct)) day.q[t] = [x.price, x.changePct];
     day.at = new Date().toISOString();
+    delete day.last;
     writeDayQuotes(day);
   }
   const kept = Object.keys(day.q).length;
+  // A new day before its session (before the open, at night after midnight New York time, at the weekend):
+  // the last session's quotes.
+  const lastAge = day.last?.date ? (Date.parse(day.date) - Date.parse(day.last.date)) / 86400000 : Infinity;
+  const lastQ = !kept && session !== "open" && day.last?.q && lastAge <= 5 ? day.last.q : null;
+  const lastKept = lastQ ? Object.keys(lastQ).length : 0;
   // During and after the session the screener's change is the previous day's: a company without a quote of
-  // the day has no change of the day (unless the live quotes are unavailable altogether).
-  const screenerStale = (session === "open" && live.size > 50) || ((session === "post" || session === "closed") && kept > 50);
+  // the day has no change of the day (unless the live quotes are unavailable altogether). The same before the
+  // next session, while the last session's quotes are at hand.
+  const screenerStale = (session === "open" && live.size > 50) || ((session === "post" || session === "closed") && kept > 50) || lastKept > 50;
   const dayQuote = (t) => {
     const x = session === "open" ? live.get(t) : null;
     if (x && Number.isFinite(x.changePct)) return { price: x.price, changePct: x.changePct };
     const k = session !== "pre" ? day.q[t] : null;
-    return k ? { price: k[0], changePct: k[1] } : null;
+    if (k) return { price: k[0], changePct: k[1] };
+    const l = lastQ?.[t];
+    return l ? { price: l[0], changePct: l[1] } : null;
   };
   // Before the open: the pre-market change against the previous close, as Nasdaq reports it. After the
   // close: the after-hours change against the day's closing price.
@@ -203,7 +216,7 @@ async function updateQuotes(screener = null) {
     if (!x || !Number.isFinite(x.price)) return undefined;
     const close = session === "post" ? day.q[t]?.[0] : null;
     const changePct = close > 0 ? (x.price / close - 1) * 100 : x.changePct;
-    return Number.isFinite(changePct) ? { session, price: x.price, changePct: +changePct.toFixed(2), at: x.at } : undefined;
+    return Number.isFinite(changePct) ? { session, price: x.price, changePct: +changePct.toFixed(2), at: x.at, day: etDate() } : undefined;
   };
   let n = 0, fresh = 0;
   for (const f of readdirSync(COMPANIES)) {
@@ -217,7 +230,10 @@ async function updateQuotes(screener = null) {
     // The screener's market cap belongs to its own (older) price.
     const marketCap = q?.marketCap > 0 && q.price > 0 ? q.marketCap * (price / q.price) : Number.isFinite(m.marketCap) && ratio ? m.marketCap * ratio : m.marketCap ?? null;
     const changePct = d ? d.changePct : screenerStale ? null : q?.changePct ?? null;
-    c.market = { ...m, price, priceDate: todayIso(), changePct, marketCap, quoteTime: new Date().toISOString(), ext: extOf(c.ticker) };
+    // After the session the after-hours quote is kept through the night (until midnight New York time): it is
+    // the latest trade, and results published after the close move the price there.
+    const keptPost = session === "closed" && m.ext?.session === "post" && m.ext.day === etDate() ? m.ext : undefined;
+    c.market = { ...m, price, priceDate: todayIso(), changePct, marketCap, quoteTime: new Date().toISOString(), ext: extOf(c.ticker) ?? keptPost };
     writeFileSync(join(COMPANIES, f), JSON.stringify(c) + "\n");
     n++;
     if (d) fresh++;
@@ -232,11 +248,12 @@ async function updateQuotes(screener = null) {
       const x = extOf(r.t);
       if (x) { r.xc = x.changePct; r.xp = x.price; r.xs = x.session; } else { delete r.xc; delete r.xp; delete r.xs; }
     }
-    etfData.quotesAt = new Date().toISOString();
+    // At night and at the weekend the prices are the last session's.
+    etfData.quotesAt = lastQ && session !== "pre" && day.last?.at ? day.last.at : new Date().toISOString();
     etfData.session = SESSION ? { session, previousTradeDate: SESSION.previousTradeDate } : null;
     writeFileSync(ef, JSON.stringify(etfData) + "\n");
   }
-  console.log(`  quotes updated: ${n} companies (${fresh} with a quote of the day), ${etfQuotes.size} ETFs in the screener; session: ${session || "unknown"}; live quotes: ${live.size}, kept from today's session: ${kept}`);
+  console.log(`  quotes updated: ${n} companies (${fresh} with a quote of the day), ${etfQuotes.size} ETFs in the screener; session: ${session || "unknown"}; live quotes: ${live.size}, kept from today's session: ${kept}${lastKept ? `, from the last session (${day.last.date}): ${lastKept}` : ""}`);
 }
 
 // ---------- ETFs for European investors and ETF price history ----------
@@ -693,21 +710,27 @@ function ensureBacktest(all, benchmarks) {
 // close is read once per news item from the daily price history of the company and kept between runs: in
 // the data folder by the daily update, in the Actions cache (with the refreshed companies) by the intraday
 // runs. News after the latest close needs none (the change of the day or of the extended session is shown).
+// Outside the session (before the open, at night, at the weekend) the latest price is the latest close of the
+// same history (refreshed every few hours): the screener's price can be days old then.
 const STORY_PRICES = "story-prices.json";
-async function storyBases(news, rows, now = new Date(), { budgetMs = 60000, maxCompanies = 30 } = {}) {
-  const kept = {};
+async function storyBases(news, rows, now = new Date(), session = null, { budgetMs = 60000, maxCompanies = 30 } = {}) {
+  const kept = {}, last = {};
   for (const f of [join(DATA, STORY_PRICES), OVERLAY ? join(OVERLAY, STORY_PRICES) : null]) {
     if (!f || !existsSync(f)) continue;
-    try { Object.assign(kept, readJson(f).items || {}); } catch {}
+    try { const j = readJson(f); Object.assign(kept, j.items || {}); Object.assign(last, j.last || {}); } catch {}
   }
   const cap = new Map(rows.map((r) => [r.t, r.mc ?? 0]));
   const latest = closeDayBefore(now);
-  const todo = new Map(); // ticker → [{ n, day }]
+  const age = (iso) => now - new Date(iso);
+  const needLast = session !== "open" && session !== "post";
+  const todo = new Map(); // ticker → news items still without their close
   for (const n of news) {
     const at = newsTime(n);
     if (!n.url || !at || !isStoryNews(n) || (cap.get(n.t) ?? 0) < STORY_CAP) continue;
+    const l = last[n.t];
+    if (needLast && (!l || age(l.at) > 6 * 3600000 || (l.day < latest && age(l.at) > 20 * 60000))) todo.set(n.t, todo.get(n.t) || []);
     const k = kept[n.url];
-    if (Number.isFinite(k?.pb) || (k?.tried && now - new Date(k.tried) < 30 * 60000)) continue;
+    if (Number.isFinite(k?.pb) || (k?.tried && age(k.tried) < 30 * 60000)) continue;
     const day = closeDayBefore(at);
     if (day >= latest) continue;
     (todo.get(n.t) || todo.set(n.t, []).get(n.t)).push({ n, day });
@@ -718,18 +741,23 @@ async function storyBases(news, rows, now = new Date(), { budgetMs = 60000, maxC
     if (read >= maxCompanies || Date.now() - start > budgetMs) break;
     const closes = await dailyCloses(t).catch(() => []);
     read++;
+    if (closes.length) last[t] = { day: closes.at(-1)[0], close: closes.at(-1)[1], at: now.toISOString() };
     for (const { n, day } of list) {
       const hit = closeOn(closes, day);
       kept[n.url] = hit ? { t, at: newsTime(n), pb: hit[1], day: hit[0] } : { t, at: newsTime(n), tried: now.toISOString() };
     }
     await sleep(150);
   }
-  for (const [url, k] of Object.entries(kept)) if (!(now - new Date(k.at) <= (STORY_DAYS + 3) * 86400000)) delete kept[url];
-  for (const n of news) if (Number.isFinite(kept[n.url]?.pb)) n.pb = kept[n.url].pb;
-  const out = JSON.stringify({ updated: now.toISOString(), items: kept }) + "\n";
+  for (const [url, k] of Object.entries(kept)) if (!(age(k.at) <= (STORY_DAYS + 3) * 86400000)) delete kept[url];
+  for (const [t, l] of Object.entries(last)) if (!(age(l.at) <= 3 * 86400000)) delete last[t];
+  for (const n of news) {
+    if (Number.isFinite(kept[n.url]?.pb)) n.pb = kept[n.url].pb;
+    if (needLast && Number.isFinite(last[n.t]?.close)) n.lc = last[n.t].close;
+  }
+  const out = JSON.stringify({ updated: now.toISOString(), items: kept, last }) + "\n";
   writeFileSync(join(DATA, STORY_PRICES), out);
   if (OVERLAY) { mkdirSync(OVERLAY, { recursive: true }); writeFileSync(join(OVERLAY, STORY_PRICES), out); }
-  if (todo.size) console.log(`  top stories: closing prices before the news read for ${read} of ${todo.size} companies`);
+  if (todo.size) console.log(`  top stories: daily closes read for ${read} of ${todo.size} companies`);
 }
 
 async function buildIndex({ snapshot = false } = {}) {
@@ -795,7 +823,11 @@ async function buildIndex({ snapshot = false } = {}) {
     if (!row.mc && Number.isFinite(c.market?.marketCap) && c.market.marketCap > 0) row.mc = Math.round(c.market.marketCap);
     if (Number.isFinite(c.market?.changePct)) row.dc = +c.market.changePct.toFixed(2);
     // Pre-market or after-hours change of the largest companies (intraday runs outside the session).
-    if (Number.isFinite(c.market?.ext?.changePct)) { row.xc = +c.market.ext.changePct.toFixed(2); row.xs = c.market.ext.session; }
+    if (Number.isFinite(c.market?.ext?.changePct)) {
+      row.xc = +c.market.ext.changePct.toFixed(2);
+      row.xs = c.market.ext.session;
+      if (Number.isFinite(c.market.ext.price)) row.xp = c.market.ext.price;
+    }
     for (const n of c.news || []) if (now - new Date(n.at || n.date) <= STORY_DAYS * 86400000) recentNews.push({ t: c.ticker, ...n });
     if (c.firstSeen) row.fs = c.firstSeen;
     if (c.market?.ipoYear) row.ipo = c.market.ipoYear;
@@ -841,8 +873,9 @@ async function buildIndex({ snapshot = false } = {}) {
   // Market today (big moves, new reports, score changes, new listings).
   const etfFile = join(DATA, "etfs.json");
   const etfData = existsSync(etfFile) ? readJson(etfFile) : { etfs: [] };
-  await storyBases(recentNews, companies, now).catch((e) => console.warn(`top stories: ${e.message}`));
-  const pulse = buildPulse({ rows: companies.map((r) => ({ ...r, o: Array.isArray(r.sc) ? r.sc[0] : null })), etfs: etfData.etfs || [], now, quotesAt: quotesOnly ? now.toISOString() : etfData.quotesAt || null, news: recentNews, session: SESSION ? { session: SESSION.session, previousTradeDate: SESSION.previousTradeDate } : etfData.session || null });
+  const session = SESSION ? { session: SESSION.session, previousTradeDate: SESSION.previousTradeDate } : etfData.session || null;
+  await storyBases(recentNews, companies, now, session?.session ?? null).catch((e) => console.warn(`top stories: ${e.message}`));
+  const pulse = buildPulse({ rows: companies.map((r) => ({ ...r, o: Array.isArray(r.sc) ? r.sc[0] : null })), etfs: etfData.etfs || [], now, quotesAt: etfData.quotesAt || (quotesOnly ? now.toISOString() : null), news: recentNews, session });
   writeFileSync(join(DATA, "pulse.json"), JSON.stringify(pulse) + "\n");
   // Major-events feed: newest first. Critical events and major events of companies above $1 billion
   // are kept for the full 12 months; of the rest only the latest 150.
