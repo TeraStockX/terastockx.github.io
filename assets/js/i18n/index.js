@@ -44,7 +44,7 @@ const ALL_LANGS = [
   { code: "hr", name: "Hrvatski", english: "Croatian", short: "HR", locale: "hr-HR" },
 ];
 // Languages whose dictionary is ready (the others are being translated).
-const AVAILABLE = new Set(["en", "hu", "de", "fr", "es", "zh", "hi", "ar", "bn", "pt", "id", "ur", "ru", "ja", "vi", "tr", "fa", "ko", "th", "it", "sv", "fi", "da", "nb", "nl", "pl", "he", "el", "cs", "ro", "uk", "ms"]);
+const AVAILABLE = new Set(["en", "hu", "de", "fr", "es", "zh", "hi", "ar", "bn", "pt", "id", "ur", "ru", "ja", "vi", "tr", "fa", "ko", "th", "it", "sv", "fi", "da", "nb", "nl", "pl", "he", "el", "cs", "ro", "uk", "ms", "fil", "sr", "hr"]);
 export const LANG_LIST = ALL_LANGS.filter((l) => AVAILABLE.has(l.code));
 const META = Object.fromEntries(LANG_LIST.map((l) => [l.code, l]));
 export const langMeta = (code) => META[code] || META.en;
