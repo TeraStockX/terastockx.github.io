@@ -1078,19 +1078,29 @@ const riskExplain = () => t("ui.riskExplain", {
   pr: Math.round(RISK_WEIGHTS.profitability * 100), li: Math.round(RISK_WEIGHTS.liquidity * 100),
 });
 
-// Home: the slogan ("…, made clear. The smart tool for investors.") always stays on one line; where the
-// full size does not fit (phones) the text is scaled down to the available width.
-function fitTagline(minPx = 8) {
+// Home: the slogan ("…, made clear. The smart tool for investors.") is one line where it fits at a comfortable
+// size (laptops, tablets) and two balanced lines on phones, where the text shrinks a little if needed.
+const SLOGAN_ONE_LINE_MIN = 15;
+function fitTagline() {
   const el = document.querySelector(".hero .tagline");
   if (!el) return;
   el.style.fontSize = "";
+  el.classList.remove("two-lines");
   el.classList.add("one-line");
+  const base = parseFloat(getComputedStyle(el).fontSize);
   const avail = el.parentElement.clientWidth;
-  const need = el.scrollWidth;
-  let fs = parseFloat(getComputedStyle(el).fontSize);
-  if (need > avail) fs = Math.max(minPx, Math.floor(((fs * avail) / need) * 4) / 4);
-  el.style.fontSize = `${fs}px`;
-  while (el.scrollWidth > el.parentElement.clientWidth && fs > minPx) { fs -= 0.25; el.style.fontSize = `${fs}px`; }
+  const oneLine = el.scrollWidth > avail ? Math.floor(((base * avail) / el.scrollWidth) * 4) / 4 : base;
+  if (oneLine >= SLOGAN_ONE_LINE_MIN) {
+    let fs = oneLine;
+    el.style.fontSize = `${fs}px`;
+    while (el.scrollWidth > el.parentElement.clientWidth && fs > SLOGAN_ONE_LINE_MIN) { fs -= 0.25; el.style.fontSize = `${fs}px`; }
+    return;
+  }
+  el.classList.remove("one-line");
+  el.classList.add("two-lines");
+  const lines = () => Math.round(el.getBoundingClientRect().height / parseFloat(getComputedStyle(el).lineHeight));
+  let fs = base;
+  while (lines() > 2 && fs > 13) { fs -= 0.5; el.style.fontSize = `${fs}px`; }
 }
 let fitTimer = 0;
 window.addEventListener("resize", () => { clearTimeout(fitTimer); fitTimer = setTimeout(() => fitTagline(), 150); });

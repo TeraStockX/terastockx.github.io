@@ -106,6 +106,7 @@ main { padding-top: 24px; padding-bottom: 56px; min-height: 70vh; }
 .hero h1 b { background: linear-gradient(90deg, #8cc1ff, var(--accent-2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .hero .tagline { font-size: clamp(17px, 2vw, 22px); line-height: 1.3; font-weight: 600; margin-top: 10px; color: var(--text); }
 .hero .tagline.one-line { white-space: nowrap; overflow: hidden; letter-spacing: -0.005em; }
+.hero .tagline.two-lines { text-wrap: balance; }
 .hero p { color: var(--text-2); margin: 12px 0 0; max-width: 560px; }
 .hero-art { width: 100%; height: auto; display: block; max-height: 250px; object-fit: contain; }
 .hero-stats { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
