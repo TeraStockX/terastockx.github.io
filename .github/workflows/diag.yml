@@ -12,16 +12,32 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: { ref: diag }
-      - uses: actions/setup-node@v4
-        with: { node-version: 22 }
-      - name: SEC times and Nasdaq history
+      - name: Wait for an intraday run of the new code
         env:
-          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p out
-          node tz.mjs 2>&1 | tee out/tz.txt
+          for i in $(seq 1 60); do
+            id=$(gh run list --repo TeraStockX/terastockx.github.io --workflow intraday.yml --limit 10 --json databaseId,headSha,status -q '[.[] | select(.headSha | startswith("dcb9f844")) | select(.status == "completed")][0].databaseId')
+            if [ -n "$id" ]; then break; fi
+            sleep 20
+          done
+          {
+          echo "now $(date -u +%FT%TZ) run $id"
+          [ -n "$id" ] && gh run view $id --repo TeraStockX/terastockx.github.io --log 2>&1 | grep -E "top stories|quotes updated|refreshed:|new filings|rror" | grep -v "Node.js 20" | sed -E 's/^([a-z]+)\t[^\t]*\t/\1 /' | cut -c1-240 | head -12
+          sleep 45
+          echo "--- pulse"; curl -sL "https://terastockx.com/data/pulse.json?x=$(date +%s)" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const p=JSON.parse(s);console.log(p.generated,p.session,p.prevDay);for(const x of p.stories||[])console.log(" ",x.t,x.kind,"move",x.move,x.when,"since",x.since,x.at,(x.title||"").slice(0,60))})'
+          echo "--- story prices"; curl -sL "https://terastockx.com/data/story-prices.json?x=$(date +%s)" | head -c 900; echo
+          } 2>&1 | tee out/since.txt
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Live screenshots
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.49.1 >/dev/null 2>&1
+          npx playwright install --with-deps chromium >/dev/null 2>&1
+          node live.cjs 2>&1 | tee out/since-shots.txt
       - name: Save results to the diag branch
         if: always()
         run: |
           git config user.name diag; git config user.email diag@users.noreply.github.com
-          git add out && git commit -qm "diag: SEC time zone check" && git push -q origin HEAD:diag
+          git add out && git commit -qm "diag: since-news live check" && git push -q origin HEAD:diag
