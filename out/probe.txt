@@ -1,0 +1,103 @@
+=== Nasdaq history, share classes
+  BRK/B [stocks] HTTP 404 rows 0   
+  BRK^B [stocks] HTTP 200 rows 0  [{"code":1001,"errorMessage":"Symbol not exists."}] 
+  BRK.B [stocks] HTTP 200 rows 290 {"date":"11/24/2026","close":"$577.21","volume":"4,044,504","open":"$574.00","high":"$579.79","low":"$571.34"}  
+  BRK-B [stocks] HTTP 200 rows 0  [{"code":1001,"errorMessage":"Symbol not exists."}] 
+  BRKB [stocks] HTTP 200 rows 0  [{"code":1001,"errorMessage":"Symbol not exists."}] 
+  BRK B [stocks] HTTP 200 rows 0  [{"code":1001,"errorMessage":"Symbol not exists."}] 
+  BRK.b [stocks] HTTP 200 rows 290 {"date":"11/24/2026","close":"$577.21","volume":"4,044,504","open":"$574.00","high":"$579.79","low":"$571.34"}  
+  BF/B [stocks] HTTP 404 rows 0   
+  BF^B [stocks] HTTP 200 rows 0  [{"code":1001,"errorMessage":"Symbol not exists."}] 
+  BF.B [stocks] HTTP 200 rows 0   
+  BF-B [stocks] HTTP 200 rows 0  [{"code":1001,"errorMessage":"Symbol not exists."}] 
+  BFB [stocks] HTTP 200 rows 0  [{"code":1001,"errorMessage":"Symbol not exists."}] 
+  BF B [stocks] HTTP 200 rows 0  [{"code":1001,"errorMessage":"Symbol not exists."}] 
+  BF.b [stocks] HTTP 200 rows 0   
+  HEI/A [stocks] HTTP 404 rows 0   
+  HEI^A [stocks] HTTP 200 rows 0  [{"code":1001,"errorMessage":"Symbol not exists."}] 
+  HEI.A [stocks] HTTP 200 rows 0   
+  HEI-A [stocks] HTTP 200 rows 0  [{"code":1001,"errorMessage":"Symbol not exists."}] 
+  HEIA [stocks] HTTP 200 rows 0  [{"code":1001,"errorMessage":"Symbol not exists."}] 
+  HEI A [stocks] HTTP 200 rows 0  [{"code":1001,"errorMessage":"Symbol not exists."}] 
+  HEI.a [stocks] HTTP 200 rows 0   
+  LEN/B [stocks] HTTP 404 rows 0   
+  LEN^B [stocks] HTTP 200 rows 0  [{"code":1001,"errorMessage":"Symbol not exists."}] 
+  LEN.B [stocks] HTTP 200 rows 0   
+  LEN-B [stocks] HTTP 200 rows 0  [{"code":1001,"errorMessage":"Symbol not exists."}] 
+  LENB [stocks] HTTP 200 rows 0  [{"code":1001,"errorMessage":"Symbol not exists."}] 
+  LEN B [stocks] HTTP 200 rows 0  [{"code":1001,"errorMessage":"Symbol not exists."}] 
+  LEN.b [stocks] HTTP 200 rows 0   
+  MOG/B [stocks] HTTP 404 rows 0   
+  MOG^B [stocks] HTTP 200 rows 0  [{"code":1001,"errorMessage":"Symbol not exists."}] 
+  MOG.B [stocks] HTTP 200 rows 0   
+  MOG-B [stocks] HTTP 200 rows 0  [{"code":1001,"errorMessage":"Symbol not exists."}] 
+  MOGB [stocks] HTTP 200 rows 0  [{"code":1001,"errorMessage":"Symbol not exists."}] 
+  MOG B [stocks] HTTP 200 rows 0  [{"code":1001,"errorMessage":"Symbol not exists."}] 
+  MOG.b [stocks] HTTP 200 rows 0   
+  MKC/V [stocks] HTTP 404 rows 0   
+  MKC^V [stocks] HTTP 200 rows 0  [{"code":1001,"errorMessage":"Symbol not exists."}] 
+  MKC.V [stocks] HTTP 200 rows 0   
+  MKC-V [stocks] HTTP 200 rows 0  [{"code":1001,"errorMessage":"Symbol not exists."}] 
+  MKCV [stocks] HTTP 200 rows 0  [{"code":1001,"errorMessage":"Symbol not exists."}] 
+  MKC V [stocks] HTTP 200 rows 0  [{"code":1001,"errorMessage":"Symbol not exists."}] 
+  MKC.v [stocks] HTTP 200 rows 0   
+=== Nasdaq info and chart endpoints, share classes
+  info BF.B HTTP 200 symbol BF.B name Brown Forman Inc Class B Common Stock last N/A 
+  chart BF.B HTTP 200 points 0 
+  info BF/B HTTP 404 symbol undefined name undefined last undefined 
+  chart BF/B HTTP 404 points 0 
+  info BF^B HTTP 200 symbol undefined name undefined last undefined [{"code":1001,"errorMessage":"Symbol not exists."}]
+  chart BF^B HTTP 200 points 0 
+  info BRK.B HTTP 200 symbol BRK.B name Berkshire Hathaway Inc. last $580.22 
+  chart BRK.B HTTP 200 points 0 
+  info BRK/B HTTP 404 symbol undefined name undefined last undefined 
+  chart BRK/B HTTP 404 points 0 
+=== Yahoo and Stooq, share classes
+  yahoo BF-B HTTP 429 points 0 Too Many Requests
+
+  stooq BF-B HTTP 403 lines 1 <meta charset=utf-8><title>Stooq</title><center style=font-f
+  yahoo HEI-A HTTP 429 points 0 Too Many Requests
+
+  stooq HEI-A HTTP 403 lines 1 <meta charset=utf-8><title>Stooq</title><center style=font-f
+  yahoo BRK-B HTTP 429 points 0 Too Many Requests
+
+  stooq BRK-B HTTP 403 lines 1 <meta charset=utf-8><title>Stooq</title><center style=font-f
+=== Nasdaq history, new listings and funds
+  SPCX [stocks] HTTP 200 rows 115 {"date":"11/24/2026","close":"$125.81","volume":"104,030,800","open":"$131.90","high":"$132.50","low":"$123.52"}  
+  XOM [stocks] HTTP 200 rows 290 {"date":"11/24/2026","close":"$158.23","volume":"11,771,850","open":"$157.42","high":"$159.3232","low":"$157.0625"}  
+  HONA [stocks] HTTP 200 rows 114 {"date":"11/24/2026","close":"$154.77","volume":"2,167,652","open":"$153.56","high":"$156.76","low":"$152.33"}  
+  CBRS [stocks] HTTP 200 rows 135 {"date":"11/24/2026","close":"$88.78","volume":"10,194,430","open":"$95.66","high":"$96.7842","low":"$86.00"}  
+  IBIT [etf] HTTP 200 rows 0  [{"code":1001,"errorMessage":"Symbol not exists."}] 
+  IBIT [stocks] HTTP 200 rows 290 {"date":"11/24/2026","close":"$33.76","volume":"56,506,630","open":"$34.16","high":"$34.29","low":"$33.47"}  
+  ETHA [etf] HTTP 200 rows 0  [{"code":1001,"errorMessage":"Symbol not exists."}] 
+  ETHA [stocks] HTTP 200 rows 290 {"date":"11/24/2026","close":"$37.83","volume":"8,185,678","open":"$38.39","high":"$38.52","low":"$37.58"}  
+=== SEC: company_tickers.json
+  HTTP 200 rows 10400
+   {"cik_str":2115436,"ticker":"XOM","title":"ExxonMobil Holdings Corp"}
+   {"cik_str":2089271,"ticker":"HONA","title":"Honeywell Aerospace Inc."}
+   {"cik_str":899715,"ticker":"SKT","title":"TANGER INC."}
+   {"cik_str":2115119,"ticker":"CLBK","title":"Columbia Financial, Inc./MD/"}
+=== SEC submissions 0002115436 HTTP 200: ExxonMobil Holdings Corp | tickers ["XOM"] | exchanges ["NYSE"] | former [] | sic 2911 | fye 1231
+   recent: 2026-11-12 DEFA14A; 2026-11-10 SCHEDULE 13G; 2026-11-03 SCHEDULE 13G/A; 2026-11-02 10-Q; 2026-10-30 SCHEDULE 13G; 2026-10-30 8-K; 2026-10-27 SCHEDULE 13G; 2026-10-16 DEFA14A; 2026-10-16 8-K; 2026-09-25 8-K; 2026-09-25 SD; 2026-09-25 424B2; 2026-09-23 FWP; 2026-09-21 424B3
+   successor/deregistration forms: [["8-K12B","2026-07-01","d71068d8k12b.htm","1.01,2.01,2.03,3.03,5.02,5.03,9.01"]]
+   companyfacts HTTP 200: ExxonMobil Holdings Corporation | concepts 105 | forms {"POSASR":5,"424B2":6,"10-Q":544}
+   revenue FY ends [] | net income FY ends []
+   latest facts: ["10-Q Q3 2026-07-01→2026-09-30 filed 2026-11-02","10-Q Q3 2026-01-01→2026-09-30 filed 2026-11-02","10-Q Q3 2025-07-01→2025-09-30 filed 2026-11-02"]
+=== SEC submissions 0000034088 HTTP 200: EXXON MOBIL CORP | tickers [] | exchanges [] | former [{"name":"EXXON CORP","from":"1994-05-11T04:00:00.000Z","to":"1999-11-30T05:00:00.000Z"}] | sic 2911 | fye 1231
+   recent: 2026-10-27 SCHEDULE 13G/A; 2026-09-25 424B2; 2026-09-23 FWP; 2026-09-21 424B3; 2026-08-07 SCHEDULE 13G; 2026-08-03 10-Q; 2026-07-06 3; 2026-07-02 25-NSE; 2026-07-01 POSASR; 2026-07-01 4; 2026-07-01 4; 2026-07-01 8-K; 2026-06-10 11-K; 2026-05-29 8-K
+   successor/deregistration forms: [["25-NSE","2026-07-02","xslF25X02/primary_doc.xml",""],["25-NSE","2024-06-26","xslF25X02/primary_doc.xml",""],["S-4/A","2023-12-22","d558467ds4a.htm",""],["S-4","2023-11-21","d558467ds4.htm",""],["S-4/A","2023-09-27","d483131ds4a.htm",""],["S-4","2023-08-29","d483131ds4.htm",""]]
+   companyfacts HTTP 200: Exxon Mobil Corporation | concepts 447 | forms {"10-Q":11709,"10-K":8361,"10-K/A":519,"DEF 14A":40}
+   revenue FY ends ["2020-12-31","2021-12-31","2022-12-31","2023-12-31","2024-12-31","2025-12-31"] | net income FY ends ["2020-12-31","2021-12-31","2022-12-31","2023-12-31","2024-12-31","2025-12-31"]
+   latest facts: ["10-Q Q1 2026-01-01→2026-03-31 filed 2026-05-04","10-Q Q1 2025-01-01→2025-03-31 filed 2026-05-04","10-Q Q1 2026-01-01→2026-03-31 filed 2026-05-04"]
+=== SEC submissions 0002115119 HTTP 200: Columbia Financial, Inc./MD/ | tickers ["CLBK"] | exchanges ["Nasdaq"] | former [] | sic 6035 | fye 1231
+   recent: 2026-11-17 4; 2026-11-17 4; 2026-11-17 4; 2026-11-16 8-K; 2026-11-09 10-Q; 2026-11-03 4; 2026-11-03 4; 2026-10-29 8-K; 2026-10-27 SCHEDULE 13G; 2026-10-20 4; 2026-10-20 4; 2026-10-06 4; 2026-10-06 4; 2026-10-06 4
+   successor/deregistration forms: [["8-K12B","2026-07-21","d80374d8k12b.htm","1.01,2.01,2.03,5.02,8.01,9.01"],["S-4/A","2026-05-05","d92655ds4a.htm",""],["S-4/A","2026-04-20","d92655ds4a.htm",""],["S-4","2026-03-06","d92655ds4.htm",""]]
+   companyfacts HTTP 200: Columbia Financial, Inc. | concepts 290 | forms {"10-Q":1387,"S-8":8}
+   revenue FY ends [] | net income FY ends []
+   latest facts: ["10-Q Q3 2026-07-01→2026-09-30 filed 2026-11-09","10-Q Q3 2026-01-01→2026-09-30 filed 2026-11-09","10-Q Q3 2025-07-01→2025-09-30 filed 2026-11-09"]
+=== SEC submissions 0000899715 HTTP 200: TANGER INC. | tickers ["SKT"] | exchanges ["NYSE"] | former [{"name":"TANGER INC.","from":"2023-11-17T00:00:00.000Z","to":"2026-11-24T00:00:00.000Z"},{"name":"TANGER FACTORY OUTLET CENTERS, INC","from":"2019-07-29T00:00:00.000Z","to":"2023-11-15T00:00:00.000Z"},{"name":"TANGER FACTORY OUTLET CENTERS INC","from":"1994-02-01T00:00:00.000Z","to":"2019-06-04T00:00:00.000Z"}] | sic 6798 | fye 1231
+   recent: 2026-11-24 4; 2026-11-24 8-K; 2026-11-16 4; 2026-11-06 10-Q; 2026-11-05 SCHEDULE 13G/A; 2026-11-04 8-K; 2026-10-05 4; 2026-08-17 4; 2026-08-06 SCHEDULE 13G/A; 2026-08-06 10-Q; 2026-08-04 8-K; 2026-05-18 4; 2026-05-18 4; 2026-05-15 144/A
+   successor/deregistration forms: []
+   companyfacts HTTP 200: TANGER INC | concepts 302 | forms {"10-Q":5110,"10-K":1413,"10-K/A":108,"10-Q/A":556}
+   revenue FY ends [] | net income FY ends []
+   latest facts: ["10-Q Q3 2026-07-01→2026-09-30 filed 2026-11-06","10-Q Q3 2026-01-01→2026-09-30 filed 2026-11-06","10-Q Q3 2025-07-01→2025-09-30 filed 2026-11-06"]
