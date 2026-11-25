@@ -150,17 +150,21 @@ export async function fxToUsd() {
 
 // Nasdaq.com daily history rows ({ date: "MM/DD/YYYY", close: "$1.23", … }, newest first; split-adjusted).
 // Class shares ("BRK.B") are written differently across Nasdaq endpoints; the common forms are tried.
+// Throws when Nasdaq does not answer at all; an answer without rows means no history for that symbol.
 async function nasdaqDailyRows(ticker, from, to = new Date()) {
   const d = (x) => x.toISOString().slice(0, 10);
   const variants = ticker.includes(".") ? [ticker.replace(".", "/"), ticker.replace(".", "^"), ticker] : [ticker];
+  let answered = false;
   for (const v of variants) {
     try {
       const r = await fetch(`https://api.nasdaq.com/api/quote/${encodeURIComponent(v)}/historical?assetclass=stocks&fromdate=${d(from)}&todate=${d(to)}&limit=9999`, { headers: BROWSER_HEADERS, signal: AbortSignal.timeout(20000) });
       if (!r.ok) continue;
       const rows = (await r.json())?.data?.tradesTable?.rows || [];
+      answered = true;
       if (rows.length) return rows;
     } catch { /* the next form */ }
   }
+  if (!answered) throw new Error("Nasdaq did not answer");
   return [];
 }
 const usDay = (s) => { const [mm, dd, yyyy] = String(s).split("/"); return yyyy && mm && dd ? `${yyyy}-${mm.padStart(2, "0")}-${dd.padStart(2, "0")}` : null; };
@@ -230,7 +234,8 @@ function dedupeMonths(data) {
   return [...m].sort((a, b) => (a[0] < b[0] ? -1 : 1));
 }
 
-// Tries each source in order; a source that fails 25 times in a row is switched off for the run.
+// Tries each source in order; a source that fails 25 times in a row is switched off for the run. Nasdaq answering
+// without a history (a symbol it has none for, e.g. most class shares) is not a failure of the source.
 const failures = { nasdaq: 0, yahoo: 0, stooq: 0 };
 // Price history is optional: after the time budget it is skipped so the financial data always gets saved.
 let started = null;
@@ -245,6 +250,7 @@ export async function priceHistory(ticker) {
       const h = await fn(ticker);
       // Recent listings have a short history: a few days of closes are enough (Nasdaq gives the daily ones).
       if (h.data.length >= 2 || h.daily?.length >= 2) { failures[name] = 0; return h; }
+      if (name === "nasdaq") continue;
     } catch { /* try next source */ }
     failures[name]++;
   }
