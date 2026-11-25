@@ -1,0 +1,66 @@
+now 2026-11-25T04:48:42Z
+=== run 45536836996
+build 2026-11-25T03:00:00.4814834Z hint: to use in all of your new repositories, which will suppress this warning,
+build 2026-11-25T03:00:30.3464236Z   new filings: 386 in the SEC feed, 0 companies to refresh (277 kept from earlier runs today)
+build 2026-11-25T03:00:34.5470228Z   quotes updated: 5860 companies (1885 with a quote of the day), 0 ETFs in the screener, 4 funds asked for (turn 1/6); session: closed; live quotes: 0, kept from today's session: 7496
+build 2026-11-25T03:00:51.7726833Z   top stories: daily closes read for 2 of 2 companies
+build 2026-11-25T03:00:53.3725784Z   if-no-files-found: error
+deploy 2026-11-25T03:01:05.9236739Z   error_count: 10
+=== run 45529744929
+build 2026-11-25T01:59:59.1728602Z hint: to use in all of your new repositories, which will suppress this warning,
+build 2026-11-25T02:00:19.8656313Z   new filings: 394 in the SEC feed, 0 companies to refresh (277 kept from earlier runs today)
+build 2026-11-25T02:00:23.7297542Z   quotes updated: 5860 companies (1885 with a quote of the day), 0 ETFs in the screener, 4 funds asked for (turn 1/6); session: closed; live quotes: 0, kept from today's session: 7496
+build 2026-11-25T02:01:40.6015577Z   top stories: daily closes read for 25 of 27 companies
+build 2026-11-25T02:01:42.7676886Z   if-no-files-found: error
+deploy 2026-11-25T02:01:56.1603632Z   error_count: 10
+=== run 45522380005
+build 2026-11-25T00:59:58.2689861Z hint: to use in all of your new repositories, which will suppress this warning,
+build 2026-11-25T01:00:26.1897709Z   new filings: 388 in the SEC feed, 0 companies to refresh (277 kept from earlier runs today)
+build 2026-11-25T01:00:34.3267915Z   quotes updated: 5860 companies (1885 with a quote of the day), 0 ETFs in the screener, 4 funds asked for (turn 1/6); session: closed; live quotes: 0, kept from today's session: 7496
+build 2026-11-25T01:01:49.4549360Z   top stories: daily closes read for 25 of 27 companies
+build 2026-11-25T01:01:50.9936723Z   if-no-files-found: error
+deploy 2026-11-25T01:02:04.7559070Z   error_count: 10
+=== run 45521111119
+build 2026-11-25T00:49:55.3652396Z hint: to use in all of your new repositories, which will suppress this warning,
+build 2026-11-25T00:50:21.0062465Z   new filings: 403 in the SEC feed, 0 companies to refresh (277 kept from earlier runs today)
+build 2026-11-25T00:50:38.4251043Z   quotes updated: 5860 companies (1885 with a quote of the day), 0 ETFs in the screener, 4 funds asked for (turn 5/6); session: post; live quotes: 304, kept from today's session: 7496
+build 2026-11-25T00:50:42.4505751Z   if-no-files-found: error
+deploy 2026-11-25T00:50:58.3501588Z   error_count: 10
+=== run 45519799145
+build 2026-11-25T00:39:51.4036442Z hint: to use in all of your new repositories, which will suppress this warning,
+build 2026-11-25T00:40:17.3761502Z   new filings: 404 in the SEC feed, 0 companies to refresh (277 kept from earlier runs today)
+build 2026-11-25T00:40:33.7313788Z   quotes updated: 5860 companies (1885 with a quote of the day), 0 ETFs in the screener, 4 funds asked for (turn 3/6); session: post; live quotes: 304, kept from today's session: 7496
+build 2026-11-25T00:40:39.1724567Z   if-no-files-found: error
+deploy 2026-11-25T00:40:51.2269741Z   error_count: 10
+=== run 45518505548
+build 2026-11-25T00:29:56.0469658Z hint: to use in all of your new repositories, which will suppress this warning,
+build 2026-11-25T00:30:16.6803781Z   new filings: 406 in the SEC feed, 0 companies to refresh (277 kept from earlier runs today)
+build 2026-11-25T00:30:32.8736130Z   quotes updated: 5860 companies (1885 with a quote of the day), 0 ETFs in the screener, 4 funds asked for (turn 1/6); session: post; live quotes: 304, kept from today's session: 7496
+build 2026-11-25T00:30:46.2044571Z   if-no-files-found: error
+deploy 2026-11-25T00:30:59.5865385Z   error_count: 10
+=== run 45517206895
+build 2026-11-25T00:19:50.0999596Z hint: to use in all of your new repositories, which will suppress this warning,
+build 2026-11-25T00:20:14.1240620Z   new filings: 436 in the SEC feed, 0 companies to refresh (277 kept from earlier runs today)
+build 2026-11-25T00:20:32.0643054Z   quotes updated: 5860 companies (1885 with a quote of the day), 0 ETFs in the screener, 4 funds asked for (turn 5/6); session: post; live quotes: 304, kept from today's session: 7496
+build 2026-11-25T00:20:36.0517121Z   if-no-files-found: error
+deploy 2026-11-25T00:20:49.1418018Z   error_count: 10
+=== run 45515865608
+build 2026-11-25T00:09:44.5132036Z hint: to use in all of your new repositories, which will suppress this warning,
+build 2026-11-25T00:10:21.3205113Z   new filings: 325 in the SEC feed, 0 companies to refresh (277 kept from earlier runs today)
+build 2026-11-25T00:10:41.8551386Z   quotes updated: 5860 companies (1885 with a quote of the day), 0 ETFs in the screener, 4 funds asked for (turn 3/6); session: post; live quotes: 304, kept from today's session: 7496
+build 2026-11-25T00:10:47.2690338Z   if-no-files-found: error
+deploy 2026-11-25T00:11:00.4603209Z   error_count: 10
+=== run 45514493953
+build 2026-11-24T23:59:47.9066733Z hint: to use in all of your new repositories, which will suppress this warning,
+build 2026-11-25T00:00:13.9728801Z   new filings: 463 in the SEC feed, 0 companies to refresh (277 kept from earlier runs today)
+build 2026-11-25T00:00:30.5060012Z   quotes updated: 5860 companies (1885 with a quote of the day), 0 ETFs in the screener, 4 funds asked for (turn 1/6); session: post; live quotes: 304, kept from today's session: 7496
+build 2026-11-25T00:00:43.9698135Z   if-no-files-found: error
+deploy 2026-11-25T00:00:55.8480866Z   error_count: 10
+=== run 45543732778
+no log: run 45543732778 is still in progress; logs will be available when it is complete
+no job log: run 45543732778 is still in progress; logs will be available when it is complete
+=== live extended-hours quotes
+index generated 2026-11-25T04:00:47.125Z | rows 5880 | rows with an extended-hours quote 0 {}
+DELL {"price":295.31,"changePct":-11.82,"quoteTime":"2026-11-25T04:00:32.999Z","retrieved":null}
+NVDA {"price":155.0298,"changePct":-6.07,"quoteTime":"2026-11-25T04:00:33.721Z","retrieved":null}
+AAPL {"price":353.58,"changePct":1.29,"quoteTime":"2026-11-25T04:00:32.474Z","retrieved":null}
