@@ -17,6 +17,10 @@ on:
         description: "Csak ezek a tickerek (vesszővel elválasztva, üresen = mind)"
         required: false
         default: ""
+      daily:
+        description: "Napi frissítés az ütemezett beállításaival (a napközbeni lánc indítja, ha a GitHub kihagyta)"
+        required: false
+        default: "false"
 
 permissions:
   contents: write
@@ -96,9 +100,10 @@ jobs:
           SITE_URL: ${{ steps.pages.outputs.base_url }}
         run: |
           # Insider data sets (published quarterly by the SEC) and ETF details (expense ratio, yield) change
-          # slowly: download them on Mondays and on manual runs only.
+          # slowly: download them on Mondays and on manual runs only. A daily update started by the intraday
+          # chain (GitHub skipped the schedule) is a scheduled one.
           extra=""
-          if [ "${{ github.event_name }}" = "schedule" ] && [ "$(date -u +%u)" != "1" ]; then extra="--skip-insiders --skip-etf-details"; fi
+          if { [ "${{ github.event_name }}" = "schedule" ] || [ "${{ github.event.inputs.daily }}" = "true" ]; } && [ "$(date -u +%u)" != "1" ]; then extra="--skip-insiders --skip-etf-details"; fi
           if [ -n "${{ github.event.inputs.tickers }}" ]; then
             node scripts/update-data.mjs --tickers "${{ github.event.inputs.tickers }}" $extra
           else

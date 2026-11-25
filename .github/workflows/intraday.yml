@@ -7,7 +7,8 @@
 #   GitHub's schedule
 # GitHub starts scheduled runs late or skips them when it is busy (some days for hours), so each run starts
 # the next one itself (the "next" job, at the end); the schedule below only starts the chain again if it ever
-# stops. While the daily update is running, a run skips its update (the daily one publishes the newest data).
+# stops. The "next" job also starts the daily update when GitHub has skipped its schedule (none by 07:00 UTC).
+# While the daily update is running, a run skips its update (the daily one publishes the newest data).
 # Each run:
 # - prices and market caps (stocks and ETFs; Nasdaq, delayed about 15 minutes), so the price-dependent parts
 #   of every TeraScore (valuation) follow the market
@@ -126,6 +127,22 @@ jobs:
     permissions:
       actions: write
     steps:
+      # The daily update starts on GitHub's schedule (04:17 UTC), which GitHub skips on busy days: when none has
+      # started by 07:00 UTC, the chain starts it, with the schedule's settings. Never stops the chain.
+      - name: Napi frissítés indítása, ha a GitHub kihagyta
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "$((10#$(date -u +%H)))" -lt 7 ]; then exit 0; fi
+          today=$(date -u +%F)
+          n=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow deploy.yml --limit 100 --json event,createdAt -q "[.[] | select(.event != \"push\" and (.createdAt | startswith(\"$today\")))] | length") || exit 0
+          if [ "${n:-1}" != "0" ]; then exit 0; fi
+          if gh workflow run deploy.yml --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF_NAME" -f daily=true; then
+            echo "::notice::The daily update had not started today (GitHub skipped its schedule): started it."
+          else
+            echo "::warning::The daily update could not be started."
+          fi
       - name: Következő futás indítása
         env:
           GH_TOKEN: ${{ github.token }}
