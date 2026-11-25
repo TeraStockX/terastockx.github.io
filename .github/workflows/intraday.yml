@@ -123,7 +123,7 @@ jobs:
     needs: [build, deploy]
     if: always()
     runs-on: ubuntu-latest
-    timeout-minutes: 75
+    timeout-minutes: 100
     permissions:
       actions: write
     steps:
@@ -136,7 +136,7 @@ jobs:
         run: |
           if [ "$((10#$(date -u +%H)))" -lt 7 ]; then exit 0; fi
           today=$(date -u +%F)
-          n=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow deploy.yml --limit 100 --json event,createdAt -q "[.[] | select(.event != \"push\" and (.createdAt | startswith(\"$today\")))] | length") || exit 0
+          n=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow deploy.yml --limit 100 --json event,createdAt,displayTitle -q "[.[] | select(.event != \"push\" and .displayTitle != \"Kijelölt cégek frissítése\" and (.createdAt | startswith(\"$today\")))] | length") || exit 0
           if [ "${n:-1}" != "0" ]; then exit 0; fi
           if gh workflow run deploy.yml --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF_NAME" -f daily=true; then
             echo "::notice::The daily update had not started today (GitHub skipped its schedule): started it."
@@ -152,8 +152,9 @@ jobs:
           if [ "$dow" -le 5 ] && [ "$h" -ge 8 ] && [ "$h" -lt 11 ]; then step=1800; fi
           if { [ "$dow" -le 5 ] && [ "$h" -ge 11 ]; } || { [ "$dow" -ge 2 ] && [ "$dow" -le 6 ] && [ "$h" -lt 1 ]; }; then step=600; fi
           if [ "$dow" -le 5 ] && [ "$h" -ge 13 ] && [ "$h" -le 21 ]; then step=300; fi
-          # A short GitHub API hiccup must not break the chain: every call is tried 3 times.
-          retry() { for i in 1 2 3; do if "$@"; then return 0; fi; sleep 15; done; return 1; }
+          # A GitHub API outage must not break the chain: every call is tried again for about 20 minutes (15 s, 30 s,
+          # 1, 2, 4, then 5 minutes apart). On 25 Nov three tries in a minute all got HTTP 500 and the chain stopped.
+          retry() { local d=15; for i in 1 2 3 4 5 6 7 8; do if "$@"; then return 0; fi; if [ "$i" -lt 8 ]; then sleep "$d"; d=$(( d * 2 > 300 ? 300 : d * 2 )); fi; done; return 1; }
           created=$(retry gh run view "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --json createdAt -q .createdAt || true)
           wait=$(( $(date -d "${created:-now}" +%s) + step - $(date +%s) ))
           if [ "$wait" -gt 0 ] && [ "$wait" -le "$step" ]; then echo "Waiting ${wait}s"; sleep "$wait"; fi

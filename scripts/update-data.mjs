@@ -103,7 +103,7 @@ function latestReport(sub) {
 const BIG_NEWS_CAP = 1e10;
 const isBig = (marketCap) => (marketCap ?? 0) >= BIG_NEWS_CAP;
 const EVENT_DAYS = 365;
-const STORY_DAYS = 3; // news of the last days for the top stories
+const STORY_DAYS = 2; // news of the last two days for the top stories
 
 // How the news is read; companies read with an older version are read again by the intraday catch-up.
 const NEWS_VERSION = 2;

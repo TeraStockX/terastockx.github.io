@@ -70,13 +70,13 @@ export function closeOn(closes, day) {
   for (const c of closes) if (c[0] <= day) hit = c;
   return hit;
 }
-// A news item counts more the newer it is: 40 points when it comes out, falling to nothing over two days, so
-// new developments come first and older news stays among the top stories only while nothing newer is as
-// important.
+// A news item counts more the newer it is: 80 points when it comes out, falling to nothing over a day and a half,
+// so today's developments come before the news of the day before, even of larger companies, and older news stays
+// among the top stories only while nothing newer is as important (news older than two days is not read for them).
 export function freshness(n, now = new Date()) {
   const at = newsTime(n);
   if (!at) return 0;
-  return 40 * Math.min(1, Math.max(0, 1 - (now - new Date(at)) / (48 * 3600000)));
+  return 80 * Math.min(1, Math.max(0, 1 - (now - new Date(at)) / (36 * 3600000)));
 }
 // The latest price for the change since a news item: the pre-market or after-hours trade of the largest
 // companies; during and right after the session the regular price; before the open, at night, at the weekend
@@ -128,11 +128,11 @@ export function buildStories({ rows, news = [], session = null, now = new Date()
       .sort((a, b) => b.w - a.w || (newsTime(b) > newsTime(a) ? 1 : -1));
     // A big move without such news gets the headline of the company's latest filing only if it is recent
     // (within a day): an older one is unlikely to be behind today's move.
-    const item = items[0] || (big ? (byCo.get(r.t) || []).filter((n) => n.title && freshness(n, now) > 20).sort((a, b) => (newsTime(b) > newsTime(a) ? 1 : -1))[0] : null);
+    const item = items[0] || (big ? (byCo.get(r.t) || []).filter((n) => n.title && freshness(n, now) > 25).sort((a, b) => (newsTime(b) > newsTime(a) ? 1 : -1))[0] : null);
     if (!items.length && !big) continue;
     // A big move happening now (before, during or after the session) is as current as fresh news.
     const live = ["pre", "open", "post"].includes(session?.session);
-    const w = 10 * Math.log10(mc) + (big ? 3 * Math.abs(move.v) : 0) + (items[0]?.w ?? 0) + (!items.length && big && live ? 25 : 0);
+    const w = 10 * Math.log10(mc) + (big ? 3 * Math.abs(move.v) : 0) + (items[0]?.w ?? 0) + (!items.length && big && live ? 40 : 0);
     out.push({
       w, t: r.t, n: r.n, mc: r.mc ?? null, dc: r.dc ?? null, o: r.o ?? null,
       move: move ? +move.v.toFixed(2) : null, when: move?.when ?? null,

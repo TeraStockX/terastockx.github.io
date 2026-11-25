@@ -5,6 +5,9 @@
 # The `data` branch always holds a single commit with the latest snapshot, so the repository does not
 # grow with every weekly update.
 name: Adatfrissítés és közzététel
+# A run for chosen companies only is named apart: it is not the day's update (intraday.yml's fallback and the late
+# schedule check below look for that one). Other runs keep GitHub's name (the commit message, or the workflow's).
+run-name: ${{ inputs.tickers && 'Kijelölt cégek frissítése' || ' ' }}
 
 on:
   push:
@@ -33,7 +36,27 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # GitHub sometimes starts a skipped schedule hours late (25 Nov: 04:17 UTC started at 14:29). When the day's update
+  # has already run (intraday.yml starts it after 07:00 UTC if the schedule has not), the late one is not needed, and
+  # while it ran the intraday updates would pause (they leave the update to it) through the US session.
+  gate:
+    runs-on: ubuntu-latest
+    outputs:
+      skip: ${{ steps.late.outputs.skip }}
+    steps:
+      - id: late
+        name: Késve indult ütemezés?
+        if: github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          today=$(date -u +%F)
+          n=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow deploy.yml --limit 50 --json databaseId,event,createdAt,displayTitle -q "[.[] | select(.databaseId != ${{ github.run_id }} and .event != \"push\" and .displayTitle != \"Kijelölt cégek frissítése\" and (.createdAt | startswith(\"$today\")))] | length" || echo 0)
+          if [ "${n:-0}" -gt 0 ]; then echo "::notice::Today's update has already run: this late scheduled run is skipped."; echo "skip=true" >> "$GITHUB_OUTPUT"; fi
+
   build:
+    needs: gate
+    if: needs.gate.outputs.skip != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 300
     steps:
@@ -147,3 +170,27 @@ jobs:
       - id: retry
         if: steps.deployment.outcome == 'failure'
         uses: actions/deploy-pages@v4
+
+  # The intraday chain (intraday.yml) starts its own next run. If GitHub refused that (an API outage) and skipped the
+  # backup schedules too, the chain stays stopped: every run here starts it again when its latest run is older than
+  # the longest pause between two runs (an hour at night).
+  chain:
+    needs: [gate, build, deploy]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Napközbeni lánc ellenőrzése
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          waiting=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow intraday.yml --limit 10 --json status -q '[.[] | select(.status != "completed")] | length') || exit 0
+          if [ "${waiting:-1}" != "0" ]; then echo "The intraday chain is running."; exit 0; fi
+          latest=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow intraday.yml --limit 1 --json createdAt -q '.[0].createdAt') || exit 0
+          age=$(( $(date +%s) - $(date -d "${latest:-1970-01-01}" +%s) ))
+          if [ "$age" -le 4500 ]; then echo "The intraday chain ran $((age / 60)) minutes ago."; exit 0; fi
+          if gh workflow run intraday.yml --repo "$GITHUB_REPOSITORY" --ref main; then
+            echo "::notice::The intraday chain had stopped ($((age / 60)) minutes without a run): started it again."
+          fi

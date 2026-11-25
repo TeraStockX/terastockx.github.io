@@ -741,9 +741,9 @@ test("Intraday quotes: the evening's after-hours quotes are kept between runs un
 test("Top stories: new developments come first; an old filing is not shown next to today's move", async () => {
   const { buildStories, freshness } = await import("../scripts/pulse.mjs");
   const now = new Date("2026-11-24T16:00:00Z");
-  assert.equal(Math.round(freshness({ at: "2026-11-24T16:00:00Z" }, now)), 40);
-  assert.equal(Math.round(freshness({ at: "2026-11-23T16:00:00Z" }, now)), 20);
-  assert.equal(freshness({ at: "2026-11-22T10:00:00Z" }, now), 0);
+  assert.equal(Math.round(freshness({ at: "2026-11-24T16:00:00Z" }, now)), 80);
+  assert.equal(Math.round(freshness({ at: "2026-11-23T16:00:00Z" }, now)), 27);
+  assert.equal(freshness({ at: "2026-11-23T04:00:00Z" }, now), 0);
   const rows = [{ t: "BMY", n: "Bristol", mc: 1e11, dc: 1.8 }, { t: "ADI", n: "Analog Devices", mc: 1.1e11, dc: 1.2 }, { t: "MU", n: "Micron", mc: 2e11, dc: -13.9 }];
   const news = [
     { t: "BMY", date: "2026-11-23", at: "2026-11-23T10:00:00Z", items: ["5.02"], kind: "leadership", title: "BMY CFO transition", url: "a" },
@@ -1297,4 +1297,16 @@ test("Dividend store: days to read, merging a day, cuts from payments or quarter
   assert.equal(dividendCut({ quarterly: q([50, 50, 50, 50, 50, 50, 25, 25]) }, now), "2026-09-30");
   assert.equal(dividendCut({ quarterly: q([50, 0, 50, 50, 100, 0, 50, 50]) }, now), null); // a payment that moved a quarter
   assert.equal(dividendCut({ quarterly: q([50, 50, 50, 50, 50, 50, 50, 50]).slice(1) }, now), null);
+});
+
+test("Top stories: today's news of a large company comes before yesterday's news of the largest one", async () => {
+  const { buildStories } = await import("../scripts/pulse.mjs");
+  const now = new Date("2026-11-25T20:00:00Z");
+  const rows = [{ t: "NVDA", n: "NVIDIA", mc: 4.5e12, dc: 0.4 }, { t: "DE", n: "Deere", mc: 1.4e11, dc: 1.1 }, { t: "HPQ", n: "HP", mc: 2.5e10, dc: -2 }];
+  const news = [
+    { t: "NVDA", date: "2026-11-24", at: "2026-11-24T14:00:00Z", items: ["5.02"], kind: "leadership", title: "NVIDIA leadership change", url: "a" },
+    { t: "DE", date: "2026-11-25", at: "2026-11-25T11:00:00Z", items: ["2.02"], kind: "results", title: "Deere results", url: "b" },
+    { t: "HPQ", date: "2026-11-25", at: "2026-11-25T18:30:00Z", items: ["1.01"], kind: "deal", title: "HP agrees to buy", url: "c" },
+  ];
+  assert.deepEqual(buildStories({ rows, news, session: { session: "open" }, now }).map((x) => x.t), ["HPQ", "DE", "NVDA"]);
 });
