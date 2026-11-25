@@ -1,0 +1,25 @@
+start 2026-11-25T04:57:37Z
+run 45551051324 deploy: completed success (2026-11-25T05:06:17Z)
+build completed success 2026-11-25T05:04:41Z 2026-11-25T05:05:36Z
+deploy completed success 2026-11-25T05:05:42Z 2026-11-25T05:06:00Z
+next in_progress  2026-11-25T05:06:03Z 0001-01-01T00:00:00Z
+log http 200
+lines: 23561
+2026-11-25T05:04:58.6160222Z Cache restored successfully
+2026-11-25T05:04:58.8197416Z Cache restored from key: intraday-45544267082
+2026-11-25T05:05:19.7174038Z   new filings: 384 in the SEC feed, 0 companies to refresh (277 kept from earlier runs today)
+2026-11-25T05:05:24.0917577Z   quotes updated: 5860 companies (1885 with a quote of the day), 0 ETFs in the screener, 4 funds asked for (turn 2/6); session: closed; live quotes: 0, kept from today's session: 0, from the last session (2026-11-24): 7496
+=== live
+now 2026-11-25T05:07:04.607Z
+pulse generated 2026-11-25T05:05:24.407Z | quotesAt 2026-11-24T20:57:30.876Z | session closed | prevDay 2026-11-23
+etfs quotesAt 2026-11-24T20:57:30.876Z | session {"session":"closed","previousTradeDate":"2026-11-23"}
+index generated 2026-11-25T05:05:26.954Z | rows 5880 | with an extended-hours quote 0
+  INSM deal since=14.13 move=14.16 (last)
+  ADI results since=-17.37 move=-17.24 (last)
+  DELL results since=- move=-11.82 (last)
+  NVDA leadership since=23.78 move=-6.07 (last)
+  DKS results since=14.59 move=15.74 (last)
+  HPE results since=-16.31 move=-16.64 (last)
+  DLTR results since=11.18 move=11.1 (last)
+  CW leadership since=-2.98 move=-3.06 (last)
+indices [["SPY",718.3,-0.55,null,null],["QQQ",637.5,-2.08,null,null],["DIA",499.62,0.77,null,null],["IWM",267.42,0.63,null,null]]
