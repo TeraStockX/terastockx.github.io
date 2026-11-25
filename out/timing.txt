@@ -1,0 +1,67 @@
+log lines 24901
+239:2026-11-25T08:07:14.9304093Z # Subtest: Listings: common stocks of Nasdaq, NYSE, NYSE American and Cboe; no ETFs, warrants or preferreds
+240:2026-11-25T08:07:14.9304776Z ok 16 - Listings: common stocks of Nasdaq, NYSE, NYSE American and Cboe; no ETFs, warrants or preferreds
+317:2026-11-25T08:07:15.1832519Z # Subtest: Portfolio with ETFs: no TeraScore for funds, no concentration warning for them, yield override
+318:2026-11-25T08:07:15.1832947Z ok 29 - Portfolio with ETFs: no TeraScore for funds, no concentration warning for them, yield override
+353:2026-11-25T08:07:15.1860090Z # Subtest: ETF listings: funds of both directories, NYSE Arca included
+354:2026-11-25T08:07:15.1860409Z ok 35 - ETF listings: funds of both directories, NYSE Arca included
+377:2026-11-25T08:07:15.1865007Z # Subtest: Top stories: news of large companies with headlines, pre-market moves, one story per company
+378:2026-11-25T08:07:15.1865451Z ok 39 - Top stories: news of large companies with headlines, pre-market moves, one story per company
+383:2026-11-25T08:07:15.1866348Z # Subtest: Top stories: next to news the change since the news, not a later session's move
+384:2026-11-25T08:07:15.1866696Z ok 40 - Top stories: next to news the change since the news, not a later session's move
+401:2026-11-25T08:07:15.1870572Z # Subtest: News headlines: press-release titles, the reported item, kinds of news
+402:2026-11-25T08:07:15.1870918Z ok 43 - News headlines: press-release titles, the reported item, kinds of news
+407:2026-11-25T08:07:15.1871722Z # Subtest: Recent 8-K filings of a company for the news, newest first
+408:2026-11-25T08:07:15.1872006Z ok 44 - Recent 8-K filings of a company for the news, newest first
+443:2026-11-25T08:07:15.1879456Z # Subtest: European ETFs: listings with currency, month-end closes from justETF and Nasdaq, search by ticker
+444:2026-11-25T08:07:15.1879905Z ok 50 - European ETFs: listings with currency, month-end closes from justETF and Nasdaq, search by ticker
+513:2026-11-25T08:07:17.0390865Z ##[group]Run # Insider data sets (published quarterly by the SEC) and ETF details (expense ratio, yield) change
+514:2026-11-25T08:07:17.0391301Z [36;1m# Insider data sets (published quarterly by the SEC) and ETF details (expense ratio, yield) change[0m
+518:2026-11-25T08:07:17.0392421Z [36;1mif { [ "workflow_dispatch" = "schedule" ] || [ "true" = "true" ]; } && [ "$(date -u +%u)" != "1" ]; then extra="--skip-insiders --skip-etf-details"; fi[0m
+531:2026-11-25T08:07:19.3175225Z Downloading listings…
+532:2026-11-25T08:07:19.9323211Z   5879 common stocks { NASDAQ: 3433, NYSE: 2174, 'NYSE American': 268, 'Cboe BZX': 4 }
+533:2026-11-25T08:07:29.4601141Z   screener: 7338 quotes; exchange rates: 166
+552:2026-11-25T08:09:39.5105317Z   250/5879 processed
+563:2026-11-25T08:11:36.8968974Z   500/5879 processed
+575:2026-11-25T08:13:54.8580313Z   750/5879 processed
+583:2026-11-25T08:15:49.0782838Z   1000/5879 processed
+594:2026-11-25T08:18:05.6707453Z   1250/5879 processed
+611:2026-11-25T08:20:16.4305785Z   1500/5879 processed
+624:2026-11-25T08:22:29.3236859Z   1750/5879 processed
+635:2026-11-25T08:24:35.6919771Z   2000/5879 processed
+643:2026-11-25T08:26:47.3927283Z   2250/5879 processed
+661:2026-11-25T08:29:08.1545388Z   2500/5879 processed
+672:2026-11-25T08:31:19.1765722Z   2750/5879 processed
+682:2026-11-25T08:33:51.4893029Z   3000/5879 processed
+696:2026-11-25T08:35:58.7378289Z   3250/5879 processed
+708:2026-11-25T08:38:12.3466894Z   3500/5879 processed
+723:2026-11-25T08:40:27.8798960Z   3750/5879 processed
+745:2026-11-25T08:42:38.7561697Z   4000/5879 processed
+766:2026-11-25T08:44:55.5739165Z   4250/5879 processed
+780:2026-11-25T08:47:11.7770065Z   4500/5879 processed
+796:2026-11-25T08:49:31.9346391Z   4750/5879 processed
+810:2026-11-25T08:51:50.0376524Z   5000/5879 processed
+826:2026-11-25T08:54:07.6267067Z   5250/5879 processed
+845:2026-11-25T08:56:39.8504623Z   5500/5879 processed
+866:2026-11-25T08:59:10.3639681Z   5750/5879 processed
+872:2026-11-25T09:00:14.0498272Z   removed 5 delisted or non-share securities
+873:2026-11-25T09:03:19.5792524Z   500 price histories
+874:2026-11-25T09:06:40.6466926Z   1000 price histories
+875:2026-11-25T09:09:56.5709966Z   1500 price histories
+876:2026-11-25T09:13:08.0357749Z   2000 price histories
+877:2026-11-25T09:16:15.0919725Z   2500 price histories
+878:2026-11-25T09:19:25.5808793Z   3000 price histories
+879:2026-11-25T09:22:37.5211427Z   3500 price histories
+880:2026-11-25T09:25:48.0834252Z   4000 price histories
+881:2026-11-25T09:29:03.1179647Z   4500 price histories
+882:2026-11-25T09:32:14.5123461Z   5000 price histories
+883:2026-11-25T09:33:04.7567319Z   price histories: 5096/5120 updated
+884:2026-11-25T09:33:04.7569123Z Done: 5117 with financials, 762 without data, 0 errors, 315 filled from filings missing in companyfacts, 5096 price histories updated.
+885:2026-11-25T09:33:05.1796483Z logos: {"due":4,"checked":4,"saved":0,"missing":4,"remaining":0,"total":5511}
+886:2026-11-25T09:36:23.4410075Z   ETF prices from the quote endpoint: 5815 of 5817 (screener: no rows)
+887:2026-11-25T09:36:23.4642424Z data/etfs.json: 5815 ETFs (876 with yield, 2371 with expense ratio)
+888:2026-11-25T09:36:45.8839528Z   European ETFs: 26 of 26 prices, monthly closes
+889:2026-11-25T09:42:58.6169647Z   ETF price history: 598 of 600 (price files: 598)
+891:2026-11-25T09:44:08.8805317Z   top stories: daily closes read for 25 of 27 companies
+892:2026-11-25T09:44:08.9103489Z data/index.json: 5879 companies; data/news.json: 330 events; data/benchmarks.json: 11 sectors.
+893:2026-11-25T09:44:09.4165954Z search pages: 5879 company pages, sitemap with 5880 URLs.
