@@ -2,7 +2,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
-import { parseCompanyFacts, normalizeShares, splitEvidence } from "../scripts/sec-parse.mjs";
+import { parseCompanyFacts, normalizeShares, splitEvidence, mergeCompanyFacts } from "../scripts/sec-parse.mjs";
+import { predecessorCik, PREDECESSORS, nameKey } from "../scripts/successors.mjs";
 import { sectorFromSic, profileFor } from "../scripts/sectors.mjs";
 import { analyze, scale, DIMENSIONS, METRIC_FORMAT, PROFILES, FLAG_IDS, marketStats } from "../assets/js/scoring.js";
 import { loadAllLangs } from "../assets/js/i18n/index.js";
@@ -1121,4 +1122,59 @@ test("Backtest: rank correlation, AUC and a point-in-time panel", async () => {
   assert.equal(out.quintiles.length, 5);
   assert.ok(out.quintiles[4].excess > out.quintiles[0].excess);
   assert.ok(out.fundamental.years > 0);
+});
+
+test("Successor registrant: the predecessor's years are added, the successor's own figures win", () => {
+  const flow = (start, end, val, form, filed, fp) => ({ start, end, val, form, filed, fp });
+  const inst = (end, val, form, filed) => ({ end, val, form, filed });
+  // The company until the reorganization (old CIK): three annual reports and a first quarter.
+  const before = { entityName: "Exxon Mobil Corporation", facts: { "us-gaap": {
+    Revenues: { units: { USD: [flow("2023-01-01", "2023-12-31", 340, "10-K", "2024-02-28", "FY"), flow("2024-01-01", "2024-12-31", 350, "10-K", "2025-02-19", "FY"),
+      flow("2025-01-01", "2025-12-31", 330, "10-K", "2026-02-18", "FY"), flow("2026-01-01", "2026-03-31", 80, "10-Q", "2026-05-04", "Q1"), flow("2025-01-01", "2025-03-31", 82, "10-Q", "2026-05-04", "Q1")] } },
+    NetIncomeLoss: { units: { USD: [flow("2023-01-01", "2023-12-31", 36, "10-K", "2024-02-28", "FY"), flow("2024-01-01", "2024-12-31", 34, "10-K", "2025-02-19", "FY"), flow("2025-01-01", "2025-12-31", 30, "10-K", "2026-02-18", "FY")] } },
+    Assets: { units: { USD: [inst("2024-12-31", 450, "10-K", "2025-02-19"), inst("2025-12-31", 460, "10-K", "2026-02-18")] } },
+  } } };
+  // The new holding company (new CIK): its first reports, with the comparative periods of the year before.
+  const after = { entityName: "ExxonMobil Holdings Corporation", facts: { "us-gaap": {
+    Revenues: { units: { USD: [flow("2026-01-01", "2026-09-30", 250, "10-Q", "2026-11-02", "Q3"), flow("2025-01-01", "2025-09-30", 248, "10-Q", "2026-11-02", "Q3"),
+      flow("2026-07-01", "2026-09-30", 85, "10-Q", "2026-11-02", "Q3"), flow("2025-07-01", "2025-09-30", 83, "10-Q", "2026-11-02", "Q3")] } },
+    NetIncomeLoss: { units: { USD: [flow("2026-01-01", "2026-09-30", 24, "10-Q", "2026-11-02", "Q3"), flow("2025-01-01", "2025-09-30", 23, "10-Q", "2026-11-02", "Q3")] } },
+    Assets: { units: { USD: [inst("2026-09-30", 470, "10-Q", "2026-11-02"), inst("2025-12-31", 461, "10-Q", "2026-11-02")] } },
+  } } };
+  // Alone, the new registrant has no annual report: no TeraScore (as ExxonMobil on 25 Nov 2026).
+  assert.equal(parseCompanyFacts(after).annual.length, 0);
+  const merged = mergeCompanyFacts(after, before);
+  assert.equal(merged.entityName, "ExxonMobil Holdings Corporation");
+  const p = parseCompanyFacts(merged);
+  assert.deepEqual(p.annual.map((y) => y.year), [2023, 2024, 2025]);
+  assert.equal(p.annual[2].revenue, 330);
+  // The balance sheet of the same date: the successor's later filing wins (461, not 460).
+  assert.equal(p.annual[2].totalAssets, 461);
+  // Trailing twelve months to the successor's latest quarter: FY 2025 + 9 months 2026 − 9 months 2025.
+  assert.equal(p.ttm.periodEnd, "2026-09-30");
+  assert.equal(p.ttm.revenue, 330 + 250 - 248);
+  assert.equal(p.ttm.netIncome, 30 + 24 - 23);
+  assert.equal(p.latestBalance.totalAssets, 470);
+  // Nothing to add, or nothing of the successor's own.
+  assert.equal(mergeCompanyFacts(after, null), after);
+  assert.equal(mergeCompanyFacts(null, before), before);
+  // The inputs are not changed.
+  assert.equal(after.facts["us-gaap"].Revenues.units.USD.length, 4);
+});
+
+test("Successor registrant: the predecessor is found from the table, an earlier run or the ticker's former CIK", () => {
+  assert.equal(PREDECESSORS["0002115436"], "0000034088");
+  assert.equal(predecessorCik("0002115436", null, "ExxonMobil Holdings Corp"), "0000034088");
+  assert.equal(nameKey("Exxon Mobil Corp"), nameKey("ExxonMobil Holdings Corp"));
+  assert.equal(nameKey("Columbia Financial, Inc./MD/"), nameKey("COLUMBIA FINANCIAL, INC."));
+  const year = [{ year: 2025, revenue: 1 }];
+  // The ticker moves to a new CIK of the same company: the former one is the predecessor.
+  assert.equal(predecessorCik("0002200000", { cik: "0000012345", name: "Acme Widgets Inc", annual: year }, "Acme Widgets Holdings, Inc."), "0000012345");
+  // Kept by the next runs.
+  assert.equal(predecessorCik("0002200000", { cik: "0002200000", name: "Acme Widgets Holdings, Inc.", predecessorCik: "0000012345" }, "Acme Widgets Holdings, Inc."), "0000012345");
+  // A ticker taken over by another company, a former registrant without annual reports, no earlier file.
+  assert.equal(predecessorCik("0002200000", { cik: "0000012345", name: "Acme Widgets Inc", annual: year }, "Zenith Biotherapeutics Corp"), null);
+  assert.equal(predecessorCik("0002200000", { cik: "0000012345", name: "Acme Widgets Inc", annual: [] }, "Acme Widgets Holdings, Inc."), null);
+  assert.equal(predecessorCik("0002200000", null, "Acme Widgets Holdings, Inc."), null);
+  assert.equal(predecessorCik("0000320193", { cik: "0000320193", name: "Apple Inc.", annual: year }, "Apple Inc."), null);
 });

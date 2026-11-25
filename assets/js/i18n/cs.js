@@ -127,7 +127,7 @@ export default {
   "chartNetIncomeSub": "ročně (červená = ztráta)",
   "chartFcfSub": "provozní peněžní toky − kapitálové výdaje",
   "chartMarginSub": "provozní zisk / tržby",
-  "chartPriceSub": "měsíční závěrečné ceny, posledních 6 let",
+  "chartPriceSub": "měsíční závěrečné ceny, posledních 6 let", "chartPriceDaily": "Cena akcie (denní)", "chartPriceDailySub": "denní závěrečné ceny od {d}",
   "notEnough": "Nedostatek dat.",
   "errorLoad": "Něco se pokazilo: {e}",
   "serveHint": "Pokud jste soubor otevřeli přímo, spusťte místní webový server (viz README).",

@@ -127,7 +127,7 @@ export default {
   "chartNetIncomeSub": "שנתי (אדום = הפסד)",
   "chartFcfSub": "תזרים מפעילות שוטפת − השקעות הוניות",
   "chartMarginSub": "רווח תפעולי / הכנסות",
-  "chartPriceSub": "מחירי סגירה חודשיים, 6 השנים האחרונות",
+  "chartPriceSub": "מחירי סגירה חודשיים, 6 השנים האחרונות", "chartPriceDaily": "מחיר המניה (יומי)", "chartPriceDailySub": "מחירי סגירה יומיים מאז {d}",
   "notEnough": "אין מספיק נתונים.",
   "errorLoad": "משהו השתבש: {e}",
   "serveHint": "אם פתחת את הקובץ ישירות, הפעל שרת אינטרנט מקומי (ראה README).",

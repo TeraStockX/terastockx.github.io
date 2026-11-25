@@ -243,7 +243,8 @@ export async function priceHistory(ticker) {
     if (failures[name] >= 25) continue;
     try {
       const h = await fn(ticker);
-      if (h.data.length >= 2) { failures[name] = 0; return h; } // recent listings have a short history
+      // Recent listings have a short history: a few days of closes are enough (Nasdaq gives the daily ones).
+      if (h.data.length >= 2 || h.daily?.length >= 2) { failures[name] = 0; return h; }
     } catch { /* try next source */ }
     failures[name]++;
   }

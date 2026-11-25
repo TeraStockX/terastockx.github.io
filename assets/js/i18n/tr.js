@@ -127,7 +127,7 @@ export default {
   "chartNetIncomeSub": "yıllık (kırmızı = zarar)",
   "chartFcfSub": "faaliyet nakit akışı − yatırım harcamaları",
   "chartMarginSub": "faaliyet kârı / hasılat",
-  "chartPriceSub": "aylık kapanışlar, son 6 yıl",
+  "chartPriceSub": "aylık kapanışlar, son 6 yıl", "chartPriceDaily": "Hisse fiyatı (günlük)", "chartPriceDailySub": "{d} tarihinden bu yana günlük kapanışlar",
   "notEnough": "Yeterli veri yok.",
   "errorLoad": "Bir sorun oluştu: {e}",
   "serveHint": "Dosyayı doğrudan açtıysanız yerel bir web sunucusu başlatın (README'ye bakın).",

@@ -127,7 +127,7 @@ export default {
   "chartNetIncomeSub": "سنوي (الأحمر = خسارة)",
   "chartFcfSub": "التدفق النقدي التشغيلي − النفقات الرأسمالية",
   "chartMarginSub": "الدخل التشغيلي / الإيرادات",
-  "chartPriceSub": "أسعار الإغلاق الشهرية، آخر 6 سنوات",
+  "chartPriceSub": "أسعار الإغلاق الشهرية، آخر 6 سنوات", "chartPriceDaily": "سعر السهم (يومي)", "chartPriceDailySub": "أسعار الإغلاق اليومية منذ {d}",
   "notEnough": "بيانات غير كافية.",
   "errorLoad": "حدث خطأ: {e}",
   "serveHint": "إذا فتحت الملف مباشرة، فشغّل خادم ويب محليًا (راجع README).",

@@ -127,7 +127,7 @@ export default {
   "chartNetIncomeSub": "연간(빨간색 = 적자)",
   "chartFcfSub": "영업현금흐름 − 설비투자",
   "chartMarginSub": "영업이익 / 매출액",
-  "chartPriceSub": "월말 종가, 최근 6년",
+  "chartPriceSub": "월말 종가, 최근 6년", "chartPriceDaily": "주가(일별)", "chartPriceDailySub": "{d} 이후 일별 종가",
   "notEnough": "데이터가 부족합니다.",
   "errorLoad": "문제가 발생했습니다: {e}",
   "serveHint": "파일을 직접 열었다면 로컬 웹 서버를 실행하세요(README 참고).",

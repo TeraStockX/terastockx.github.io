@@ -127,7 +127,7 @@ export default {
   "chartNetIncomeSub": "godišnje (crveno = gubitak)",
   "chartFcfSub": "operativni novčani tok − kapitalna ulaganja",
   "chartMarginSub": "operativna dobit / prihodi",
-  "chartPriceSub": "mjesečne zaključne cijene, posljednjih 6 godina",
+  "chartPriceSub": "mjesečne zaključne cijene, posljednjih 6 godina", "chartPriceDaily": "Cijena dionice (dnevna)", "chartPriceDailySub": "dnevne zaključne cijene od {d}",
   "notEnough": "Nema dovoljno podataka.",
   "errorLoad": "Došlo je do pogreške: {e}",
   "serveHint": "Ako ste datoteku otvorili izravno, pokrenite lokalni web-poslužitelj (pogledajte README).",

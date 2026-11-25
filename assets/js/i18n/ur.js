@@ -127,7 +127,7 @@ export default {
   "chartNetIncomeSub": "سالانہ (سرخ = خسارہ)",
   "chartFcfSub": "آپریٹنگ کیش فلو − سرمایہ جاتی اخراجات",
   "chartMarginSub": "آپریٹنگ منافع / آمدنی",
-  "chartPriceSub": "ماہانہ اختتامی قیمتیں، گزشتہ 6 سال",
+  "chartPriceSub": "ماہانہ اختتامی قیمتیں، گزشتہ 6 سال", "chartPriceDaily": "حصص کی قیمت (روزانہ)", "chartPriceDailySub": "{d} سے روزانہ اختتامی قیمتیں",
   "notEnough": "کافی ڈیٹا نہیں۔",
   "errorLoad": "کچھ غلط ہو گیا: {e}",
   "serveHint": "اگر آپ نے فائل براہ راست کھولی ہے تو مقامی ویب سرور چلائیں (README دیکھیں)۔",

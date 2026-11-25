@@ -127,7 +127,7 @@ export default {
   "chartNetIncomeSub": "vuosittain (punainen = tappio)",
   "chartFcfSub": "liiketoiminnan kassavirta − investoinnit",
   "chartMarginSub": "liikevoitto / liikevaihto",
-  "chartPriceSub": "kuukauden päätöskurssit, viimeiset 6 vuotta",
+  "chartPriceSub": "kuukauden päätöskurssit, viimeiset 6 vuotta", "chartPriceDaily": "Osakekurssi (päivittäin)", "chartPriceDailySub": "päivän päätöskurssit {d} alkaen",
   "notEnough": "Tietoja ei ole riittävästi.",
   "errorLoad": "Jokin meni vikaan: {e}",
   "serveHint": "Jos avasit tiedoston suoraan, käynnistä paikallinen verkkopalvelin (katso README).",

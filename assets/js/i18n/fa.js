@@ -127,7 +127,7 @@ export default {
   "chartNetIncomeSub": "سالانه (قرمز = زیان)",
   "chartFcfSub": "جریان نقد عملیاتی − مخارج سرمایه‌ای",
   "chartMarginSub": "سود عملیاتی / درآمد",
-  "chartPriceSub": "قیمت‌های پایانی ماهانه، 6 سال اخیر",
+  "chartPriceSub": "قیمت‌های پایانی ماهانه، 6 سال اخیر", "chartPriceDaily": "قیمت سهم (روزانه)", "chartPriceDailySub": "قیمت‌های پایانی روزانه از {d}",
   "notEnough": "داده کافی نیست.",
   "errorLoad": "مشکلی پیش آمد: {e}",
   "serveHint": "اگر فایل را مستقیم باز کرده‌اید، یک وب‌سرور محلی راه‌اندازی کنید (README را ببینید).",

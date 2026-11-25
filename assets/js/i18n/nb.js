@@ -127,7 +127,7 @@ export default {
   "chartNetIncomeSub": "årlig (rød = underskudd)",
   "chartFcfSub": "kontantstrøm fra drift − investeringer",
   "chartMarginSub": "driftsresultat / omsetning",
-  "chartPriceSub": "månedlige sluttkurser, siste 6 år",
+  "chartPriceSub": "månedlige sluttkurser, siste 6 år", "chartPriceDaily": "Aksjekurs (daglig)", "chartPriceDailySub": "daglige sluttkurser siden {d}",
   "notEnough": "Ikke nok data.",
   "errorLoad": "Noe gikk galt: {e}",
   "serveHint": "Hvis du åpnet filen direkte, start en lokal webserver (se README).",

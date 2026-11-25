@@ -127,7 +127,7 @@ export default {
   "chartNetIncomeSub": "tahunan (merah = rugi)",
   "chartFcfSub": "aliran tunai operasi − perbelanjaan modal",
   "chartMarginSub": "untung operasi / hasil",
-  "chartPriceSub": "harga tutup bulanan, 6 tahun terakhir",
+  "chartPriceSub": "harga tutup bulanan, 6 tahun terakhir", "chartPriceDaily": "Harga saham (harian)", "chartPriceDailySub": "harga tutup harian sejak {d}",
   "notEnough": "Data tidak mencukupi.",
   "errorLoad": "Berlaku ralat: {e}",
   "serveHint": "Jika anda membuka fail secara terus, mulakan pelayan web tempatan (lihat README).",

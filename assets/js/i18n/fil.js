@@ -127,7 +127,7 @@ export default {
   "chartNetIncomeSub": "taunan (pula = lugi)",
   "chartFcfSub": "operating cash flow − capex",
   "chartMarginSub": "kita sa operasyon / kita",
-  "chartPriceSub": "buwanang closing, nakaraang 6 na taon",
+  "chartPriceSub": "buwanang closing, nakaraang 6 na taon", "chartPriceDaily": "Presyo ng share (araw-araw)", "chartPriceDailySub": "mga closing price araw-araw mula {d}",
   "notEnough": "Kulang ang datos.",
   "errorLoad": "May nangyaring mali: {e}",
   "serveHint": "Kung direktang binuksan mo ang file, magpatakbo ng lokal na web server (tingnan ang README).",

@@ -127,7 +127,7 @@ export default {
   "chartNetIncomeSub": "årsvis (röd = förlust)",
   "chartFcfSub": "operativt kassaflöde − investeringar",
   "chartMarginSub": "rörelseresultat / omsättning",
-  "chartPriceSub": "månadsstängningar, senaste 6 åren",
+  "chartPriceSub": "månadsstängningar, senaste 6 åren", "chartPriceDaily": "Aktiekurs (daglig)", "chartPriceDailySub": "dagliga stängningskurser sedan {d}",
   "notEnough": "Inte tillräckligt med data.",
   "errorLoad": "Något gick fel: {e}",
   "serveHint": "Om du öppnade filen direkt, starta en lokal webbserver (se README).",

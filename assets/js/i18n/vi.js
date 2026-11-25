@@ -127,7 +127,7 @@ export default {
   "chartNetIncomeSub": "hằng năm (đỏ = lỗ)",
   "chartFcfSub": "dòng tiền hoạt động − chi tiêu vốn",
   "chartMarginSub": "lợi nhuận hoạt động / doanh thu",
-  "chartPriceSub": "giá đóng cửa hằng tháng, 6 năm gần nhất",
+  "chartPriceSub": "giá đóng cửa hằng tháng, 6 năm gần nhất", "chartPriceDaily": "Giá cổ phiếu (hằng ngày)", "chartPriceDailySub": "giá đóng cửa hằng ngày từ {d}",
   "notEnough": "Không đủ dữ liệu.",
   "errorLoad": "Đã xảy ra lỗi: {e}",
   "serveHint": "Nếu bạn mở tệp trực tiếp, hãy chạy một máy chủ web cục bộ (xem README).",

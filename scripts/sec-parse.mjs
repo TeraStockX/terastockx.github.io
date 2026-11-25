@@ -197,6 +197,26 @@ export function reportingCurrency(facts) {
   return best || "USD";
 }
 
+// Facts of a predecessor registrant added to the successor's. A holding-company reorganization or a change of
+// domicile gives the company a new CIK (ExxonMobil: Exxon Mobil Corp → ExxonMobil Holdings Corp); the new
+// registrant's facts start with its first report, the earlier years stay under the old CIK. For the same
+// period the latest filing wins, so the successor's own figures replace the predecessor's.
+export function mergeCompanyFacts(cf, earlier) {
+  if (!earlier?.facts) return cf;
+  if (!cf?.facts) return earlier;
+  const facts = {};
+  for (const ns of new Set([...Object.keys(earlier.facts), ...Object.keys(cf.facts)])) {
+    const a = earlier.facts[ns] || {}, b = cf.facts[ns] || {};
+    facts[ns] = {};
+    for (const tag of new Set([...Object.keys(a), ...Object.keys(b)])) {
+      const units = {};
+      for (const u of new Set([...Object.keys(a[tag]?.units || {}), ...Object.keys(b[tag]?.units || {})])) units[u] = [...(a[tag]?.units?.[u] || []), ...(b[tag]?.units?.[u] || [])];
+      facts[ns][tag] = { ...a[tag], ...b[tag], units };
+    }
+  }
+  return { ...cf, facts };
+}
+
 export function parseCompanyFacts(cf, { maxYears = 10 } = {}) {
   const facts = cf.facts || {};
   const currency = reportingCurrency(facts);

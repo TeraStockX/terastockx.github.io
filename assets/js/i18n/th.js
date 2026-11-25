@@ -127,7 +127,7 @@ export default {
   "chartNetIncomeSub": "รายปี (สีแดง = ขาดทุน)",
   "chartFcfSub": "กระแสเงินสดจากการดำเนินงาน − รายจ่ายลงทุน",
   "chartMarginSub": "กำไรจากการดำเนินงาน / รายได้",
-  "chartPriceSub": "ราคาปิดรายเดือน 6 ปีล่าสุด",
+  "chartPriceSub": "ราคาปิดรายเดือน 6 ปีล่าสุด", "chartPriceDaily": "ราคาหุ้น (รายวัน)", "chartPriceDailySub": "ราคาปิดรายวันตั้งแต่ {d}",
   "notEnough": "ข้อมูลไม่เพียงพอ",
   "errorLoad": "เกิดข้อผิดพลาด: {e}",
   "serveHint": "หากเปิดไฟล์โดยตรง ให้เปิดเว็บเซิร์ฟเวอร์ในเครื่อง (ดู README)",

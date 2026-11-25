@@ -127,7 +127,7 @@ export default {
   "chartNetIncomeSub": "jaarlijks (rood = verlies)",
   "chartFcfSub": "operationele kasstroom − investeringen",
   "chartMarginSub": "bedrijfsresultaat / omzet",
-  "chartPriceSub": "maandelijkse slotkoersen, laatste 6 jaar",
+  "chartPriceSub": "maandelijkse slotkoersen, laatste 6 jaar", "chartPriceDaily": "Aandelenkoers (dagelijks)", "chartPriceDailySub": "dagelijkse slotkoersen sinds {d}",
   "notEnough": "Onvoldoende gegevens.",
   "errorLoad": "Er ging iets mis: {e}",
   "serveHint": "Als je het bestand rechtstreeks hebt geopend, start dan een lokale webserver (zie README).",

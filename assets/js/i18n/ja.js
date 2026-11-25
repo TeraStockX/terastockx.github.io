@@ -127,7 +127,7 @@ export default {
   "chartNetIncomeSub": "年次（赤 = 赤字）",
   "chartFcfSub": "営業キャッシュフロー − 設備投資",
   "chartMarginSub": "営業利益 / 売上高",
-  "chartPriceSub": "月末終値、過去6年",
+  "chartPriceSub": "月末終値、過去6年", "chartPriceDaily": "株価（日次）", "chartPriceDailySub": "{d}以降の日次終値",
   "notEnough": "データが不足しています。",
   "errorLoad": "問題が発生しました：{e}",
   "serveHint": "ファイルを直接開いた場合は、ローカルのウェブサーバーを起動してください（README を参照）。",

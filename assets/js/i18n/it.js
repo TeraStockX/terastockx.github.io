@@ -127,7 +127,7 @@ export default {
   "chartNetIncomeSub": "annuale (rosso = perdita)",
   "chartFcfSub": "flusso di cassa operativo − capex",
   "chartMarginSub": "utile operativo / ricavi",
-  "chartPriceSub": "chiusure mensili, ultimi 6 anni",
+  "chartPriceSub": "chiusure mensili, ultimi 6 anni", "chartPriceDaily": "Prezzo dell'azione (giornaliero)", "chartPriceDailySub": "chiusure giornaliere dal {d}",
   "notEnough": "Dati insufficienti.",
   "errorLoad": "Si è verificato un errore: {e}",
   "serveHint": "Se hai aperto il file direttamente, avvia un server web locale (vedi README).",

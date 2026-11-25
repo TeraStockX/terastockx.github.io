@@ -56,7 +56,7 @@ export default {
     compareTitle: "Comparar empresas", compareHint: "Seleccione hasta seis empresas para compararlas.", addCompany: "Añadir empresa (nombre o ticker)…", remove: "Quitar",
     dimension: "Dimensión", metric: "Indicador",
     chartRevenue: "Ingresos", chartNetIncome: "Beneficio neto", chartFcf: "Flujo de caja libre", chartMargin: "Margen operativo", chartPrice: "Cotización (mensual, ajustada)",
-    chartRevenueSub: "anual", chartNetIncomeSub: "anual (rojo = pérdida)", chartFcfSub: "flujo operativo − inversiones", chartMarginSub: "resultado operativo / ingresos", chartPriceSub: "cierres mensuales, últimos 6 años",
+    chartRevenueSub: "anual", chartNetIncomeSub: "anual (rojo = pérdida)", chartFcfSub: "flujo operativo − inversiones", chartMarginSub: "resultado operativo / ingresos", chartPriceSub: "cierres mensuales, últimos 6 años", chartPriceDaily: "Precio de la acción (diario)", chartPriceDailySub: "cierres diarios desde el {d}",
     notEnough: "Datos insuficientes.", errorLoad: "Se produjo un error: {e}", serveHint: "Si abrió el archivo directamente, inicie un servidor web local (ver README).",
     profileFinancial: "Perfil de entidad financiera: los ratios de liquidez, EBITDA y flujo de caja libre no son significativos para bancos y aseguradoras y se excluyen.",
     profileRealEstate: "Perfil inmobiliario: los umbrales de endeudamiento y valoración se ajustan al mayor apalancamiento estructural de los REIT.",

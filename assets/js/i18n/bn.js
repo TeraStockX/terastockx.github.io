@@ -127,7 +127,7 @@ export default {
   "chartNetIncomeSub": "বার্ষিক (লাল = লোকসান)",
   "chartFcfSub": "অপারেটিং নগদ প্রবাহ − মূলধনী ব্যয়",
   "chartMarginSub": "অপারেটিং আয় / রাজস্ব",
-  "chartPriceSub": "মাসিক সমাপনী দাম, গত 6 বছর",
+  "chartPriceSub": "মাসিক সমাপনী দাম, গত 6 বছর", "chartPriceDaily": "শেয়ারের দাম (দৈনিক)", "chartPriceDailySub": "{d} থেকে দৈনিক সমাপনী দাম",
   "notEnough": "যথেষ্ট তথ্য নেই।",
   "errorLoad": "কিছু একটা ভুল হয়েছে: {e}",
   "serveHint": "ফাইলটি সরাসরি খুলে থাকলে একটি লোকাল ওয়েব সার্ভার চালু করুন (README দেখুন)।",

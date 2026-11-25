@@ -1032,7 +1032,23 @@ function notAnalyzedView(c) {
         ${fact("pulse.lastReport", c.lastReport ? `${esc(c.lastReport.form)} · ${esc(date(c.lastReport.date))}` : "–")}
       </div>
     </div>
+    ${unscoredPriceChart(c)}
     ${c.quarterly?.length ? `<h2 class="section-title">${esc(t("ui.periodQuarterly"))}</h2>${quarterTable(c)}` : ""}`;
+}
+
+// The share price of a company without a TeraScore: the month ends when there are more than a year of them, else
+// the daily closes (a recent listing: since its first trading days).
+function unscoredPriceChart(c) {
+  const monthly = c.prices?.data || [], daily = c.prices?.daily || [];
+  const usd = (v) => fmt(v, "usd");
+  if (monthly.length >= 13) return `<div class="charts">${lineChart(t("ui.chartPrice"), t("ui.chartPriceSub"), monthly, usd, t("ui.notEnough"))}</div>`;
+  if (daily.length < 2) return "";
+  const today = nyToday();
+  const ticks = (keys, plotW) => {
+    const n = keys.length, k = Math.min(n, Math.max(2, Math.floor(plotW / 110)));
+    return [...new Set(Array.from({ length: k }, (_, j) => Math.round((j * (n - 1)) / (k - 1))))].map((i) => [i, keyLabel(keys[i], today)]);
+  };
+  return `<div class="charts">${lineChart(t("ui.chartPriceDaily"), t("ui.chartPriceDailySub", { d: date(daily[0][0]) }), daily, usd, t("ui.notEnough"), { label: (k) => keyLabel(k, today), ticks })}</div>`;
 }
 
 // ---------- Financial data page ----------
@@ -1578,7 +1594,10 @@ function rawView(c, a, onDataPage = false) {
     body += `<tr class="group"><td colspan="${n}"><span class="sticky-label">${esc(t("ui.computedRatios"))}</span></td></tr>` + SERIES_ROWS.map((k) =>
       `<tr><td>${esc(metricLabel(k))}</td>${years.map((y) => { const v = byYear.get(y.year)?.[k]; return isNum(v) || v === Infinity ? `<td>${fmt(v, METRIC_FORMAT[k], cur)}</td>` : `<td class="na">–</td>`; }).join("")}${ttm ? `<td class="ttm na"></td>` : ""}</tr>`).join("");
   }
-  const src = c.source ? `${esc(t("ui.source"))}: ${c.source.url ? `<a href="${esc(c.source.url)}" target="_blank" rel="noopener">${esc(c.source.name)}</a>` : esc(c.source.name)}${c.source.retrieved ? ` · ${esc(t("ui.retrieved", { d: date(c.source.retrieved) }))}` : ""}` : "";
+  // A company under a new CIK: its earlier years come from the predecessor registrant (e.g. Exxon Mobil Corp).
+  const pre = c.source?.predecessor;
+  const preLink = pre?.url ? ` + <a href="${esc(pre.url)}" target="_blank" rel="noopener">${esc(pre.name || `CIK ${pre.cik}`)}</a>` : "";
+  const src = c.source ? `${esc(t("ui.source"))}: ${c.source.url ? `<a href="${esc(c.source.url)}" target="_blank" rel="noopener">${esc(c.source.name)}</a>` : esc(c.source.name)}${preLink}${c.source.retrieved ? ` · ${esc(t("ui.retrieved", { d: date(c.source.retrieved) }))}` : ""}` : "";
   return `
     <div class="raw-actions">
       <span class="small muted">${esc(t("ui.currencyNote", { cur }))} ${src}</span>

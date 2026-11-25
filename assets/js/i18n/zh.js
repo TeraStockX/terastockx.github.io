@@ -121,7 +121,7 @@ export default {
   "chartNetIncomeSub": "年度（红色 = 亏损）",
   "chartFcfSub": "经营现金流 − 资本支出",
   "chartMarginSub": "营业利润 / 营收",
-  "chartPriceSub": "月末收盘价，最近 6 年",
+  "chartPriceSub": "月末收盘价，最近 6 年", "chartPriceDaily": "股价（每日）", "chartPriceDailySub": "自{d}起的每日收盘价",
   "notEnough": "数据不足。",
   "errorLoad": "出错了：{e}",
   "serveHint": "如果您直接打开了文件，请启动本地 Web 服务器（见 README）。",

@@ -19,7 +19,8 @@
 import { readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync, unlinkSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { parseCompanyFacts } from "./sec-parse.mjs";
+import { parseCompanyFacts, mergeCompanyFacts } from "./sec-parse.mjs";
+import { predecessorCik } from "./successors.mjs";
 import { sectorFromSic, sectorFromNasdaq, profileFor } from "./sectors.mjs";
 import { nasdaqScreener, nasdaqEtfScreener, etfSummary, priceHistory, priceBudgetLeft, fxToUsd, marketSession, extendedQuotes, browserJson, dailyCloses } from "./market.mjs";
 import { UCITS, ucitsQuote, ucitsHistory, nasdaqMonthlyRows, nasdaqDailyCloses } from "./ucits.mjs";
@@ -333,8 +334,13 @@ async function updateEtfHistory() {
   const worker = async () => {
     while (next < top.length) {
       const x = top[next++];
-      const j = await browserJson(`https://api.nasdaq.com/api/quote/${encodeURIComponent(x.t)}/historical?assetclass=etf&fromdate=${d(from)}&todate=${d(to)}&limit=9999`);
-      const rows = j?.data?.tradesTable?.rows;
+      // Nasdaq lists some exchange-traded trusts (the bitcoin and ether funds IBIT, ETHA) as stocks.
+      let rows = null;
+      for (const cls of ["etf", "stocks"]) {
+        const j = await browserJson(`https://api.nasdaq.com/api/quote/${encodeURIComponent(x.t)}/historical?assetclass=${cls}&fromdate=${d(from)}&todate=${d(to)}&limit=9999`);
+        rows = j?.data?.tradesTable?.rows;
+        if (rows?.length) break;
+      }
       const m = nasdaqMonthlyRows(rows, 72);
       if (m.length) h[x.t] = m.slice(-26);
       const dd = nasdaqDailyCloses(rows, to);
@@ -512,13 +518,21 @@ async function fetchCompany(item, sec, q = {}, fx = {}) {
     const added = await fillMissingFilings(cf, sub, sec.cik, async (url, type) => { const r = await get(url, type); await sleep(110); return r; });
     if (added.length) { result.gapFilled = true; console.log(`  ${item.ticker}: read from the filing, missing in companyfacts: ${added.join(", ")}`); }
   }
-  const parsed = cf ? parseCompanyFacts(cf) : { annual: [], currency: "USD" };
+  const file = join(COMPANIES, `${item.ticker}.json`);
+  const old = existsSync(file) ? readJson(file) : null;
+  // A company under a new CIK (e.g. a new holding company): the earlier years from its predecessor's facts.
+  const pred = predecessorCik(sec.cik, old, sub?.name || cf?.entityName || item.name);
+  let earlier = null;
+  if (pred) {
+    earlier = await get(`https://data.sec.gov/api/xbrl/companyfacts/CIK${pred}.json`).catch(() => null);
+    await sleep(110);
+  }
+  const facts = mergeCompanyFacts(cf, earlier);
+  const parsed = facts ? parseCompanyFacts(facts) : { annual: [], currency: "USD" };
   result.ok = parsed.annual.length > 0;
 
   const sector = sectorFromSic(sub?.sic) || sectorFromNasdaq(q.sector);
   // Price history and insider data are added in later phases; until then the previous ones are kept.
-  const file = join(COMPANIES, `${item.ticker}.json`);
-  const old = existsSync(file) ? readJson(file) : null;
   const hist = old?.prices?.data?.length ? old.prices : null;
   const news = sub && isBig(q.marketCap ?? old?.market?.marketCap) ? await companyNews(sub, old).catch((e) => { console.warn(`  ${item.ticker} news: ${e.message}`); return old?.news; }) : undefined;
   const currency = parsed.currency || "USD";
@@ -534,6 +548,7 @@ async function fetchCompany(item, sec, q = {}, fx = {}) {
     lastReport: latestReport(sub),
     name: sub?.name || cf?.entityName || item.name,
     cik: sec.cik,
+    predecessorCik: pred || undefined,
     currency,
     country: q.country || sub?.addresses?.business?.stateOrCountryDescription || null,
     sicCode: sub?.sic ? Number(sub.sic) : null,
@@ -542,7 +557,8 @@ async function fetchCompany(item, sec, q = {}, fx = {}) {
     industry: q.industry || sub?.sicDescription || null,
     profile: profileFor(sub?.sic, sector),
     fiscalYearEndMonth: sub?.fiscalYearEnd ? Number(sub.fiscalYearEnd.slice(0, 2)) : null,
-    source: { name: "SEC EDGAR XBRL company facts (10-K, 10-Q, 20-F, 40-F)", url: `https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=${sec.cik}`, retrieved: new Date().toISOString() },
+    source: { name: "SEC EDGAR XBRL company facts (10-K, 10-Q, 20-F, 40-F)", url: `https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=${sec.cik}`, retrieved: new Date().toISOString(),
+      ...(pred && earlier ? { predecessor: { cik: pred, name: earlier.entityName || null, url: `https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=${pred}` } } : {}) },
     market: {
       price,
       priceDate: new Date().toISOString().slice(0, 10),
@@ -683,10 +699,12 @@ async function updateInsiders(tickers) {
   console.log(`  insider transactions: ${n} companies with open-market trades`);
 }
 
-// Phase 3: monthly price histories, largest companies first, several requests in parallel.
+// Phase 3: monthly price histories, largest companies first, several requests in parallel. Every listed company
+// gets one, also those without an annual report yet (recent listings, a new holding company): their pages and the
+// portfolio show the price since the listing.
 async function updatePriceHistories(tickers) {
   const files = tickers.map((t) => join(COMPANIES, `${t}.json`)).filter(existsSync);
-  const companies = files.map((f) => ({ f, c: readJson(f) })).filter(({ c }) => c.annual?.length);
+  const companies = files.map((f) => ({ f, c: readJson(f) }));
   companies.sort((a, b) => (b.c.market?.marketCap || 0) - (a.c.market?.marketCap || 0));
   let next = 0, updated = 0;
   const worker = async () => {

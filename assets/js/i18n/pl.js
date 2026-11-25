@@ -127,7 +127,7 @@ export default {
   "chartNetIncomeSub": "rocznie (czerwony = strata)",
   "chartFcfSub": "przepływy operacyjne − nakłady inwestycyjne",
   "chartMarginSub": "zysk operacyjny / przychody",
-  "chartPriceSub": "kursy zamknięcia miesięcy, ostatnie 6 lat",
+  "chartPriceSub": "kursy zamknięcia miesięcy, ostatnie 6 lat", "chartPriceDaily": "Kurs akcji (dzienny)", "chartPriceDailySub": "dzienne kursy zamknięcia od {d}",
   "notEnough": "Za mało danych.",
   "errorLoad": "Coś poszło nie tak: {e}",
   "serveHint": "Jeśli plik otwarto bezpośrednio, uruchom lokalny serwer WWW (zob. README).",

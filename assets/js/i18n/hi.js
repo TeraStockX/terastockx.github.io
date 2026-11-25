@@ -127,7 +127,7 @@ export default {
   "chartNetIncomeSub": "वार्षिक (लाल = घाटा)",
   "chartFcfSub": "परिचालन नकदी प्रवाह − पूंजीगत व्यय",
   "chartMarginSub": "परिचालन आय / राजस्व",
-  "chartPriceSub": "मासिक समापन मूल्य, पिछले 6 वर्ष",
+  "chartPriceSub": "मासिक समापन मूल्य, पिछले 6 वर्ष", "chartPriceDaily": "शेयर मूल्य (दैनिक)", "chartPriceDailySub": "{d} से दैनिक समापन मूल्य",
   "notEnough": "पर्याप्त डेटा नहीं।",
   "errorLoad": "कुछ गलत हो गया: {e}",
   "serveHint": "यदि आपने फ़ाइल सीधे खोली है, तो एक लोकल वेब सर्वर शुरू करें (README देखें)।",

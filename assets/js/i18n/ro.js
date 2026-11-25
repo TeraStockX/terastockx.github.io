@@ -127,7 +127,7 @@ export default {
   "chartNetIncomeSub": "anual (roșu = pierdere)",
   "chartFcfSub": "flux de numerar operațional − cheltuieli de capital",
   "chartMarginSub": "profit operațional / venituri",
-  "chartPriceSub": "prețuri lunare de închidere, ultimii 6 ani",
+  "chartPriceSub": "prețuri lunare de închidere, ultimii 6 ani", "chartPriceDaily": "Prețul acțiunii (zilnic)", "chartPriceDailySub": "prețuri zilnice de închidere din {d}",
   "notEnough": "Date insuficiente.",
   "errorLoad": "Ceva n-a mers bine: {e}",
   "serveHint": "Dacă ai deschis fișierul direct, pornește un server web local (vezi README).",
