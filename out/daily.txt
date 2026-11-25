@@ -1,0 +1,109 @@
+start 2026-11-25T09:44:57Z
+run: completed success 2026-11-25T08:07:02Z → 2026-11-25T09:44:48Z
+  build success 2026-11-25T08:07:07Z → 2026-11-25T09:44:28Z
+  deploy success 2026-11-25T09:44:33Z → 2026-11-25T09:44:48Z
+=== build log (24901 lines)
+# Subtest: Unit errors fixed; genuine dilution is not mistaken for a split
+ok 15 - Unit errors fixed; genuine dilution is not mistaken for a split
+# Subtest: Similar companies: same sector, closest size, own industry first, one share class
+ok 27 - Similar companies: same sector, closest size, own industry first, one share class
+# Subtest: Portfolio: weights, weighted TeraScore, income and concentration warnings
+ok 28 - Portfolio: weights, weighted TeraScore, income and concentration warnings
+# Subtest: Portfolio with ETFs: no TeraScore for funds, no concentration warning for them, yield override
+ok 29 - Portfolio with ETFs: no TeraScore for funds, no concentration warning for them, yield override
+# Subtest: European ETFs: listings with currency, month-end closes from justETF and Nasdaq, search by ticker
+ok 50 - European ETFs: listings with currency, month-end closes from justETF and Nasdaq, search by ticker
+# Subtest: Engine 2.1: risk rises with warning flags on a saturating curve, never above 100
+ok 53 - Engine 2.1: risk rises with warning flags on a saturating curve, never above 100
+[36;1mif { [ "workflow_dispatch" = "schedule" ] || [ "true" = "true" ]; } && [ "$(date -u +%u)" != "1" ]; then extra="--skip-insiders --skip-etf-details"; fi[0m
+Done: 5117 with financials, 762 without data, 0 errors, 315 filled from filings missing in companyfacts, 5096 price histories updated.
+  European ETFs: 26 of 26 prices, monthly closes
+  ETF price history: 598 of 600 (price files: 598)
+  top stories: daily closes read for 25 of 27 companies
+data/index.json: 5879 companies; data/news.json: 330 events; data/benchmarks.json: 11 sectors.
+search pages: 5879 company pages, sitemap with 5880 URLs.
+=== data branch
+data commit 1f050e5 Adatfrissítés: 2026-11-25 2026-11-25T09:44:12Z
+companies 5879 | with prices.daily 5096 | points: median 276 min 23 max 276
+last daily close (date: companies) [["2026-11-24",5096]]
+ AAPL: daily 276 ["2025-10-21",262.77] … ["2026-11-24",354.07] | monthly 73 (Nasdaq)
+ MSFT: daily 276 ["2025-10-21",517.66] … ["2026-11-24",496.13] | monthly 73 (Nasdaq)
+ NVDA: daily 276 ["2025-10-21",181.16] … ["2026-11-24",155.38] | monthly 73 (Nasdaq)
+ JNJ: daily 276 ["2025-10-21",191.88] … ["2026-11-24",276.46] | monthly 73 (Nasdaq)
+ KO: daily 276 ["2025-10-21",71.22] … ["2026-11-24",97.62] | monthly 73 (Nasdaq)
+ XOM: daily 0 undefined … undefined | monthly 0 (-)
+ JPM: daily 276 ["2025-10-21",297.09] … ["2026-11-24",317.1] | monthly 73 (Nasdaq)
+etf-prices files 624 | European (key with ':') 26 | etfs.json funds 5815 | sizes KB: total 4346
+top 600 US funds without a price file: ["IBIT","ETHA"]
+ SPY.json: t SPY | daily 276 ["2026-11-24",718.78] | monthly 72 ["2020-12",373.88] … ["2026-11",718.78]
+ VOO.json: t VOO | daily 276 ["2026-11-24",660.71] | monthly 72 ["2020-12",343.69] … ["2026-11",660.71]
+ QQQ.json: t QQQ | daily 276 ["2026-11-24",638.1] | monthly 72 ["2020-12",313.74] … ["2026-11",638.1]
+ 4GLD_XETRA.json: t 4GLD:XETRA | daily 401 ["2026-11-25",103.75] | monthly 26 ["2024-10",81.17] … ["2026-11",103.75]
+ CNDX_LSE.json: t CNDX:LSE | daily 401 ["2026-11-25",1475.2] | monthly 26 ["2024-10",1136.4] … ["2026-11",1475.2]
+=== live portfolio (hu)
+pf-1w-phone {
+ "overflow": false,
+ "active": "1 hét",
+ "kpis": [
+  "Értékváltozás −12 824 Ft −0,21% nov. 18. óta",
+  "TeraScore-változás – Még nincs elég előzmény: a jelenlegi módszer heti TeraScore-jait 2026. nov. 24. óta rögzítjük."
+ ],
+ "rows": [
+  "NVDA +2,70% +27,4 E Ft",
+  "MSFT −2,53% −21,7 E Ft",
+  "JPM −2,30% −15,1 E Ft",
+  "SPY −1,63% −12 E Ft",
+  "JNJ +1,33% +9,78 E Ft",
+  "KO −0,51% −5,06 E Ft",
+  "AAPL +0,32% +3,81 E Ft"
+ ],
+ "charts": 1,
+ "notes": [
+  "Tételenként az árváltozás, annak hatása a portfólió értékére és a TeraScore változása az időszakban.",
+  "Árfolyam-előzmény nélkül, ezért kimarad: XOM."
+ ]
+} no errors
+pf-1m-phone {
+ "overflow": false,
+ "active": "1 hónap",
+ "kpis": [
+  "Értékváltozás −395 730 Ft −6,02% okt. 25. óta",
+  "TeraScore-változás – Még nincs elég előzmény: a jelenlegi módszer heti TeraScore-jait 2026. nov. 24. óta rögzítjük."
+ ],
+ "rows": [
+  "NVDA −26,51% −377 E Ft",
+  "KO +5,26% +49,4 E Ft",
+  "MSFT −5,55% −49 E Ft",
+  "SPY −5,48% −42,2 E Ft",
+  "JNJ +4,74% +33,8 E Ft",
+  "JPM −4,50% −30,2 E Ft",
+  "AAPL +1,68% +19,7 E Ft"
+ ],
+ "charts": 1,
+ "notes": [
+  "Tételenként az árváltozás, annak hatása a portfólió értékére és a TeraScore változása az időszakban.",
+  "Árfolyam-előzmény nélkül, ezért kimarad: XOM."
+ ]
+} no errors
+pf-1w-desktop {
+ "overflow": false,
+ "active": "1 hét",
+ "kpis": [
+  "Értékváltozás −12 824 Ft −0,21% nov. 18. óta",
+  "TeraScore-változás – Még nincs elég előzmény: a jelenlegi módszer heti TeraScore-jait 2026. nov. 24. óta rögzítjük."
+ ],
+ "rows": [
+  "NVDA +2,70% +27,4 E Ft",
+  "MSFT −2,53% −21,7 E Ft",
+  "JPM −2,30% −15,1 E Ft",
+  "SPY −1,63% −12 E Ft",
+  "JNJ +1,33% +9,78 E Ft",
+  "KO −0,51% −5,06 E Ft",
+  "AAPL +0,32% +3,81 E Ft"
+ ],
+ "charts": 1,
+ "notes": [
+  "Tételenként az árváltozás, annak hatása a portfólió értékére és a TeraScore változása az időszakban.",
+  "Árfolyam-előzmény nélkül, ezért kimarad: XOM."
+ ]
+} no errors
