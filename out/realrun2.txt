@@ -1,0 +1,18 @@
+=== tests
+# pass 59
+# fail 0
+=== update --tickers BIP,XOM,ANT
+Downloading listings…
+  5879 common stocks { NASDAQ: 3433, NYSE: 2174, 'NYSE American': 268, 'Cboe BZX': 4 }
+  screener: 7338 quotes; exchange rates: 166
+  price histories: 3/3 updated
+Done: 2 with financials, 1 without data, 0 errors, 0 filled from filings missing in companyfacts, 3 price histories updated.
+Backtest: 8.3 s
+  top stories: daily closes read for 2 of 2 companies
+data/index.json: 5879 companies; data/news.json: 330 events; data/benchmarks.json: 11 sectors.
+search pages: 5879 company pages, sitemap with 0 URLs (no SITE_URL: sitemap skipped).
+took 49s
+=== results
+BIP | Brookfield Infrastructure Partners Inc. | cik 0002155396 pred 0001406234 | annual 10 [2016,2017,2018,2019,2020,2021,2022,2023,2024,2025] | quarterly 9 | ttm - rev - | daily 276 ["2025-10-21",34.67]…["2026-11-24",45.52] monthly 73 | score 66 cov 84 | src {"cik":"0001406234","name":"BROOKFIELD INFRASTRUCTURE PARTNERS L.P.","url":"https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=0001406234"}
+XOM | ExxonMobil Holdings Corp | cik 0002115436 pred 0000034088 | annual 10 [2016,2017,2018,2019,2020,2021,2022,2023,2024,2025] | quarterly 12 | ttm 2026-09-30 rev 396627000000 | daily 276 ["2025-10-21",112.71]…["2026-11-24",158.23] monthly 73 | score 64 cov 88 | src {"cik":"0000034088","name":"Exxon Mobil Corporation","url":"https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=0000034088"}
+ANT | Anthropic, PBC | cik 0002130357 pred - | annual 0 [] | quarterly 0 | ttm - rev - | daily 4 ["2026-11-19",97.17]…["2026-11-24",81.905] monthly 1 | score - cov - | src null
