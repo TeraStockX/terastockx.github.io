@@ -14,37 +14,15 @@ jobs:
         with: { ref: diag }
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
-      - name: Daily update of 25 Nov, daily closes, live portfolio
+      - name: Probe Nasdaq share classes, new listings, funds; SEC data of successor registrants
         env:
-          GH_TOKEN: ${{ github.token }}
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
         run: |
           mkdir -p out
-          repo=TeraStockX/terastockx.github.io
-          run=45573500784
-          f=out/daily.txt
-          echo "start $(date -u +%FT%TZ)" > $f
-          for i in $(seq 1 100); do
-            st=$(gh run view $run --repo $repo --json status,conclusion -q '.status + " " + .conclusion' 2>/dev/null)
-            case "$st" in completed*) break;; esac
-            sleep 30
-          done
-          gh run view $run --repo $repo --json status,conclusion,createdAt,updatedAt,jobs -q '"run: \(.status) \(.conclusion) \(.createdAt) → \(.updatedAt)", (.jobs[] | "  \(.name) \(.conclusion) \(.startedAt) → \(.completedAt)")' >> $f
-          job=$(gh run view $run --repo $repo --json jobs -q '.jobs[] | select(.name=="build") | .databaseId')
-          curl -sSL -H "Authorization: Bearer $GH_TOKEN" "https://api.github.com/repos/$repo/actions/jobs/$job/logs" -o job.log
-          echo "=== build log ($(wc -l < job.log) lines)" >> $f
-          grep -E "skip-insiders|ETF price history|European ETFs|ETFs:|price files|daily closes|companies:|data/index.json|search pages|rror|arning|ailed" job.log | grep -vE "Node.js 20|punycode|DEP0|trace-deprecation|\./data/|\./assets/|\./scripts/|\./tests/|if-no-files-found|hint:|##\[group\]" | sed -E 's/^[0-9T:.-]+Z //' | cut -c1-300 | head -40 >> $f
-          echo "=== data branch" >> $f
-          git fetch -q --depth=1 origin data && mkdir -p /tmp/db && git archive FETCH_HEAD data | tar -x -C /tmp/db
-          git log -1 --format='data commit %h %s %cI' FETCH_HEAD >> $f
-          node dailystats.mjs /tmp/db >> $f 2>&1 || echo "dailystats failed" >> $f
-          echo "=== live portfolio (hu)" >> $f
-          sleep 60
-          npm install --no-save --no-audit --no-fund playwright@1.49.1 >/dev/null 2>&1
-          npx playwright install --with-deps chromium >/dev/null 2>&1
-          node livepf2.cjs >> $f 2>&1 || echo "livepf2 failed" >> $f
-          cat $f
+          node probe.mjs > out/probe.txt 2>&1 || echo "probe failed" >> out/probe.txt
+          cat out/probe.txt
       - name: Save results to the diag branch
         if: always()
         run: |
           git config user.name diag; git config user.email diag@users.noreply.github.com
-          git add out && git commit -qm "diag: daily update and daily closes" && git push -q origin HEAD:diag
+          git add out && git commit -qm "diag: probe share classes and successor registrants" && git push -q origin HEAD:diag
