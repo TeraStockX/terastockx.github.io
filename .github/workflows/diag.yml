@@ -14,13 +14,13 @@ jobs:
         with: { ref: diag }
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
-      - name: Nasdaq dividend history
+      - name: Nasdaq dividend calendar
         run: |
           mkdir -p out
-          node probe4.mjs > out/probe4.txt 2>&1 || echo "probe4 failed" >> out/probe4.txt
-          cat out/probe4.txt
+          node probe5.mjs > out/probe5.txt 2>&1 || echo "probe5 failed" >> out/probe5.txt
+          cat out/probe5.txt
       - name: Save results to the diag branch
         if: always()
         run: |
           git config user.name diag; git config user.email diag@users.noreply.github.com
-          git add out && git commit -qm "diag: Nasdaq dividend history" && git push -q origin HEAD:diag
+          git add out && git commit -qm "diag: Nasdaq dividend calendar" && git push -q origin HEAD:diag
