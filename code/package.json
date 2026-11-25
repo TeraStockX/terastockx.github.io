@@ -1,0 +1,17 @@
+{
+  "name": "terastockx",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "TeraStockX \u2013 fundamental analysis of Nasdaq-listed companies",
+  "scripts": {
+    "start": "python3 -m http.server 8000",
+    "test": "node --test tests/run.mjs",
+    "update-data": "node scripts/update-data.mjs",
+    "build-index": "node scripts/update-data.mjs --index-only",
+    "docs": "node scripts/gen-docs.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

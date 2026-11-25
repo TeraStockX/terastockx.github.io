@@ -1,0 +1,8 @@
+node_modules/
+.DS_Store
+data/
+# generated on every build (scripts/seo.mjs)
+/c/
+/sitemap.xml
+/sitemap.txt
+/robots.txt

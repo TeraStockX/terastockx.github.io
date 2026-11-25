@@ -1,0 +1,17 @@
+# The AI helper's Cloudflare Worker (setup: worker/README.md). Deployed by .github/workflows/ai-worker.yml.
+# The Claude API key is not here: it is the ANTHROPIC_API_KEY secret of the Worker.
+name = "terastockx-ai"
+main = "src/index.js"
+compatibility_date = "2025-09-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+# Pages allowed to ask (the site's addresses).
+ALLOWED_ORIGINS = "https://terastockx.com,https://www.terastockx.com,https://terastockx.github.io"
+# claude-opus-5-5 (best explanations, about 2–3 cents a question) or claude-haiku-5-5 (about 0.1 cent).
+MODEL = "claude-opus-5-5"
+# How much the model thinks before answering: low keeps answers quick and cheap.
+EFFORT = "low"
+MAX_TOKENS = "2000"
+# Questions an hour from one address.
+MAX_PER_HOUR = "15"
