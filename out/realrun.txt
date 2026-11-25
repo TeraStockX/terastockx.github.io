@@ -1,0 +1,27 @@
+=== tests
+# pass 59
+# fail 0
+=== update --tickers XOM,CLBK,XPRO,DMRC,CBAT,SPCX,ANT,SKHY,HONA,CBRS,BF.B,AAPL
+Downloading listings…
+  5879 common stocks { NASDAQ: 3433, NYSE: 2174, 'NYSE American': 268, 'Cboe BZX': 4 }
+  screener: 7338 quotes; exchange rates: 166
+  price histories: 11/12 updated
+Done: 7 with financials, 5 without data, 0 errors, 0 filled from filings missing in companyfacts, 11 price histories updated.
+Backtest: 11.0 s
+  top stories: daily closes read for 2 of 2 companies
+data/index.json: 5879 companies; data/news.json: 330 events; data/benchmarks.json: 11 sectors.
+search pages: 5879 company pages, sitemap with 0 URLs (no SITE_URL: sitemap skipped).
+took 79s
+=== results
+XOM | ExxonMobil Holdings Corp | cik 0002115436 pred 0000034088 | annual 10 [2016,2017,2018,2019,2020,2021,2022,2023,2024,2025] | quarterly 12 | ttm 2026-09-30 rev 396627000000 | daily 276 ["2025-10-21",112.71]…["2026-11-24",158.23] monthly 73 | score 64 cov 88 | src {"cik":"0000034088","name":"Exxon Mobil Corporation","url":"https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=0000034088"}
+CLBK | Columbia Financial, Inc./MD/ | cik 0002115119 pred 0001723596 | annual 10 [2016,2017,2018,2019,2020,2021,2022,2023,2024,2025] | quarterly 12 | ttm 2026-09-30 rev 555659000 | daily 90 ["2026-07-21",11.08]…["2026-11-24",10.83] monthly 5 | score 43 cov 86 | src {"cik":"0001723596","name":"Columbia Financial, Inc.","url":"https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=0001723596"}
+XPRO | Expro Ltd | cik 0002126198 pred 0001575828 | annual 10 [2016,2017,2018,2019,2020,2021,2022,2023,2024,2025] | quarterly 12 | ttm 2026-09-30 rev 1582825000 | daily 276 ["2025-10-21",12.8]…["2026-11-24",11.89] monthly 73 | score 53 cov 86 | src {"cik":"0001575828","name":"Expro Group Holdings N.V.","url":"https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=0001575828"}
+DMRC | Digimarc Corp | cik 0002119322 pred 0001438231 | annual 10 [2016,2017,2018,2019,2020,2021,2022,2023,2024,2025] | quarterly 12 | ttm 2026-09-30 rev 30320000 | daily 276 ["2025-10-21",9.98]…["2026-11-24",5.13] monthly 73 | score 19 cov 89 | src {"cik":"0001438231","name":"Digimarc CORP","url":"https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=0001438231"}
+CBAT | CBAK Energy Technology Ltd | cik 0002086841 pred 0001117171 | annual 10 [2016,2017,2018,2019,2020,2021,2022,2023,2024,2025] | quarterly 12 | ttm 2026-03-31 rev 229868397 | daily 276 ["2025-10-21",1]…["2026-11-24",0.9201] monthly 73 | score 34 cov 93 | src {"cik":"0001117171","name":"CBAK ENERGY TECHNOLOGY, INC.","url":"https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=0001117171"}
+SPCX | SPACE EXPLORATION TECHNOLOGIES CORP | cik 0001181412 pred - | annual 0 [] | quarterly 4 | ttm - rev - | daily 115 ["2026-06-12",160.95]…["2026-11-24",125.81] monthly 6 | score - cov - | src null
+ANT | Anthropic, PBC | cik 0002130357 pred - | annual 0 [] | quarterly 0 | ttm - rev - | daily 4 ["2026-11-19",97.17]…["2026-11-24",81.905] monthly 1 | score - cov - | src null
+SKHY | SK hynix Inc. | cik 0002120882 pred - | annual 0 [] | quarterly 0 | ttm - rev - | daily 97 ["2026-07-10",168.01]…["2026-11-24",111.98] monthly 5 | score - cov - | src null
+HONA | Honeywell Aerospace Inc. | cik 0002089271 pred - | annual 0 [] | quarterly 4 | ttm - rev - | daily 114 ["2026-06-15",200]…["2026-11-24",154.77] monthly 6 | score - cov - | src null
+CBRS | Cerebras Systems Inc. | cik 0002021728 pred - | annual 0 [] | quarterly 6 | ttm - rev - | daily 135 ["2026-05-14",311.07]…["2026-11-24",88.78] monthly 7 | score - cov - | src null
+BF.B | BROWN FORMAN CORP | cik 0000014693 pred - | annual 10 [2017,2018,2019,2020,2021,2022,2023,2024,2025,2026] | quarterly 12 | ttm 2026-07-31 rev 3915000000 | daily 0 undefined…undefined monthly 0 | score 69 cov 95 | src null
+AAPL | Apple Inc. | cik 0000320193 pred - | annual 10 [2017,2018,2019,2020,2021,2022,2023,2024,2025,2026] | quarterly 12 | ttm - rev - | daily 276 ["2025-10-21",262.77]…["2026-11-24",354.07] monthly 73 | score 76 cov 98 | src null
