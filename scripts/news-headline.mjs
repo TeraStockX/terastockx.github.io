@@ -111,6 +111,9 @@ export function tidyTitle(s) {
     // "November 23, 2026 KT-621 Phase 2b … Results Exhibit 99.1" → "KT-621 Phase 2b … Results"
     .replace(new RegExp(`^${MONTH}\\.?\\s+\\d{1,2},?\\s+\\d{4}\\s*[-–—:|]?\\s+`, "i"), "")
     .replace(/\s*[-–—(]?\s*Exhibit\s+\d+(?:\.\d+)?\)?\s*$/i, "")
+    // "HP Inc. Media Relations HP Inc. Investor Relations HP Inc. Reports …": the press contacts above the headline
+    // (two or more of them in a row, so a title about an investor relations head stays).
+    .replace(/^(?:(?:[A-Z][\w.&,'’ -]{0,60}?\s)?(?:Media|Investor|Press|Public)\s+(?:Relations|Contacts?|Inquiries)\s*[:-]?\s+){2,}/, "")
     .trim();
   const letters = t.replace(/[^A-Za-z]/g, "");
   if (letters.length < 12 || letters.replace(/[^A-Z]/g, "").length / letters.length < 0.85) return t;

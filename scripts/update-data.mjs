@@ -915,7 +915,7 @@ async function buildIndex({ snapshot = false } = {}) {
       row.xs = c.market.ext.session;
       if (Number.isFinite(c.market.ext.price)) row.xp = c.market.ext.price;
     }
-    for (const n of c.news || []) if (now - new Date(n.at || n.date) <= STORY_DAYS * 86400000) recentNews.push({ t: c.ticker, ...n });
+    for (const n of c.news || []) if (now - new Date(n.at || n.date) <= STORY_DAYS * 86400000) recentNews.push({ t: c.ticker, ...n, title: n.title ? tidyTitle(n.title) : n.title });
     if (c.firstSeen) row.fs = c.firstSeen;
     if (c.market?.ipoYear) row.ipo = c.market.ipoYear;
     if (c.lastReport?.date) row.lr = `${c.lastReport.date}|${c.lastReport.form}`;
