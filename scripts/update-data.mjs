@@ -28,6 +28,7 @@ import { headlineFor, classifyNews, tidyTitle } from "./news-headline.mjs";
 import { fillMissingFilings } from "./xbrl-instance.mjs";
 import { buildSeo } from "./seo.mjs";
 import { buildPulse, INDEX_ETFS, STORY_CAP, isStoryNews, newsTime, closeDayBefore, closeOn } from "./pulse.mjs";
+import { dayQuotesFor, recordSession, recordAfterHours, lastSession, keptAfterHours, afterHoursQuote, quotesTime } from "./day-quotes.mjs";
 import { parseNasdaqListed, parseOtherListed, parseEtfs } from "./listings.mjs";
 import { insiderActivity } from "./insider.mjs";
 import { updateLogos, logoSet } from "./logos.mjs";
@@ -158,18 +159,13 @@ async function fundQuotes(tickers) {
 }
 const etDate = (d = new Date()) => d.toLocaleDateString("en-CA", { timeZone: "America/New_York" });
 
-// The day's session quotes, kept between intraday runs (in the Actions cache, with the refreshed companies):
-// after the close they are the day's closing prices and changes while the screener still shows the previous
-// day. On a new day the last session's quotes stay ("last") until the new session's replace them: before the
-// open, at night and at the weekend they are the latest prices and changes (the screener's can be days old).
+// The day's session quotes and the evening's after-hours quotes, kept between intraday runs (in the Actions
+// cache, with the refreshed companies; see scripts/day-quotes.mjs).
 function readDayQuotes() {
   const date = etDate();
   try {
     const f = OVERLAY && join(OVERLAY, "quotes.json");
-    const d = f && existsSync(f) ? readJson(f) : null;
-    if (d?.date === date && d.q) return d;
-    const last = d?.q && Object.keys(d.q).length ? { date: d.date, q: d.q, at: d.at || null } : d?.last || null;
-    return last ? { date, q: {}, last } : { date, q: {} };
+    return dayQuotesFor(f && existsSync(f) ? readJson(f) : null, date);
   } catch {
     return { date, q: {} };
   }
@@ -200,18 +196,17 @@ async function updateQuotes(screener = null) {
   if (session === "open") live = await extendedQuotes(byCap.slice(0, LIVE_TOP));
   else if (session === "pre" || session === "post") live = await extendedQuotes(byCap.slice(0, EXT_TOP));
   if (session === "open" || session === "pre" || session === "post") for (const [t, x] of await fundQuotes([...funds, ...inTurn])) live.set(t, x);
-  if (session === "open" && live.size) {
-    for (const [t, x] of live) if (Number.isFinite(x.changePct)) day.q[t] = [x.price, x.changePct];
-    day.at = new Date().toISOString();
-    delete day.last;
-    writeDayQuotes(day);
-  }
+  if (session === "open" && live.size) writeDayQuotes(recordSession(day, live, new Date().toISOString()));
   const kept = Object.keys(day.q).length;
   // A new day before its session (before the open, at night after midnight New York time, at the weekend):
   // the last session's quotes.
-  const lastAge = day.last?.date ? (Date.parse(day.date) - Date.parse(day.last.date)) / 86400000 : Infinity;
-  const lastQ = !kept && session !== "open" && day.last?.q && lastAge <= 5 ? day.last.q : null;
+  const lastQ = lastSession(day, session);
   const lastKept = lastQ ? Object.keys(lastQ).length : 0;
+  // Outside the session (at night, at the weekend, on holidays) the last session's after-hours quotes: the
+  // latest trades, and the reaction to results published after the close. During the after-hours session the
+  // quotes are saved for that.
+  const postQ = keptAfterHours(day, session);
+  const postNow = {};
   // During and after the session the screener's change is the previous day's: a company without a quote of
   // the day has no change of the day (unless the live quotes are unavailable altogether). The same before the
   // next session, while the last session's quotes are at hand.
@@ -246,10 +241,9 @@ async function updateQuotes(screener = null) {
     // The screener's market cap belongs to its own (older) price.
     const marketCap = q?.marketCap > 0 && q.price > 0 ? q.marketCap * (price / q.price) : Number.isFinite(m.marketCap) && ratio ? m.marketCap * ratio : m.marketCap ?? null;
     const changePct = d ? d.changePct : screenerStale ? null : q?.changePct ?? null;
-    // After the session the after-hours quote is kept through the night (until midnight New York time): it is
-    // the latest trade, and results published after the close move the price there.
-    const keptPost = session === "closed" && m.ext?.session === "post" && m.ext.day === etDate() ? m.ext : undefined;
-    c.market = { ...m, price, priceDate: todayIso(), changePct, marketCap, quoteTime: new Date().toISOString(), ext: extOf(c.ticker) ?? keptPost };
+    const ext = extOf(c.ticker) ?? afterHoursQuote(day, postQ, c.ticker);
+    if (session === "post" && ext?.session === "post") postNow[c.ticker] = [ext.price, ext.changePct, ext.at ?? null];
+    c.market = { ...m, price, priceDate: todayIso(), changePct, marketCap, quoteTime: new Date().toISOString(), ext };
     writeFileSync(join(COMPANIES, f), JSON.stringify(c) + "\n");
     n++;
     if (d) fresh++;
@@ -261,15 +255,18 @@ async function updateQuotes(screener = null) {
       if (d) { r.px = d.price; r.dc = d.changePct; }
       else if (q && Number.isFinite(q.price)) { r.px = q.price; r.dc = screenerStale ? null : Number.isFinite(q.changePct) ? q.changePct : r.dc; }
       else if (screenerStale) r.dc = null;
-      const x = extOf(r.t);
+      const x = extOf(r.t) ?? afterHoursQuote(day, postQ, r.t);
+      if (session === "post" && x?.session === "post") postNow[r.t] = [x.price, x.changePct, x.at ?? null];
       if (x) { r.xc = x.changePct; r.xp = x.price; r.xs = x.session; } else { delete r.xc; delete r.xp; delete r.xs; }
     }
-    // At night and at the weekend the prices are the last session's.
-    etfData.quotesAt = lastQ && session !== "pre" && day.last?.at ? day.last.at : new Date().toISOString();
+    // At night and at the weekend the prices are the last session's ("Prices:" says when they are from).
+    etfData.quotesAt = quotesTime(day, session);
     etfData.session = SESSION ? { session, previousTradeDate: SESSION.previousTradeDate } : null;
     writeFileSync(ef, JSON.stringify(etfData) + "\n");
   }
-  console.log(`  quotes updated: ${n} companies (${fresh} with a quote of the day), ${etfQuotes.size} ETFs in the screener, ${funds.length + inTurn.length} funds asked for (turn ${turn + 1}/${ETF_TURNS}); session: ${session || "unknown"}; live quotes: ${live.size}, kept from today's session: ${kept}${lastKept ? `, from the last session (${day.last.date}): ${lastKept}` : ""}`);
+  const saved = Object.keys(postNow).length;
+  if (saved) writeDayQuotes(recordAfterHours(day, postNow, new Date().toISOString()));
+  console.log(`  quotes updated: ${n} companies (${fresh} with a quote of the day), ${etfQuotes.size} ETFs in the screener, ${funds.length + inTurn.length} funds asked for (turn ${turn + 1}/${ETF_TURNS}); session: ${session || "unknown"}; live quotes: ${live.size}, kept from today's session: ${kept}${lastKept ? `, from the last session (${day.last.date}): ${lastKept}` : ""}${saved ? `; after-hours quotes saved: ${saved}` : ""}${postQ ? `; after-hours quotes of ${day.post.date}: ${Object.keys(postQ).length}` : ""}`);
 }
 
 // ---------- ETFs for European investors and ETF price history ----------

@@ -688,6 +688,55 @@ test("Top stories: next to news the change since the news, not a later session's
   assert.equal(sinceNews({ px: 50, dc: 1, xc: -8, xs: "post", xp: 46 }, { at: "2026-11-24T21:10:00Z" }, { now: new Date("2026-11-25T03:00:00Z"), session: "closed" }), -8);
 });
 
+test("Intraday quotes: the evening's after-hours quotes are kept between runs until the next session", async () => {
+  const q = await import("../scripts/day-quotes.mjs");
+  const { buildStories } = await import("../scripts/pulse.mjs");
+  const roundTrip = (d) => JSON.parse(JSON.stringify(d));
+  // Tuesday's session, then two after-hours runs (Dell reported after the close).
+  let day = q.dayQuotesFor(null, "2026-11-24");
+  q.recordSession(day, new Map([["DELL", { price: 295.31, changePct: -11.82 }], ["NVDA", { price: 155.03, changePct: -6.07 }]]), "2026-11-24T20:58:00Z");
+  q.recordAfterHours(day, { DELL: [280.5, -5.01, "Nov 24, 2026 4:45 PM ET"] }, "2026-11-24T21:45:00Z");
+  q.recordAfterHours(day, { NVDA: [156, 0.63, null] }, "2026-11-25T00:55:00Z");
+  assert.deepEqual(Object.keys(day.post.q), ["DELL", "NVDA"], "the runs' after-hours quotes add up");
+  const saved = roundTrip(day);
+  // After 20:00 New York time (the same day): the after-hours quotes are the latest trades.
+  const night = q.dayQuotesFor(saved, "2026-11-24");
+  const post = q.keptAfterHours(night, "closed");
+  assert.deepEqual(q.afterHoursQuote(night, post, "DELL"), { session: "post", price: 280.5, changePct: -5.01, at: "Nov 24, 2026 4:45 PM ET", day: "2026-11-24" });
+  assert.equal(q.afterHoursQuote(night, post, "AAPL"), undefined);
+  assert.equal(q.quotesTime(night, "closed"), "2026-11-25T00:55:00Z", "Prices: the end of the after-hours trading");
+  assert.equal(q.lastSession(night, "closed"), null, "the day's own quotes are still the day's");
+  // After midnight New York time: the last session's quotes and its after-hours quotes stay.
+  const wed = q.dayQuotesFor(saved, "2026-11-25");
+  assert.equal(q.lastSession(wed, "closed").DELL[1], -11.82);
+  assert.equal(q.keptAfterHours(wed, "closed").DELL[1], -5.01);
+  assert.equal(q.quotesTime(wed, "closed"), "2026-11-25T00:55:00Z");
+  // The reaction to the results shows next to them, as the move after hours.
+  const row = { t: "DELL", n: "Dell", mc: 2.1e11, px: 295.31, dc: -11.82 };
+  const x = q.afterHoursQuote(wed, q.keptAfterHours(wed, "closed"), "DELL");
+  const [story] = buildStories({ rows: [{ ...row, xc: x.changePct, xp: x.price, xs: x.session }], news: [{ t: "DELL", date: "2026-11-24", at: "2026-11-24T21:09:13Z", items: ["2.02"], kind: "results", title: "Dell results", url: "d" }], session: { session: "closed" }, now: new Date("2026-11-25T06:30:00Z") });
+  assert.equal(story.since, -5.01);
+  assert.deepEqual([story.move, story.when], [-5.01, "post"]);
+  // Before the open the pre-market quotes are the latest; the new session replaces the old quotes.
+  assert.equal(q.keptAfterHours(wed, "pre"), null);
+  assert.equal(q.quotesTime(wed, "pre", new Date("2026-11-25T10:00:00Z")), "2026-11-25T10:00:00.000Z");
+  q.recordSession(wed, new Map([["DELL", { price: 281, changePct: -4.84 }]]), "2026-11-25T14:35:00Z");
+  assert.equal(wed.post, undefined);
+  assert.equal(wed.last, undefined);
+  assert.equal(q.keptAfterHours(wed, "closed"), null);
+  // Friday's after-hours quotes stay over the weekend, not for ever; a session's own after-hours quotes stay.
+  const fri = q.recordAfterHours(q.dayQuotesFor(null, "2026-11-27"), { AAPL: [280, 1.2, null] }, "2026-11-28T00:59:00Z");
+  assert.equal(q.keptAfterHours(q.dayQuotesFor(roundTrip(fri), "2026-11-29"), "closed").AAPL[0], 280);
+  assert.equal(q.keptAfterHours(q.dayQuotesFor(roundTrip(fri), "2026-12-04"), "closed"), null);
+  const same = q.recordSession(q.dayQuotesFor(roundTrip(fri), "2026-11-27"), new Map([["AAPL", { price: 279, changePct: 0.9 }]]), "2026-11-27T18:00:00Z");
+  assert.equal(same.post.q.AAPL[0], 280);
+  // Without after-hours quotes: the time of the session's last live quotes; unknown session: as before.
+  const plain = q.dayQuotesFor(roundTrip({ date: "2026-11-24", q: { NVDA: [155, -6] }, at: "2026-11-24T20:58:00Z" }), "2026-11-24");
+  assert.equal(q.quotesTime(plain, "closed"), "2026-11-24T20:58:00Z");
+  assert.equal(q.quotesTime(q.dayQuotesFor(roundTrip(plain), "2026-11-25"), null), "2026-11-24T20:58:00Z");
+  assert.deepEqual(q.dayQuotesFor("broken", "2026-11-25"), { date: "2026-11-25", q: {} });
+});
+
 test("Top stories: new developments come first; an old filing is not shown next to today's move", async () => {
   const { buildStories, freshness } = await import("../scripts/pulse.mjs");
   const now = new Date("2026-11-24T16:00:00Z");
