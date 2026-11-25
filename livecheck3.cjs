@@ -5,7 +5,7 @@ const PF = JSON.stringify([{ t: 'AAPL', shares: 10 }, { t: 'MSFT', shares: 5 }, 
 (async () => {
   const b = await chromium.launch();
   const ctxOpts = { ...devices['iPhone 13'] };
-  for (const t of ['XOM', 'SPCX', 'ANT']) {
+  for (const t of ['XOM', 'SPCX', 'ANT', 'BIP']) {
     const ctx = await b.newContext(ctxOpts);
     await ctx.addInitScript(() => { localStorage.setItem('tsx-lang', 'hu'); localStorage.setItem('tsx-install-hide', '1'); });
     const p = await ctx.newPage();
