@@ -19,6 +19,7 @@ jobs:
           mkdir -p out
           npm install --no-save --no-audit --no-fund playwright@1.49.1 >/dev/null 2>&1
           npx playwright install --with-deps chromium >/dev/null 2>&1
+          sleep 480
           node newscheck.cjs > out/news.txt 2>&1 || echo "newscheck failed" >> out/news.txt
           node livepf4.cjs > out/live4.txt 2>&1 || echo "livepf4 failed" >> out/live4.txt
           cat out/news.txt out/live4.txt
