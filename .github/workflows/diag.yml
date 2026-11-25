@@ -14,27 +14,26 @@ jobs:
         with: { ref: diag }
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
-      - name: Overnight intraday chain check
+      - name: Build logs of the night runs and extended-hours quotes
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p out
           repo=TeraStockX/terastockx.github.io
-          f=out/night.txt
+          f=out/night2.txt
           echo "now $(date -u +%FT%TZ)" > $f
-          echo "=== intraday runs since 00:00Z" >> $f
-          gh run list --repo $repo --workflow intraday.yml --limit 20 --json databaseId,number,event,status,conclusion,createdAt,updatedAt -q '.[] | select(.createdAt >= "2026-11-25T00:00:00Z") | "\(.number) \(.databaseId) \(.event) \(.createdAt) \(.updatedAt) \(.status) \(.conclusion)"' >> $f
-          for job in 138968231302 138945424627; do
-            echo "=== build job $job" >> $f
-            gh api repos/$repo/actions/jobs/$job/logs > job.log 2>&1 || echo "log error" >> $f
-            echo "lines: $(wc -l < job.log)" >> $f
-            grep -E "Cache restored|new filings|refreshed:|quotes updated|top stories|rror|arning|ERR!|ailed" job.log | grep -vE "Node.js 20|punycode|DEP0|trace-deprecation|\./data/|\./assets/|\./scripts/|\./tests/" | cut -c1-500 | head -40 >> $f
+          # The night's runs: the evening (post session), after 20:00 New York time, and the latest.
+          for run in $(gh run list --repo $repo --workflow intraday.yml --limit 40 --json databaseId,createdAt,status -q '.[] | select(.createdAt >= "2026-11-24T23:50:00Z" and .status == "completed") | .databaseId' | head -12) 45543732778; do
+            echo "=== run $run" >> $f
+            gh run view $run --repo $repo --log > job.log 2> err.log || true
+            [ -s job.log ] || { echo "no log: $(head -c 300 err.log)" >> $f; jobs=$(gh run view $run --repo $repo --json jobs -q '.jobs[] | select(.name=="build") | .databaseId'); for j in $jobs; do gh run view --repo $repo --job $j --log > job.log 2> err.log || echo "no job log: $(head -c 300 err.log)" >> $f; done; }
+            grep -E "new filings|refreshed:|quotes updated|top stories|rror|arning|ailed" job.log | grep -vE "Node.js 20|punycode|DEP0|trace-deprecation|\./data/|\./assets/|\./scripts/|\./tests/|^next|##\[group\]|\[36;1m" | sed -E 's/^([a-z]+)\t[^\t]*\t/\1 /' | cut -c1-420 | head -12 >> $f
           done
-          echo "=== live data" >> $f
-          node nightcheck.mjs >> $f 2>&1 || echo "nightcheck failed" >> $f
+          echo "=== live extended-hours quotes" >> $f
+          node extcheck.mjs >> $f 2>&1 || echo "extcheck failed" >> $f
           cat $f
       - name: Save results to the diag branch
         if: always()
         run: |
           git config user.name diag; git config user.email diag@users.noreply.github.com
-          git add out && git commit -qm "diag: overnight chain check" && git push -q origin HEAD:diag
+          git add out && git commit -qm "diag: night logs and extended-hours quotes" && git push -q origin HEAD:diag
