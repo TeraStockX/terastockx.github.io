@@ -8,32 +8,41 @@ permissions:
 jobs:
   d:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
         with: { ref: diag }
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
-      - name: Build logs of the night runs and extended-hours quotes
+      - name: First intraday run on cbe2d54b
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p out
           repo=TeraStockX/terastockx.github.io
-          f=out/night2.txt
-          echo "now $(date -u +%FT%TZ)" > $f
-          # The night's runs: the evening (post session), after 20:00 New York time, and the latest.
-          for run in $(gh run list --repo $repo --workflow intraday.yml --limit 40 --json databaseId,createdAt,status -q '.[] | select(.createdAt >= "2026-11-24T23:50:00Z" and .status == "completed") | .databaseId' | head -12) 45543732778; do
-            echo "=== run $run" >> $f
-            gh run view $run --repo $repo --log > job.log 2> err.log || true
-            [ -s job.log ] || { echo "no log: $(head -c 300 err.log)" >> $f; jobs=$(gh run view $run --repo $repo --json jobs -q '.jobs[] | select(.name=="build") | .databaseId'); for j in $jobs; do gh run view --repo $repo --job $j --log > job.log 2> err.log || echo "no job log: $(head -c 300 err.log)" >> $f; done; }
-            grep -E "new filings|refreshed:|quotes updated|top stories|rror|arning|ailed" job.log | grep -vE "Node.js 20|punycode|DEP0|trace-deprecation|\./data/|\./assets/|\./scripts/|\./tests/|^next|##\[group\]|\[36;1m" | sed -E 's/^([a-z]+)\t[^\t]*\t/\1 /' | cut -c1-420 | head -12 >> $f
+          f=out/after.txt
+          echo "start $(date -u +%FT%TZ)" > $f
+          run=""; job=""
+          for i in $(seq 1 60); do
+            run=$(gh run list --repo $repo --workflow intraday.yml --limit 10 --json databaseId,headSha -q '[.[] | select(.headSha | startswith("cbe2d54b"))] | last | .databaseId // empty' 2>/dev/null)
+            if [ -n "$run" ]; then
+              st=$(gh run view $run --repo $repo --json jobs -q '[.jobs[] | select(.name=="deploy")][0] | .status + " " + (.conclusion // "")' 2>/dev/null)
+              case "$st" in completed*) break;; esac
+            fi
+            sleep 20
           done
-          echo "=== live extended-hours quotes" >> $f
-          node extcheck.mjs >> $f 2>&1 || echo "extcheck failed" >> $f
+          echo "run $run deploy: $st ($(date -u +%FT%TZ))" >> $f
+          gh run view $run --repo $repo --json jobs -q '.jobs[] | "\(.name) \(.status) \(.conclusion) \(.startedAt) \(.completedAt)"' >> $f 2>&1
+          job=$(gh run view $run --repo $repo --json jobs -q '.jobs[] | select(.name=="build") | .databaseId')
+          curl -sSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$repo/actions/jobs/$job/logs" -o job.log -w "log http %{http_code}\n" >> $f 2>&1
+          echo "lines: $(wc -l < job.log)" >> $f
+          grep -E "Cache restored|new filings|refreshed:|quotes updated|top stories|rror|arning|ailed|TypeError|ReferenceError" job.log | grep -vE "Node.js 20|punycode|DEP0|trace-deprecation|\./data/|\./assets/|\./scripts/|\./tests/|if-no-files-found|hint:" | cut -c1-500 | head -20 >> $f
+          sleep 45
+          echo "=== live" >> $f
+          node aftercheck.mjs >> $f 2>&1 || echo "aftercheck failed" >> $f
           cat $f
       - name: Save results to the diag branch
         if: always()
         run: |
           git config user.name diag; git config user.email diag@users.noreply.github.com
-          git add out && git commit -qm "diag: night logs and extended-hours quotes" && git push -q origin HEAD:diag
+          git add out && git commit -qm "diag: first run after the after-hours fix" && git push -q origin HEAD:diag
