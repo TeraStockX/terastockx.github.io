@@ -1,0 +1,57 @@
+now 2026-11-25T04:44:21Z
+=== intraday runs since 00:00Z
+227 45544267082 schedule 2026-11-25T04:04:33Z 2026-11-25T04:04:34Z pending 
+226 45543732778 workflow_dispatch 2026-11-25T03:59:54Z 2026-11-25T04:01:13Z in_progress 
+225 45536836996 workflow_dispatch 2026-11-25T02:59:52Z 2026-11-25T03:59:56Z completed success
+224 45529744929 workflow_dispatch 2026-11-25T01:59:50Z 2026-11-25T02:59:55Z completed success
+223 45522380005 workflow_dispatch 2026-11-25T00:59:48Z 2026-11-25T01:59:53Z completed success
+222 45521111119 workflow_dispatch 2026-11-25T00:49:46Z 2026-11-25T00:59:52Z completed success
+221 45519799145 workflow_dispatch 2026-11-25T00:39:43Z 2026-11-25T00:49:49Z completed success
+220 45518505548 workflow_dispatch 2026-11-25T00:29:40Z 2026-11-25T00:39:45Z completed success
+219 45517206895 workflow_dispatch 2026-11-25T00:19:38Z 2026-11-25T00:29:43Z completed success
+218 45515865608 workflow_dispatch 2026-11-25T00:09:36Z 2026-11-25T00:19:41Z completed success
+=== build job 138968231302
+log error
+lines: 1
+=== build job 138945424627
+log error
+lines: 1
+=== live data
+now 2026-11-25T04:44:24.421Z
+pulse generated 2026-11-25T04:00:44.301Z | quotesAt 2026-11-25T04:00:34.370Z | session closed | prevDay 2026-11-23
+index generated 2026-11-25T04:00:47.125Z | rows 5880
+story-prices updated 2026-11-25T04:00:44.301Z | items 24 | last closes 27
+=== stories (in the order shown)
+1. INSM kind=deal age=17.7h at=2026-11-24T11:04:08.000Z since=14.13 move=14.16 (last) dc=14.16 | Sanofi to Acquire Insmed in Strategic Step that Strengthens Long-Term Future
+2. ADI kind=results age=16.7h at=2026-11-24T12:03:22.000Z since=-17.37 move=-17.24 (last) dc=-17.24 | Analog Devices Reports Record Fourth Quarter and Fiscal 2026 Financial Results
+3. DELL kind=results age=7.6h at=2026-11-24T21:09:13.000Z since=- move=-11.82 (last) dc=-11.82 | Dell Technologies Delivers Third Quarter Fiscal 2027 Financial Results
+4. NVDA kind=leadership age=38.8h at=2026-11-23T13:57:54.000Z since=23.78 move=-6.07 (last) dc=-6.07 | NVIDIA Board Reinstates Jensen Huang as President, CEO and Board Director
+5. DKS kind=results age=16.7h at=2026-11-24T12:02:02.000Z since=14.59 move=15.74 (last) dc=15.74 | DICK'S Sporting Goods, Inc. Reports Third Quarter Results
+6. HPE kind=results age=31.5h at=2026-11-23T21:12:08.000Z since=-16.31 move=-16.64 (last) dc=-16.64 | HPE reports fiscal 2026 fourth quarter results
+7. DLTR kind=results age=17.2h at=2026-11-24T11:30:42.000Z since=11.18 move=11.1 (last) dc=11.1 | Dollar Tree, Inc. Reports Third Quarter Results
+8. CW kind=leadership age=9.6h at=2026-11-24T19:09:55.000Z since=-2.98 move=-3.06 (last) dc=-3.06 | As reported on a Form 8-K filed by Curtiss-Wright Corporation on September 21, 2026, the C
+=== headlines
+theme undefined  
+theme undefined  
+index QQQ  
+theme undefined  
+listing BIP 2026-11-24 
+listing CLYD 2026-11-24 
+listing EVRL 2026-11-24 
+listing AVZO 2026-11-24 
+listing VESI 2026-11-24 
+report ADI 2026-11-24 
+report COR 2026-11-24 
+report BDX 2026-11-24 
+=== since the news vs the daily closes (stories with news)
+INSM: since=14.13 | kept: close before the news 149.09 (2026-11-23), latest close 170.15 (2026-11-24, read 2.7h ago) -> 14.13 | Nasdaq history: 2026-11-23 149.09 -> 2026-11-24 170.15 = 14.13
+ADI: since=-17.37 | kept: close before the news 378.75 (2026-11-23), latest close 312.95 (2026-11-24, read 2.7h ago) -> -17.37 | Nasdaq history: 2026-11-23 378.75 -> 2026-11-24 312.95 = -17.37
+DELL: since=- | kept: close before the news - (-), latest close 295.28 (2026-11-24, read 2.7h ago) -> - | Nasdaq history: - -> 2026-11-24 295.28 = -
+NVDA: since=23.78 | kept: close before the news 125.53 (2026-11-20), latest close 155.38 (2026-11-24, read 2.7h ago) -> 23.78 | Nasdaq history: 2026-11-20 125.53 -> 2026-11-24 155.38 = 23.78
+DKS: since=14.59 | kept: close before the news 133.67 (2026-11-23), latest close 153.17 (2026-11-24, read 2.7h ago) -> 14.59 | Nasdaq history: 2026-11-23 133.67 -> 2026-11-24 153.17 = 14.59
+HPE: since=-16.31 | kept: close before the news 48.02 (2026-11-23), latest close 40.19 (2026-11-24, read 2.7h ago) -> -16.31 | Nasdaq history: 2026-11-23 48.02 -> 2026-11-24 40.19 = -16.31
+DLTR: since=11.18 | kept: close before the news 139.1 (2026-11-23), latest close 154.65 (2026-11-24, read 2.7h ago) -> 11.18 | Nasdaq history: 2026-11-23 139.1 -> 2026-11-24 154.65 = 11.18
+CW: since=-2.98 | kept: close before the news 462.81 (2026-11-23), latest close 449.04 (2026-11-24, read 2.7h ago) -> -2.98 | Nasdaq history: 2026-11-23 462.81 -> 2026-11-24 449.04 = -2.98
+=== NVDA story {"t":"NVDA","n":"NVIDIA CORP","mc":3736218180000,"dc":-6.07,"o":80,"move":-6.07,"when":"last","since":23.78,"kind":"leadership","title":"NVIDIA Board Reinstates Jensen Huang as President, CEO and Board Director","date":"2026-11-23","at":"2026-11-23T13:57:54.000Z","url":"https://www.sec.gov/Archives/edgar/data/1045810/000104581026000090/nvda-20261122.htm","items":["5.02"]}
+NVDA kept closes [["https://www.sec.gov/Archives/edgar/data/1045810/000104581026000090/nvda-20261122.htm",{"t":"NVDA","at":"2026-11-23T13:57:54.000Z","pb":125.53,"day":"2026-11-20"}]] {"day":"2026-11-24","close":155.38,"at":"2026-11-25T02:00:35.562Z"}
+NVDA Nasdaq closes [["2026-11-13",162.85],["2026-11-16",156.14],["2026-11-17",155.46],["2026-11-18",150.96],["2026-11-19",145.98],["2026-11-20",125.53],["2026-11-23",165.05],["2026-11-24",155.38]]
