@@ -14,15 +14,17 @@ jobs:
         with: { ref: diag }
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
-      - name: Changed update code for a few tickers (successors, new listings, share classes)
+      - name: Phase timings of the daily run; candidate predecessors of BIP and VRSA
         env:
+          GH_TOKEN: ${{ github.token }}
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
         run: |
           mkdir -p out
-          ./realrun.sh > out/realrun.txt 2>&1 || echo "realrun failed" >> out/realrun.txt
-          cat out/realrun.txt
+          ./timing.sh > out/timing.txt 2>&1 || echo "timing failed" >> out/timing.txt
+          node probe3.mjs > out/probe3.txt 2>&1 || echo "probe3 failed" >> out/probe3.txt
+          cat out/timing.txt out/probe3.txt
       - name: Save results to the diag branch
         if: always()
         run: |
           git config user.name diag; git config user.email diag@users.noreply.github.com
-          git add out && git commit -qm "diag: changed update code for a few tickers" && git push -q origin HEAD:diag
+          git add out && git commit -qm "diag: phase timings and BIP/VRSA predecessors" && git push -q origin HEAD:diag
