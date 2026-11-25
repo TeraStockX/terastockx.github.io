@@ -827,8 +827,9 @@ table.ocr-table td.num .ocr-note { font-size: 11px; line-height: 1.3; margin-top
 .pf-row .pf-shares { width: 96px; }
 /* Wide screens: one table (the rows share the columns, sized by their content). */
 @media (min-width: 1200px) {
-  .pf-hold { display: grid; grid-template-columns: minmax(170px, 1fr) repeat(8, auto) 32px; }
-  .pf-row { grid-column: 1 / -1; grid-template-columns: minmax(170px, 1fr) 96px 92px 112px 56px 92px 70px 96px 120px 32px; grid-template-columns: subgrid; padding: 10px 16px; border-top: 1px solid var(--border); }
+  .pf-hold { display: grid; grid-template-columns: minmax(150px, 1fr) repeat(9, auto) 32px; }
+  .pf-row { grid-column: 1 / -1; grid-template-columns: minmax(150px, 1fr) 84px 84px 92px 112px 56px 92px 70px 96px 120px 32px; grid-template-columns: subgrid; gap: 8px 12px; padding: 10px 16px; border-top: 1px solid var(--border); }
+  .pf-row .pf-shares { width: 84px; }
   .pf-row.pf-head { border-top: 0; padding-top: 12px; padding-bottom: 8px; font-size: 12px; font-weight: 700; color: var(--text-3); white-space: nowrap; }
   .pf-row .num { text-align: right; }
   .pf-row .ph-rm { justify-self: end; padding-inline-start: 12px; }
@@ -878,6 +879,59 @@ table.ocr-table td.num .ocr-note { font-size: 11px; line-height: 1.3; margin-top
   .pf-contrib { gap: 12px; }
 }
 .pf-row .badge { white-space: nowrap; }
+/* A second, dashed series on a line chart (the S&P 500 next to the portfolio) and its legend. */
+.chart path.line2 { fill: none; stroke: #f5b041; stroke-width: 2; stroke-dasharray: 6 5; stroke-linejoin: round; }
+.chart-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 6px 0 2px; font-size: 12px; color: var(--text-2); }
+.chart-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.chart-legend i { display: inline-block; width: 18px; height: 0; border-top: 2px solid var(--series-1); }
+.chart-legend i.lg-dash { border-top: 2px dashed #f5b041; }
+/* Risk and diversification: weight and share of the risk per holding. */
+.pf-risk-card .chart-legend { margin: 0 0 12px; }
+.chart-legend i.rk-lw { border-top: 6px solid rgba(148, 163, 184, .45); border-radius: 3px; }
+.chart-legend i.rk-lr { border-top: 6px solid var(--series-1); border-radius: 3px; }
+.rk-list { display: grid; gap: 10px; max-width: 900px; }
+.rk-row { display: grid; grid-template-columns: minmax(56px, 96px) minmax(80px, 1fr) 120px; align-items: center; gap: 12px; font-size: 14px; font-variant-numeric: tabular-nums; }
+.rk-t { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rk-bars { display: grid; gap: 3px; }
+.rk-bars > span { display: block; height: 6px; border-radius: 3px; min-width: 2px; }
+.rk-w { background: rgba(148, 163, 184, .45); }
+.rk-r { background: var(--series-1); }
+.rk-r.hot { background: linear-gradient(90deg, #d99100, var(--warning)); }
+.rk-v { text-align: right; white-space: nowrap; color: var(--text-2); }
+.rk-v b.hot { color: var(--warning-ink, #fbbf24); }
+/* Dividend calendar: a row per month, the amount from payment dates solid and the estimate light. */
+.chart-legend i.dv-lk { border-top: 6px solid var(--good); border-radius: 3px; }
+.chart-legend i.dv-le { border-top: 6px solid rgba(34, 197, 94, .35); border-radius: 3px; }
+.pf-div-card .chart-legend { margin: 0 0 12px; }
+.dv-list { display: grid; gap: 8px; max-width: 900px; }
+.dv-row { display: grid; grid-template-columns: 92px minmax(60px, 1fr) 88px minmax(0, 1.2fr); align-items: center; gap: 12px; font-size: 14px; font-variant-numeric: tabular-nums; }
+.dv-m { color: var(--text-2); white-space: nowrap; }
+.dv-bar { display: flex; height: 10px; border-radius: 5px; background: rgba(255,255,255,.05); overflow: hidden; }
+.dv-k { background: var(--good); }
+.dv-e { background: rgba(34, 197, 94, .35); }
+.dv-v { text-align: right; font-weight: 700; white-space: nowrap; }
+.dv-t { color: var(--text-3); font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 640px) {
+  .dv-row { grid-template-columns: 76px minmax(0, 1fr) auto; grid-template-areas: "m b v" "t t t"; gap: 4px 10px; }
+  .dv-m { grid-area: m; } .dv-bar { grid-area: b; } .dv-v { grid-area: v; } .dv-t { grid-area: t; white-space: normal; }
+  .rk-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "t v" "b b"; gap: 4px 10px; }
+  .rk-t { grid-area: t; } .rk-bars { grid-area: b; } .rk-v { grid-area: v; }
+}
+.pf-alerts-none { margin: 0 0 14px; }
+.pf-alerts { margin-bottom: 14px; }
+/* Phones: the portfolio's figures in two columns (a gain in forints needs the room), the purchase price label on two
+   lines, fixed value columns so the bars line up. */
+@media (max-width: 640px) {
+  .pf-summary .hero-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pf-row .ph-cost .ph-l { white-space: normal; line-height: 1.2; }
+  .dv-row { grid-template-columns: 76px minmax(0, 1fr) 76px; }
+  .rk-row { grid-template-columns: minmax(0, 1fr) 112px; }
+}
+/* Gain against the purchase price: under the value of a holding, and in the figures. */
+.pf-gain { font-size: 12px; font-weight: 600; margin-top: 2px; }
+.pf-gain.pos, .pf-summary .pos { color: var(--good-ink); }
+.pf-gain.neg, .pf-summary .neg { color: var(--critical-ink); }
+.pf-gain-pct { font-size: .78em; font-weight: 700; }
 .section-title + .breakdown { margin-top: 0; }
 
 /* ---------- AI helper ("Ask" panel on company pages and the methodology page) ---------- */

@@ -1178,3 +1178,123 @@ test("Successor registrant: the predecessor is found from the table, an earlier 
   assert.equal(predecessorCik("0002200000", null, "Acme Widgets Holdings, Inc."), null);
   assert.equal(predecessorCik("0000320193", { cik: "0000320193", name: "Apple Inc.", annual: year }, "Apple Inc."), null);
 });
+
+test("Portfolio: gain against the purchase price, also for a European listing; holdings without one left out", async () => {
+  const { portfolioSummary } = await import("../assets/js/portfolio.js");
+  const p = portfolioSummary([
+    { t: "A", shares: 10, cost: 80, row: { px: 100 } },
+    { t: "B", shares: 5, row: { px: 20 } },
+    { t: "U", shares: 2, cost: 90, row: { ucits: true, etf: true, px: 120, pxLocal: 100, cur: "EUR" } },
+  ]);
+  const [a, b, u] = p.positions;
+  assert.equal(a.invested, 800); assert.equal(a.gain, 200); assert.equal(a.gainPct, 0.25);
+  assert.equal(b.gain, null);
+  // 90 EUR bought, 100 EUR now, at today's 1.2 dollars per euro.
+  assert.equal(u.invested, 216); assert.equal(Math.round(u.gain), 24); assert.ok(Math.abs(u.gainPct - 1 / 9) < 1e-9);
+  assert.equal(p.invested, 1016); assert.equal(Math.round(p.gain), 224); assert.equal(p.gainCount, 2);
+  assert.equal(portfolioSummary([{ t: "B", shares: 5, row: { px: 20 } }]).gain, null);
+});
+
+test("Portfolio: the S&P 500 over the same period, on the same chart points", async () => {
+  const { benchMove } = await import("../assets/js/portfolio.js");
+  const today = "2026-11-25";
+  const bench = { now: 110, dc: 1, daily: [["2026-11-17", 100], ["2026-11-18", 102], ["2026-11-24", 108]], monthly: [["2026-09", 95], ["2026-10", 105]] };
+  const w = benchMove({ id: "1w", from: "2026-11-18" }, [["2026-11-18", 1000], ["2026-11-24", 1050], [today, 1100]], bench, { today });
+  assert.ok(Math.abs(w.pct - (110 / 102 - 1)) < 1e-12);
+  // Scaled to the portfolio's first value: 1000 × 108/102 on the 24th, 1000 × 110/102 today.
+  assert.deepEqual(w.line.map((v) => Math.round(v)), [1000, 1059, 1078]);
+  assert.ok(Math.abs(benchMove({ id: "1d" }, [], bench, { today }).pct - 0.01) < 1e-12);
+  // Month-end points (max): the month's close, carried over gaps.
+  const m = benchMove({ id: "max", from: "2026-09-30" }, [["2026-09", 500], ["2026-10", 520], [today, 560]], bench, { today });
+  assert.ok(Math.abs(m.pct - (110 / 95 - 1)) < 1e-12);
+  assert.deepEqual(m.line.map((v) => Math.round(v)), [500, 553, 579]);
+  assert.equal(benchMove({ id: "1w", from: "2026-11-18" }, [], null, { today }), null);
+});
+
+test("Portfolio risk: volatility, each holding's share of the risk (adds up to 100%), independent holdings", async () => {
+  const { riskBreakdown } = await import("../assets/js/portfolio.js");
+  const days = [];
+  for (const d = new Date("2025-11-03T12:00:00Z"); days.length < 250; d.setUTCDate(d.getUTCDate() + 1)) if (d.getUTCDay() % 6) days.push(d.toISOString().slice(0, 10));
+  let seed = 11;
+  const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647 - 0.5; };
+  let a = 100, c = 100;
+  const A = [], B = [], C = [];
+  for (const k of days) { a *= 1 + rnd() * 0.04; c *= 1 + rnd() * 0.02; A.push([k, a]); B.push([k, a * 3]); C.push([k, c]); }
+  const series = new Map([["A", { daily: A }], ["B", { daily: B }], ["C", { daily: C }], ["N", { daily: A.slice(-30) }]]);
+  // Two holdings that move together are worth one.
+  const same = riskBreakdown([{ t: "A", value: 500 }, { t: "B", value: 500 }], series, { today: "2026-11-25" });
+  assert.ok(Math.abs(same.independent - 1) < 1e-6);
+  assert.ok(Math.abs(same.corr - 1) < 1e-6);
+  // Unrelated holdings: more than one; the shares of the risk add up to 100%; a young listing is left out.
+  const mix = riskBreakdown([{ t: "A", value: 500 }, { t: "C", value: 500 }, { t: "N", value: 100 }], series, { today: "2026-11-25", bench: { daily: A } });
+  assert.ok(mix.independent > 1.3 && mix.independent < 2);
+  assert.ok(Math.abs(mix.items.reduce((s, x) => s + x.share, 0) - 1) < 1e-9);
+  assert.equal(mix.items[0].t, "A"); // the more volatile one carries more of the risk than its half of the value
+  assert.ok(mix.items[0].share > 0.5);
+  assert.deepEqual(mix.missing, ["N"]);
+  assert.ok(mix.vol > 0 && mix.vol < mix.benchVol);
+  assert.equal(riskBreakdown([{ t: "N", value: 1 }], series, { today: "2026-11-25" }).vol, null);
+});
+
+test("Dividend calendar: payment dates of Nasdaq listings, quarterly pattern or yield for the others", async () => {
+  const { dividendCalendar } = await import("../assets/js/portfolio.js");
+  const today = "2026-11-25";
+  const divs = {
+    AAPL: [["2025-11-10", "2025-11-13", 0.26], ["2026-02-09", "2026-02-12", 0.26], ["2026-05-11", "2026-05-14", 0.27], ["2026-08-10", "2026-08-13", 0.27], ["2026-11-12", "2026-11-16", 0.27]],
+    // An announced special dividend is paid; it does not set the amount of the regular ones.
+    COST: [["2025-10-31", "2025-11-14", 1.3], ["2026-01-30", "2026-02-13", 1.3], ["2026-05-01", "2026-05-15", 1.47], ["2026-07-24", "2026-08-07", 1.47], ["2026-10-30", "2026-11-13", 1.47], ["2026-11-24", "2026-12-04", 30]],
+  };
+  const q = (rows) => rows.map(([periodEnd, dividendsPaid, sharesDiluted]) => ({ periodEnd, dividendsPaid, sharesDiluted }));
+  const semi = q([["2025-12-31", 100, 10], ["2026-03-31", 0, 10], ["2026-06-30", 100, 10], ["2026-09-30", 0, null]]);
+  const cal = dividendCalendar([
+    { t: "AAPL", shares: 10, value: 3500, dy: 0.003, usdPer: 1 },
+    { t: "COST", shares: 2, value: 2000, dy: 0.005, usdPer: 1 },
+    { t: "SEMI", shares: 1, value: 1000, dy: 0.02, usdPer: 1, quarterly: semi },
+    { t: "SPY", shares: 3, value: 2100, dy: 0.012, usdPer: 1 },
+    { t: "NONE", shares: 3, value: 2100, dy: null, usdPer: 1 },
+  ], divs, { today });
+  const month = (ym) => cal.months.find((m) => m.ym === ym);
+  assert.deepEqual(cal.months.map((m) => m.ym).slice(0, 2), ["2026-11", "2026-12"]);
+  assert.equal(cal.months.length, 12);
+  // AAPL: last year's payment months at the latest amount; this month's payment is already paid.
+  assert.ok(Math.abs(month("2027-02").items.find((i) => i.t === "AAPL").v - 2.7) < 1e-9);
+  assert.equal(month("2026-11").items.some((i) => i.t === "AAPL"), false);
+  // COST: the announced special in December, then the regular 1.47.
+  assert.ok(Math.abs(month("2026-12").items.find((i) => i.t === "COST").v - 60) < 1e-9);
+  assert.ok(Math.abs(month("2027-05").items.find((i) => i.t === "COST").v - 2.94) < 1e-9);
+  // SEMI: the yield's year (20) spread over the quarters that paid (Oct–Dec, Apr–Jun); SPY: evenly.
+  const semiTotal = cal.months.reduce((s, m) => s + (m.items.find((i) => i.t === "SEMI")?.v || 0), 0);
+  assert.ok(Math.abs(semiTotal - 20) < 1e-9);
+  assert.equal(month("2027-02").items.some((i) => i.t === "SEMI"), false);
+  assert.ok(Math.abs(month("2027-05").items.find((i) => i.t === "SPY").v - 2.1) < 1e-9);
+  assert.equal(month("2027-05").items.find((i) => i.t === "SPY").known, false);
+  assert.deepEqual(cal.byT.map((x) => [x.t, x.how]), [["AAPL", "dates"], ["COST", "dates"], ["SEMI", "quarters"], ["SPY", "yield"]]);
+});
+
+test("Dividend store: days to read, merging a day, cuts from payments or quarterly cash dividends", async () => {
+  const { usDate, daysToRead, mergeDay, pruneDividends, dividendCut } = await import("../scripts/dividends.mjs");
+  const now = new Date("2026-11-25T12:00:00Z");
+  assert.equal(usDate("11/16/2026"), "2026-11-16");
+  assert.equal(usDate("N/A"), null);
+  const all = daysToRead({}, now);
+  assert.equal(all[0], "2025-10-21");
+  assert.ok(all.every((d) => ![0, 6].includes(new Date(d).getUTCDay())));
+  // Read days are skipped, except the last week and the coming days, read again after 20 hours.
+  const read = Object.fromEntries(all.map((d) => [d, "2026-11-25T06:00:00Z"]));
+  assert.deepEqual(daysToRead(read, now), []);
+  read["2026-11-24"] = "2026-11-24T06:00:00Z"; read["2026-06-01"] = "2026-06-01T06:00:00Z";
+  assert.deepEqual(daysToRead(read, now), ["2026-11-24"]);
+  const store = { read: {}, d: { OLD: [["2025-01-02", null, 1]] } };
+  mergeDay(store, "2026-11-12", [{ symbol: "AAPL", dividend_Ex_Date: "11/12/2026", payment_Date: "11/16/2026", dividend_Rate: 0.27 }, { symbol: "BRK/B", dividend_Ex_Date: "11/12/2026", payment_Date: "N/A", dividend_Rate: 1 }, { symbol: "X", dividend_Ex_Date: "11/13/2026", dividend_Rate: 1 }]);
+  mergeDay(store, "2026-11-12", [{ symbol: "AAPL", dividend_Ex_Date: "11/12/2026", payment_Date: "11/16/2026", dividend_Rate: 0.27 }]);
+  pruneDividends(store, now);
+  assert.deepEqual(store.d, { AAPL: [["2026-11-12", "2026-11-16", 0.27]] });
+  assert.ok(store.read["2026-11-12"]);
+  // Cuts: a lower regular payment (a special dividend before it is no cut); quarterly cash dividends by year.
+  assert.equal(dividendCut({ list: [["2026-05-01", null, 0.5], ["2026-08-01", null, 0.5], ["2026-11-01", null, 0.25]] }, now), "2026-11-01");
+  assert.equal(dividendCut({ list: [["2026-05-01", null, 1.47], ["2026-08-01", null, 1.47], ["2026-10-30", null, 1.47], ["2026-11-24", null, 30]] }, now), null);
+  const q = (vals) => vals.map((v, i) => ({ periodEnd: ["2024-12-31", "2025-03-31", "2025-06-30", "2025-09-30", "2025-12-31", "2026-03-31", "2026-06-30", "2026-09-30"][i], dividendsPaid: v, sharesDiluted: i === 4 ? null : 100 }));
+  assert.equal(dividendCut({ quarterly: q([50, 50, 50, 50, 50, 50, 25, 25]) }, now), "2026-09-30");
+  assert.equal(dividendCut({ quarterly: q([50, 0, 50, 50, 100, 0, 50, 50]) }, now), null); // a payment that moved a quarter
+  assert.equal(dividendCut({ quarterly: q([50, 50, 50, 50, 50, 50, 50, 50]).slice(1) }, now), null);
+});

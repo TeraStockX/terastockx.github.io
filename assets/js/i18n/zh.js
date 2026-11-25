@@ -121,7 +121,7 @@ export default {
   "chartNetIncomeSub": "年度（红色 = 亏损）",
   "chartFcfSub": "经营现金流 − 资本支出",
   "chartMarginSub": "营业利润 / 营收",
-  "chartPriceSub": "月末收盘价，最近 6 年", "chartPriceDaily": "股价（每日）", "chartPriceDailySub": "自{d}起的每日收盘价",
+  "chartPriceSub": "月末收盘价，最近 6 年", "chartPriceDaily": "股价（每日）", "chartPriceDailySub": "自{d}起的每日收盘价", "pfCost": "买入价", "pfCostHint": "每股平均买入价，以交易货币计（可选）", "pfGain": "盈亏", "pfGainPartial": "{m} 个持仓中 {n} 个填写了买入价", "pfGainHint": "请填写持仓的买入价", "pfGainNote": "盈亏：当前股价与买入价（每股平均，以交易货币计）之差，按今日汇率折算，不含股息。", "pfBench": "同期 S&P 500", "pfBenchBetter": "您的组合领先 {d} 个百分点", "pfBenchWorse": "您的组合落后 {d} 个百分点", "pfBenchSame": "您的组合涨跌相同", "pfRiskTitle": "风险与分散", "pfVol": "波动率（年化）", "pfVolBench": "S&P 500：{v}", "pfDivers": "分散程度", "pfDiversUnit": "个独立持仓", "pfDiversSub": "共 {n} 个持仓 · 平均相关系数：{c}", "pfTopRisk": "最大风险来源", "pfTopRiskSub": "占风险 {r}，占市值 {w}", "pfRiskShare": "风险占比", "pfRiskNote": "根据 {d} 以来的每日收盘价：组合市值波动有多大，以及每个持仓贡献了多少。若某持仓的风险占比明显高于其权重，说明它波动较大或与其他持仓同涨同跌。分散程度表示该组合相当于多少个相互独立的持仓。", "pfRiskShort": "因价格历史较短或缺失而未计入：{list}。", "pfDivTitle": "股息日历", "pfDivTotal": "未来 12 个月预期股息：{v}", "pfDivKnown": "依据派息日期", "pfDivEst": "估算", "pfDivNote": "纳斯达克上市证券：依据已公布的派息及去年的派息日期，按最近一次金额计算。其他（*）：根据股息率估算，按公司季度派息分布（或平均）分配。税前金额，按今日汇率折算。", "pfDivNone": "您的持仓均不派发股息。", "alertDividendCut": "{t}：削减股息（{date}）", "pfAlertsTitle": "提醒", "pfAlertsNone": "自 {d} 以来，您的持仓没有新的提醒。", "pfAlertsFirst": "从现在起将关注您的持仓：如果 TeraScore 大幅变化、风险上升、股息被削减，或出现关键信号、重大事件，您会在这里看到。", "pfAlertsNote": "提醒在此浏览器中有效；邮件和手机提醒将随登录功能一同推出。",
   "notEnough": "数据不足。",
   "errorLoad": "出错了：{e}",
   "serveHint": "如果您直接打开了文件，请启动本地 Web 服务器（见 README）。",

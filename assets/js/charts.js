@@ -40,10 +40,14 @@ export function barChart(title, sub, points, f, emptyText) {
 // opts: W/H (viewBox size: the drawn width in pixels keeps the labels at their CSS size), label(key) for the
 // tooltip, ticks(keys, plotWidth) → [[index, text]] for the x axis (default: the year at each January of
 // "YYYY-MM" keys).
-export function lineChart(title, sub, points, f, emptyText, { W = 900, H = 220, label = (k) => k, ticks: xTicks = null } = {}) {
-  const pts = points.filter(([, v]) => isNum(v));
+// second: values of a second series for the same points (drawn dashed, e.g. the S&P 500 next to a portfolio), with
+// secondName for the tooltip and legend (names: [first, second]).
+export function lineChart(title, sub, points, f, emptyText, { W = 900, H = 220, label = (k) => k, ticks: xTicks = null, second = null, names = null } = {}) {
+  const rows = points.map(([k, v], i) => [k, v, second ? second[i] : null]).filter(([, v]) => isNum(v));
+  const pts = rows.map(([k, v]) => [k, v]);
+  const s2 = second ? rows.map((r) => (isNum(r[2]) ? r[2] : null)) : null;
   if (pts.length < 2) return `<div class="glass chart wide"><h3>${esc(title)}</h3><div class="chart-sub">${esc(sub)}</div><div class="empty small">${esc(emptyText)}</div></div>`;
-  const vals = pts.map(([, v]) => v);
+  const vals = [...pts.map(([, v]) => v), ...(s2 || []).filter(isNum)];
   const max = Math.max(...vals), min = Math.min(...vals);
   // Room on the right for the longest value label ("6 877 818 Ft", "344,63 USD").
   const padT = 14, padB = 22, padR = Math.min(120, Math.max(54, 12 + 6.3 * Math.max(...[max, (max + min) / 2, min].map((v) => String(f(v)).length))));
@@ -51,17 +55,20 @@ export function lineChart(title, sub, points, f, emptyText, { W = 900, H = 220, 
   const x = (i) => (i / (pts.length - 1)) * (W - padR);
   const y = (v) => padT + ((max - v) / range) * (H - padT - padB);
   const path = pts.map(([, v], i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
+  const path2 = s2 ? s2.map((v, i) => (isNum(v) ? `${i && isNum(s2[i - 1]) ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}` : "")).join(" ") : "";
   const area = `${path} L${x(pts.length - 1)},${H - padB} L0,${H - padB} Z`;
   const ticks = [max, (max + min) / 2, min].map((v) => `<line class="gridline" x1="0" x2="${W - padR}" y1="${y(v)}" y2="${y(v)}"/><text class="axis-label" x="${W - padR + 6}" y="${y(v) + 4}">${esc(f(v))}</text>`).join("");
   const years = [];
   if (xTicks) for (const [i, text] of xTicks(pts.map(([k]) => k), W - padR)) years.push(`<text class="axis-label" x="${x(i)}" y="${H - 5}" text-anchor="${i === 0 ? "start" : i === pts.length - 1 ? "end" : "middle"}">${esc(text)}</text>`);
   else pts.forEach(([k], i) => { if (k.endsWith("-01") && i > 0) years.push(`<text class="axis-label" x="${x(i)}" y="${H - 5}" text-anchor="middle">${k.slice(0, 4)}</text>`); });
-  const data = esc(JSON.stringify(pts.map(([l, v]) => [label(l), f(v)])));
-  return `<div class="glass chart wide" data-line="${data}" data-w="${W - padR}" data-n="${pts.length}"><h3>${esc(title)}</h3><div class="chart-sub">${esc(sub)}</div>
+  const data = esc(JSON.stringify(pts.map(([l, v], i) => [label(l), s2 && isNum(s2[i]) && names ? `${names[0]} ${f(v)} · ${names[1]} ${f(s2[i])}` : f(v)])));
+  const legend = s2 && names ? `<div class="chart-legend"><span><i class="lg-line"></i>${esc(names[0])}</span><span><i class="lg-dash"></i>${esc(names[1])}</span></div>` : "";
+  return `<div class="glass chart wide" data-line="${data}" data-w="${W - padR}" data-n="${pts.length}"><h3>${esc(title)}</h3><div class="chart-sub">${esc(sub)}</div>${legend}
     <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(title)}">
       <defs><linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5ea2ff" stop-opacity=".35"/><stop offset="1" stop-color="#5ea2ff" stop-opacity="0"/></linearGradient></defs>
       ${ticks}${years.join("")}
       <path class="area" d="${area}"/>
+      ${path2 ? `<path class="line2" d="${path2}"/>` : ""}
       <path class="line" d="${path}"/>
       <line class="cross hidden" x1="0" x2="0" y1="${padT}" y2="${H - padB}"/>
       <circle class="marker hidden" r="4.5" cx="0" cy="0"/>

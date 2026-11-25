@@ -21,6 +21,7 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseCompanyFacts, mergeCompanyFacts } from "./sec-parse.mjs";
 import { predecessorCik } from "./successors.mjs";
+import { daysToRead, mergeDay, pruneDividends, dividendCut } from "./dividends.mjs";
 import { sectorFromSic, sectorFromNasdaq, profileFor } from "./sectors.mjs";
 import { nasdaqScreener, nasdaqEtfScreener, etfSummary, priceHistory, priceBudgetLeft, fxToUsd, marketSession, extendedQuotes, browserJson, dailyCloses } from "./market.mjs";
 import { UCITS, ucitsQuote, ucitsHistory, nasdaqMonthlyRows, nasdaqDailyCloses } from "./ucits.mjs";
@@ -351,6 +352,29 @@ async function updateEtfHistory() {
   await Promise.all(Array.from({ length: 4 }, worker));
   if (Object.keys(h).length) writeFileSync(join(DATA, "etf-history.json"), JSON.stringify({ generated: new Date().toISOString(), h }) + "\n");
   console.log(`  ETF price history: ${Object.keys(h).length} of ${top.length} (price files: ${files})`);
+}
+
+// Dividend calendar of the Nasdaq-listed stocks and funds (see scripts/dividends.mjs): the days of the last 13 months
+// not read yet (the first run reads them all, a few minutes), and the last week and the coming two months again.
+const DIVIDENDS = join(DATA, "dividends.json");
+async function updateDividends({ budgetMs = 10 * 60000 } = {}) {
+  let store = { read: {}, d: {} };
+  if (existsSync(DIVIDENDS)) try { const j = readJson(DIVIDENDS); store = { read: j.read || {}, d: j.d || {} }; } catch {}
+  const now = new Date(), start = Date.now();
+  const todo = daysToRead(store.read, now);
+  let next = 0, ok = 0, failed = 0;
+  const worker = async () => {
+    while (next < todo.length && Date.now() - start < budgetMs) {
+      const day = todo[next++];
+      const j = await browserJson(`https://api.nasdaq.com/api/calendar/dividends?date=${day}`);
+      if (j?.data) { mergeDay(store, day, j.data.calendar?.rows || [], new Date().toISOString()); ok++; } else failed++;
+      await sleep(100);
+    }
+  };
+  await Promise.all(Array.from({ length: 4 }, worker));
+  pruneDividends(store, now);
+  writeFileSync(DIVIDENDS, JSON.stringify({ generated: now.toISOString(), read: store.read, d: store.d }) + "\n");
+  console.log(`  dividend calendar: ${ok} of ${todo.length} days read${failed ? ` (${failed} failed)` : ""}; ${Object.keys(store.d).length} Nasdaq-listed payers`);
 }
 
 // Large companies whose recent news has not been read yet (when this was introduced, or a company that grew
@@ -850,6 +874,8 @@ async function buildIndex({ snapshot = false } = {}) {
 
   const news = [];
   const recentNews = []; // headlines of large companies for the top stories
+  let divCal = null;
+  try { if (existsSync(DIVIDENDS)) divCal = readJson(DIVIDENDS).d || null; } catch {}
   const logos = logoSet(DATA);
   const companies = all.map((c) => {
     const a = analyze(c, { benchmarks });
@@ -876,6 +902,9 @@ async function buildIndex({ snapshot = false } = {}) {
       if (crit.length) row.cf = crit;
       const dv = dividendProfile(c, a);
       if (dv.payer && Number.isFinite(dv.score)) row.ds = dv.score;
+      // A dividend cut in the last half year (alerts): from the Nasdaq calendar, else the quarterly cash dividends.
+      const cut = dividendCut({ list: divCal?.[c.ticker] || null, quarterly: c.quarterly }, now);
+      if (cut) row.dk = cut;
     }
     if (Number.isFinite(c.market?.price)) row.px = c.market.price;
     if (!row.mc && Number.isFinite(c.market?.marketCap) && c.market.marketCap > 0) row.mc = Math.round(c.market.marketCap);
@@ -962,6 +991,7 @@ if (!indexOnly && !quotesOnly && !skipLogos) {
   const tickers = readdirSync(COMPANIES).filter((f) => f.endsWith(".json")).map((f) => f.slice(0, -5)).filter((t) => !onlyTickers || onlyTickers.has(t));
   await updateLogos({ dataDir: DATA, tickers }).catch((e) => console.warn(`logos: ${e.message}`));
 }
+if (!indexOnly && !quotesOnly) await updateDividends().catch((e) => console.warn(`dividend calendar: ${e.message}`));
 if (!indexOnly && !quotesOnly && !onlyTickers && limit === Infinity) {
   await updateEtfs();
   await updateUcits({ history: true }).catch((e) => console.warn(`European ETFs: ${e.message}`));

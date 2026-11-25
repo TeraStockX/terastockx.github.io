@@ -5,13 +5,21 @@ const isNum = (x) => typeof x === "number" && Number.isFinite(x);
 
 export const PORTFOLIO_LIMITS = { position: 0.25, sector: 0.40, minHoldings: 5, lowScore: 40 };
 
-// holdings: [{ t, shares, row, dy? }] – row is the company's index row (with px = price in USD), or an ETF row
+// holdings: [{ t, shares, row, dy?, cost? }] – row is the company's index row (with px = price in USD), or an ETF row
 // ({ etf: true, px, dy, … }). ETFs have no TeraScore: weighted scores cover the companies only, and
 // concentration checks skip them (a fund is already diversified). `dy` on a holding overrides the yield.
+// `cost` is the average purchase price of one share in its trading currency (US dollars, or the currency of a
+// European listing, whose row has the local price as pxLocal): the gain is today's price against it, both converted
+// at today's exchange rate (so it is the price gain, without dividends and currency moves).
 export function portfolioSummary(holdings, limits = PORTFOLIO_LIMITS) {
   const positions = holdings
     .map((h) => ({ ...h, row: h.row && isNum(h.dy) ? { ...h.row, dy: h.dy } : h.row, price: h.row?.px ?? null }))
-    .map((h) => ({ ...h, value: isNum(h.price) && isNum(h.shares) && h.shares > 0 ? h.price * h.shares : null }));
+    .map((h) => ({ ...h, value: isNum(h.price) && isNum(h.shares) && h.shares > 0 ? h.price * h.shares : null }))
+    .map((h) => {
+      const usdPer = h.row?.ucits ? (isNum(h.row.pxLocal) && h.row.pxLocal > 0 && isNum(h.price) ? h.price / h.row.pxLocal : null) : 1;
+      const invested = isNum(h.cost) && h.cost > 0 && isNum(h.value) && isNum(usdPer) ? h.cost * usdPer * h.shares : null;
+      return { ...h, invested, gain: isNum(invested) ? h.value - invested : null, gainPct: isNum(invested) ? h.value / invested - 1 : null };
+    });
   const valued = positions.filter((p) => isNum(p.value));
   const total = valued.reduce((s, p) => s + p.value, 0);
   for (const p of positions) p.weight = total > 0 && isNum(p.value) ? p.value / total : null;
@@ -49,8 +57,14 @@ export function portfolioSummary(holdings, limits = PORTFOLIO_LIMITS) {
   const unscored = list((p) => !p.row?.etf && !isNum(p.row?.sc?.overall));
   if (unscored.length) warnings.push({ id: "unscored", level: "info", list: unscored });
 
+  // Gain of the holdings with a purchase price.
+  const withCost = valued.filter((p) => isNum(p.invested));
+  const invested = withCost.reduce((s, p) => s + p.invested, 0);
+  const gain = withCost.reduce((s, p) => s + p.gain, 0);
+
   return {
     positions, total, sectors: sectorList, warnings,
+    invested: withCost.length ? invested : null, gain: withCost.length ? gain : null, gainPct: invested > 0 ? gain / invested : null, gainCount: withCost.length,
     score: isNum(score.value) ? Math.round(score.value) : null, scoreCovered: score.covered,
     risk: isNum(risk.value) ? Math.round(risk.value) : null,
     income, yield: total > 0 ? income / total : null, pe,
@@ -185,6 +199,29 @@ export function movePoints(move, holdings, series, { today }) {
   return pts;
 }
 
+// The S&P 500 over the same period, from the SPY fund: bench = { now, dc, daily, monthly } (today's price, the day's
+// change in %, its closes). Returns its change (null without a price at the start) and, for the chart, its value on
+// each point of the portfolio's chart, scaled to start at the portfolio's first value (both without dividends).
+export function benchMove(move, points, bench, { today }) {
+  if (!bench || !isNum(bench.now) || bench.now <= 0) return null;
+  let p0 = null;
+  if (move.id === "1d") p0 = isNum(bench.dc) && bench.dc > -100 ? bench.now / (1 + bench.dc / 100) : null;
+  else if (move.from) {
+    p0 = move.id === "max" ? (bench.monthly || []).find(([m]) => m >= move.from.slice(0, 7))?.[1] ?? null
+      : (closeOnOrBefore(bench.daily, move.from) || monthEndNear(bench.monthly, move.from, today, 16))?.v ?? null;
+  }
+  const pct = isNum(p0) && p0 > 0 ? bench.now / p0 - 1 : null;
+  let line = null;
+  if (isNum(pct) && points.length >= 2) {
+    const monthly = bench.monthly || [];
+    const monthAt = (k) => { let v = null; for (const [m, c] of monthly) { if (m > k) break; if (isNum(c)) v = c; } return v; };
+    const at = (k) => (k === today ? bench.now : k.length === 7 ? monthAt(k) : closeOnOrBefore(bench.daily, k)?.v ?? null);
+    const b0 = at(points[0][0]);
+    if (isNum(b0) && b0 > 0) line = points.map(([k]) => { const b = at(k); return isNum(b) ? (points[0][1] * b) / b0 : null; });
+  }
+  return { pct, line };
+}
+
 // The value-weighted TeraScore change of the companies over a period. scored: [{ t, value, score, d1, ch,
 // weekly: [[YYYY-MM-DD, score]], fy: [[year, score]] }]. "1d" is the change at the last daily update; 1w…1y come
 // from the weekly snapshots of the current method; "1y" falls back to the latest fiscal year against the one
@@ -247,3 +284,138 @@ export function scoreMove(id, scored, { today, minCover = 0.6 }) {
 }
 // The first weekly snapshot of the current method among the companies (when the weekly history starts).
 const firstSnapshot = (xs) => xs.flatMap((x) => (x.weekly || []).map(([d]) => d)).sort()[0] || null;
+
+// ---------- Risk and diversification ----------
+// From the daily closes of the last year, on the days every included holding traded: the portfolio's volatility
+// (annualized standard deviation of its daily returns), each holding's share of the portfolio's risk (its weight ×
+// its covariance with the portfolio ÷ the portfolio's variance; the shares add up to 100%) and how diversified it is:
+// the diversification ratio (weighted average of the holdings' volatilities ÷ the portfolio's) squared is the number
+// of independent holdings the portfolio is worth (equal-weighted, uncorrelated holdings: their number; holdings that
+// move together: close to one). holdings: [{ t, value }] (dollars); series: Map(t → { daily: [[YYYY-MM-DD, close]] }).
+// A holding with fewer than minDays closes in the window is left out (missing); so is the benchmark when it has none.
+export function riskBreakdown(holdings, series, { today, bench = null, days = 365, minDays = 120 } = {}) {
+  const [y, m, d] = today.split("-").map(Number);
+  const from = ymd(new Date(Date.UTC(y, m - 1, d - days)));
+  const closes = (daily) => new Map((daily || []).filter(([k, v]) => k >= from && isNum(v) && v > 0));
+  const incl = [], missing = [];
+  for (const h of holdings) {
+    if (!isNum(h.value) || h.value <= 0) continue;
+    const c = closes(series.get(h.t)?.daily);
+    if (c.size >= minDays) incl.push({ t: h.t, value: h.value, c }); else missing.push(h.t);
+  }
+  if (!incl.length) return { items: [], missing, vol: null };
+  const common = [...incl[0].c.keys()].filter((k) => incl.every((x) => x.c.has(k))).sort();
+  if (common.length < minDays) return { items: [], missing: [...missing, ...incl.map((x) => x.t)], vol: null };
+  const ret = (c) => common.slice(1).map((k, i) => Math.log(c.get(k) / c.get(common[i])));
+  const R = incl.map((x) => ret(x.c));
+  const n = R[0].length, k = incl.length;
+  const mean = R.map((r) => r.reduce((a, b) => a + b, 0) / n);
+  const C = Array.from({ length: k }, () => new Array(k).fill(0));
+  for (let i = 0; i < k; i++) for (let j = i; j < k; j++) {
+    let s = 0;
+    for (let q = 0; q < n; q++) s += (R[i][q] - mean[i]) * (R[j][q] - mean[j]);
+    C[i][j] = C[j][i] = s / (n - 1);
+  }
+  const total = incl.reduce((a, x) => a + x.value, 0);
+  const w = incl.map((x) => x.value / total);
+  const Cw = C.map((row) => row.reduce((a, c, j) => a + c * w[j], 0));
+  const variance = w.reduce((a, wi, i) => a + wi * Cw[i], 0);
+  const year = Math.sqrt(252);
+  const vol = Math.sqrt(Math.max(0, variance)) * year;
+  const vols = C.map((row, i) => Math.sqrt(row[i]) * year);
+  const ratio = vol > 0 ? w.reduce((a, wi, i) => a + wi * vols[i], 0) / vol : null;
+  // Average correlation of the pairs of holdings, weighted by the product of their weights.
+  let cs = 0, cw = 0;
+  for (let i = 0; i < k; i++) for (let j = i + 1; j < k; j++) if (C[i][i] > 0 && C[j][j] > 0) { cs += w[i] * w[j] * (C[i][j] / Math.sqrt(C[i][i] * C[j][j])); cw += w[i] * w[j]; }
+  let benchVol = null;
+  if (bench) {
+    const b = closes(bench.daily);
+    const bd = common.filter((q) => b.has(q));
+    if (bd.length >= minDays) {
+      const br = bd.slice(1).map((q, i) => Math.log(b.get(q) / b.get(bd[i])));
+      const bm = br.reduce((a, x) => a + x, 0) / br.length;
+      benchVol = Math.sqrt(br.reduce((a, x) => a + (x - bm) ** 2, 0) / (br.length - 1)) * year;
+    }
+  }
+  const items = incl.map((x, i) => ({ t: x.t, weight: w[i], vol: vols[i], share: variance > 0 ? (w[i] * Cw[i]) / variance : null }))
+    .sort((a, b) => (b.share ?? 0) - (a.share ?? 0));
+  return { items, missing, vol, benchVol, ratio, independent: isNum(ratio) ? ratio * ratio : null, corr: cw > 0 ? cs / cw : null, from: common[0], days: n };
+}
+
+// ---------- Dividend calendar ----------
+const addMonths = (ym, n) => { const [y, m] = ym.split("-").map(Number); const d = new Date(Date.UTC(y, m - 1 + n, 1)); return ymd(d).slice(0, 7); };
+const addDays = (day, n) => { const [y, m, d] = day.split("-").map(Number); return ymd(new Date(Date.UTC(y, m - 1, d + n))); };
+
+// Regular payments of a dividend list ([[ex, pay, amount]]): one-off special dividends (more than twice the median
+// of the list) left out.
+export function regularDividends(list) {
+  const xs = (list || []).filter((x) => isNum(x[2]) && x[2] > 0);
+  if (xs.length < 3) return xs;
+  const sorted = xs.map((x) => x[2]).sort((a, b) => a - b);
+  const median = sorted[sorted.length >> 1];
+  return xs.filter((x) => x[2] <= median * 2);
+}
+
+// Expected dividends of the next 12 months (this month and the 11 after it), in dollars.
+// holdings: [{ t, shares, value (dollars), dy (yield), usdPer (dollars per unit of the trading currency), quarterly }].
+// divs: { ticker: [[ex, pay, amount per share]] } – the Nasdaq calendar (Nasdaq listings only). Three ways, best first:
+// - "dates": the announced payments, and last year's payment dates one year on at the latest regular amount;
+// - "quarters": the year's amount from the dividend yield (as in the portfolio's income), spread over the months like
+//   the company's quarterly cash dividends per share of the last four quarters (SEC filings; each quarter evenly over
+//   its months, by month of the year);
+// - "yield": the dividend yield, spread evenly over the year.
+export function dividendCalendar(holdings, divs, { today }) {
+  const first = today.slice(0, 7);
+  const months = Array.from({ length: 12 }, (_, i) => ({ ym: addMonths(first, i), known: 0, est: 0, items: new Map() }));
+  const end = addDays(today, 365);
+  const add = (ym, t, v, known) => {
+    const m = months.find((x) => x.ym === ym);
+    if (!m || !(v > 0)) return;
+    if (known) m.known += v; else m.est += v;
+    const it = m.items.get(t) || { t, v: 0, known };
+    it.v += v; it.known &&= known;
+    m.items.set(t, it);
+  };
+  const byT = [];
+  for (const h of holdings) {
+    if (!isNum(h.shares) || h.shares <= 0 || !isNum(h.usdPer) || h.usdPer <= 0) continue;
+    const list = divs?.[h.t];
+    let how = null;
+    if (list?.length) {
+      how = "dates";
+      const pay = (x) => x[1] || addDays(x[0], 14);
+      const reg = regularDividends(list);
+      const latest = reg.at(-1)?.[2];
+      const announced = list.filter((x) => pay(x) >= today);
+      for (const x of announced) add(pay(x).slice(0, 7), h.t, x[2] * h.shares * h.usdPer, true);
+      if (isNum(latest)) for (const x of reg) {
+        const d = addDays(pay(x), 365);
+        if (d < today || d >= end) continue;
+        if (announced.some((a) => Math.abs(Date.parse(pay(a)) - Date.parse(d)) <= 45 * DAY)) continue;
+        add(d.slice(0, 7), h.t, latest * h.shares * h.usdPer, true);
+      }
+    } else {
+      // Quarterly cash dividends per share; a quarter without its share count takes its neighbour's.
+      const q = (h.quarterly || []).filter((x) => x?.periodEnd).slice().sort((a, b) => (a.periodEnd < b.periodEnd ? -1 : 1));
+      const sh = q.map((x) => (isNum(x.sharesDiluted) && x.sharesDiluted > 0 ? x.sharesDiluted : isNum(x.sharesOutstanding) && x.sharesOutstanding > 0 ? x.sharesOutstanding : null));
+      for (let i = 0; i < sh.length; i++) if (sh[i] === null) sh[i] = sh[i - 1] ?? sh.slice(i + 1).find((v) => v !== null) ?? null;
+      const quarters = q.map((x, i) => ({ end: addDays(x.periodEnd, -5).slice(0, 7), dps: isNum(x.dividendsPaid) && isNum(sh[i]) ? Math.abs(x.dividendsPaid) / sh[i] : null }));
+      const last4 = quarters.filter((x) => x.end >= addMonths(first, -15)).slice(-4);
+      const annual = isNum(h.dy) && h.dy > 0 && isNum(h.value) ? h.value * h.dy : null;
+      if (isNum(annual) && last4.length === 4 && last4.every((x) => isNum(x.dps)) && last4.some((x) => x.dps > 0)) {
+        how = "quarters";
+        // Weight of each month of the year: its quarter's dividend per share, a third to each of the quarter's months.
+        const moy = (ym) => Number(ym.slice(5, 7));
+        const weight = (ym) => { const x = last4.find((z) => [0, 1, 2].some((k) => moy(addMonths(z.end, -k)) === moy(ym))); return x ? x.dps / 3 : 0; };
+        const ws = months.map((m) => weight(m.ym)), sum = ws.reduce((a, b) => a + b, 0);
+        if (sum > 0) months.forEach((m, i) => add(m.ym, h.t, (annual * ws[i]) / sum, false));
+      } else if (isNum(annual)) {
+        how = "yield";
+        for (const m of months) add(m.ym, h.t, annual / 12, false);
+      }
+    }
+    if (how) byT.push({ t: h.t, how, total: months.reduce((s, m) => s + (m.items.get(h.t)?.v || 0), 0) });
+  }
+  const out = months.map((m) => ({ ym: m.ym, known: m.known, est: m.est, items: [...m.items.values()].sort((a, b) => b.v - a.v) }));
+  return { months: out, total: out.reduce((s, m) => s + m.known + m.est, 0), byT: byT.filter((x) => x.total > 0) };
+}

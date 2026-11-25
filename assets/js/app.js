@@ -1,5 +1,5 @@
 import { analyze, scoreHistory, gradeKey, GRADE_TONE, DIMENSIONS, METRIC_FORMAT, ENGINE_VERSION, ENGINE_SERIES, PROFILES, OVERALL_WEIGHTS, RISK_WEIGHTS, MARKET_RISK_SHARE, FLAG_PENALTY, MISSING_DIMENSION_SCORE, SMOOTH_PRIOR_WEIGHT, RUNWAY_BAD, RUNWAY_GOOD, NET_CASH_LOSS_SCORE, dividendProfile, DIVIDEND_TONE, DIVIDEND_WEIGHTS, findPeers } from "./scoring.js";
-import { portfolioSummary, PORTFOLIO_LIMITS, PERIODS, periodMove, movePoints, scoreMove } from "./portfolio.js";
+import { portfolioSummary, PORTFOLIO_LIMITS, PERIODS, periodMove, movePoints, scoreMove, benchMove, riskBreakdown, dividendCalendar } from "./portfolio.js";
 import { SCREENS, screenById } from "./screens.js";
 import { LANG_LIST, EN, langMeta, ready, lang, setLang, t, fill, fmt, money, date, num, dict, locale, ltr } from "./i18n/index.js";
 import { barChart, lineChart, wireCharts, donutChart } from "./charts.js";
@@ -71,8 +71,11 @@ async function loadCompany(ticker) {
 function getWatch() { try { return JSON.parse(localStorage.getItem("tsx-watch") || "[]"); } catch { return []; } }
 function getSnaps() { try { return JSON.parse(localStorage.getItem("tsx-watch-snap") || "{}"); } catch { return {}; } }
 function setSnaps(s) { try { localStorage.setItem("tsx-watch-snap", JSON.stringify(s)); } catch {} }
-// What the watchlist remembers about a company, to detect changes on later visits.
-const snapOf = (row) => ({ o: row?.sc?.overall ?? null, r: row?.sc?.risk ?? null, d: row?.d ?? null, le: row?.le ?? null, cf: row?.cf ?? [] });
+// What the watchlist and the portfolio remember about a company, to detect changes on later visits.
+const snapOf = (row) => ({ o: row?.sc?.overall ?? null, r: row?.sc?.risk ?? null, d: row?.d ?? null, le: row?.le ?? null, cf: row?.cf ?? [], dk: row?.dk ?? null });
+// The portfolio's own snapshots (per browser) and when its alerts were last marked as seen.
+function getPfSnaps() { try { return JSON.parse(localStorage.getItem("tsx-pf-snap") || "{}"); } catch { return {}; } }
+function setPfSnaps(s) { try { localStorage.setItem("tsx-pf-snap", JSON.stringify(s)); localStorage.setItem("tsx-pf-seen", new Date().toISOString()); } catch {} }
 function toggleWatch(tk, row) {
   const w = new Set(getWatch());
   const snaps = getSnaps();
@@ -83,12 +86,13 @@ function toggleWatch(tk, row) {
   return w.has(tk);
 }
 
-// Changes since the user last marked the watchlist as seen.
+// Changes since the user last marked the watchlist (or the portfolio) as seen: TeraScore ±5, risk +10, distress,
+// new critical flags, a new major event, a dividend cut.
 const DISTRESS_ORDER = { low: 0, medium: 1, high: 2 };
-function watchAlerts(idx) {
-  const snaps = getSnaps();
+const watchAlerts = (idx) => companyAlerts(idx, getWatch(), getSnaps());
+function companyAlerts(idx, tickers, snaps) {
   const out = [];
-  for (const tk of getWatch()) {
+  for (const tk of tickers) {
     const row = idx.companies.find((c) => c.t === tk);
     const s = snaps[tk];
     if (!row || !s) continue;
@@ -101,6 +105,7 @@ function watchAlerts(idx) {
       const [d, items] = cur.le.split("|");
       out.push({ t: tk, tone: "serious", text: t("ui.alertEvent", { t: tk, event: items.split(",").map(eventName).join(", "), date: date(d) }) });
     }
+    if (cur.dk && cur.dk !== s.dk) out.push({ t: tk, tone: "serious", text: t("ui.alertDividendCut", { t: tk, date: date(cur.dk) }) });
   }
   return out;
 }
@@ -1765,8 +1770,9 @@ async function renderPortfolio(prefill = "") {
         ? `<div class="co">${letterLogo({ t: tickerOf(h), n: h.row.n })}<div class="co-txt"><div class="tick">${esc(tickerOf(h))} <span class="badge">ETF</span>${h.row.ex ? `<span class="badge ex">${esc(h.row.ex)} · ${esc(h.row.cur || "USD")}</span>` : ""}</div><div class="cname">${esc(h.row.n)}</div>${isNum(h.row.er) ? `<div class="small muted">${esc(t("ui.etfExpense", { v: `${num(h.row.er * 100, 2)}%` }))}${h.row.ucits ? ` · ${esc(t(h.row.acc ? "ui.etfAcc" : "ui.etfDist"))}` : ""}</div>` : ""}</div></div>`
         : `<a class="co" href="#/c/${encodeURIComponent(h.t)}">${logo(h.row || { t: h.t })}<div class="co-txt"><div class="tick">${esc(h.t)}</div><div class="cname">${esc(h.row ? coName(h.row) : t("ui.notFound", { t: h.t }))}</div></div></a>`}</div>
       ${cell("ph-sh", t("ui.pfShares"), `<input class="pf-shares" type="number" min="0" step="any" inputmode="decimal" value="${esc(h.shares)}" data-t="${esc(h.t)}" aria-label="${esc(t("ui.pfShares"))} ${esc(h.t)}">`)}
+      ${cell("ph-cost", t("ui.pfCost"), `<input class="pf-shares pf-cost" type="number" min="0" step="any" inputmode="decimal" value="${isNum(h.cost) ? esc(h.cost) : ""}" data-t="${esc(h.t)}" placeholder="${esc(h.row?.ucits ? h.row.cur : "USD")}" title="${esc(t("ui.pfCostHint"))}" aria-label="${esc(t("ui.pfCost"))} ${esc(h.t)}">`)}
       ${cell("ph-px num", t("ui.pfPrice"), h.row?.ucits ? fullMoney(h.row.pxLocal, h.row.cur) : isNum(h.price) ? fmt(h.price, "usd") : "–")}
-      ${cell("ph-val num", t("ui.pfValueCol"), isNum(h.value) ? fullMoney(inCur(h.value), cur) : "–")}
+      ${cell("ph-val num", t("ui.pfValueCol"), isNum(h.value) ? `${fullMoney(inCur(h.value), cur)}${isNum(h.gain) ? `<div class="pf-gain ${toneOf(h.gain)}">${ltr(signOf(h.gain) + compactMoney(Math.abs(inCur(h.gain)), cur))} · ${ltr(`${signOf(h.gainPct)}${num(Math.abs(h.gainPct * 100), 1)}%`)}</div>` : ""}` : "–")}
       ${cell("ph-w num", t("ui.pfWeight"), isNum(h.weight) ? fmt(h.weight, "pct") : "–")}
       ${cell("ph-sc num", t("ui.overallScore"), h.row?.etf ? `<span class="small muted" title="${esc(t("ui.etfNoScore"))}">–</span>` : h.row ? overallCell(h.row) : "–")}
       ${cell("ph-rk num", t("ui.risk"), h.row?.etf ? "–" : scorePill(h.row?.sc?.risk, true))}
@@ -1776,15 +1782,36 @@ async function renderPortfolio(prefill = "") {
       ${cell("ph-ds num", t("ui.dividendSafety"), isNum(h.row?.ds) ? `<span class="pill tone-${DIVIDEND_TONE[dividendLevelOf(h.row.ds)]}"><span class="dot"></span>${h.row.ds}</span>` : "–")}
       <div class="ph ph-rm"><button class="icon-btn" data-rm="${esc(h.t)}" aria-label="${esc(t("ui.remove"))} ${esc(h.t)}">×</button></div>
     </div>`;
-  const head = `<div class="pf-row pf-head" aria-hidden="true"><span>${esc(t("ui.company"))}</span><span>${esc(t("ui.pfShares"))}</span><span class="num">${esc(t("ui.pfPrice"))}</span><span class="num">${esc(t("ui.pfValueCol"))}</span><span class="num">${esc(t("ui.pfWeight"))}</span><span class="num">${esc(t("ui.overallScore"))}</span><span class="num">${esc(t("ui.risk"))}</span><span class="num">${esc(t("ui.dividendYieldShort"))}</span><span class="num">${esc(t("ui.dividendSafety"))}</span><span></span></div>`;
+  const head = `<div class="pf-row pf-head" aria-hidden="true"><span>${esc(t("ui.company"))}</span><span>${esc(t("ui.pfShares"))}</span><span>${esc(t("ui.pfCost"))}</span><span class="num">${esc(t("ui.pfPrice"))}</span><span class="num">${esc(t("ui.pfValueCol"))}</span><span class="num">${esc(t("ui.pfWeight"))}</span><span class="num">${esc(t("ui.overallScore"))}</span><span class="num">${esc(t("ui.risk"))}</span><span class="num">${esc(t("ui.dividendYieldShort"))}</span><span class="num">${esc(t("ui.dividendSafety"))}</span><span></span></div>`;
   // 5. Allocation: by holding (the largest seven) and by trading currency.
   const byHolding = (() => { const xs = p.positions.filter((h) => isNum(h.weight)).sort((a, b) => b.weight - a.weight); const top = xs.slice(0, 7).map((h) => ({ label: tickerOf(h), value: h.weight })); const rest = xs.slice(7).reduce((a, h) => a + h.weight, 0); return rest > 0 ? [...top, { label: t("ui.pfOther"), value: rest }] : top; })();
   const byCurrency = (() => { const m = new Map(); for (const h of p.positions) if (isNum(h.weight)) { const c = h.row?.cur || "USD"; m.set(c, (m.get(c) || 0) + h.weight); } return [...m].sort((a, b) => b[1] - a[1]).map(([label, value]) => ({ label, value })); })();
 
+  // Alerts about the companies held. A company without a snapshot yet (newly added, or the first visit since alerts
+  // exist) is remembered as it is now, without an alert.
+  const pfSnaps = getPfSnaps();
+  const pfCos = list.map((h) => h.t).filter((tk) => rows.get(tk) && !rows.get(tk).etf);
+  let seenAt = null;
+  try { seenAt = localStorage.getItem("tsx-pf-seen"); } catch {}
+  const firstVisit = !seenAt && pfCos.length > 0;
+  let added = false;
+  for (const tk of pfCos) if (!pfSnaps[tk]) { pfSnaps[tk] = snapOf(rows.get(tk)); added = true; }
+  if (added || firstVisit) { try { localStorage.setItem("tsx-pf-snap", JSON.stringify(pfSnaps)); if (firstVisit) localStorage.setItem("tsx-pf-seen", new Date().toISOString()); } catch {} }
+  const pfAlerts = companyAlerts(idx, pfCos, pfSnaps);
+  const alertsCard = !pfCos.length ? "" : pfAlerts.length ? `<div class="glass alerts pad pf-alerts">
+      <div class="section-title" style="margin:0 0 10px">${esc(t("ui.pfAlertsTitle"))} <span class="pill tone-serious"><span class="dot"></span>${pfAlerts.length}</span></div>
+      <ul>${pfAlerts.map((x) => `<li><span class="pill tone-${x.tone}"><span class="dot"></span>${esc(x.t)}</span> <a href="#/c/${encodeURIComponent(x.t)}">${esc(x.text)}</a></li>`).join("")}</ul>
+      <button type="button" class="btn" id="pf-alerts-seen">${esc(t("ui.alertsSeen"))}</button>
+      <p class="small muted" style="margin:10px 0 0">${esc(t("ui.pfAlertsNote"))}</p></div>`
+    : `<p class="small muted pf-alerts-none">🔔 ${esc(firstVisit ? t("ui.pfAlertsFirst") : t("ui.pfAlertsNone", { d: dayLabel(seenAt.slice(0, 10), true) }))} ${esc(t("ui.pfAlertsNote"))}</p>`;
+
   const summary = list.length ? `
+    ${alertsCard}
     <div class="glass pad pf-summary">
       <div class="hero-stats">
         ${stat("ui.pfValue", p.total ? fullMoney(inCur(p.total), cur) : "–")}
+        ${stat("ui.pfGain", isNum(p.gain) ? `<span class="${toneOf(p.gain)}">${ltr(signOf(p.gain) + fullMoney(Math.abs(inCur(p.gain)), cur))}</span> <span class="pf-gain-pct ${toneOf(p.gain)}">${ltr(`${signOf(p.gainPct)}${num(Math.abs(p.gainPct * 100), 1)}%`)}</span>` : "–",
+          isNum(p.gain) ? (p.gainCount < list.length ? esc(t("ui.pfGainPartial", { n: p.gainCount, m: list.length })) : "") : esc(t("ui.pfGainHint")))}
         ${stat("ui.pfScore", scorePill(p.score), p.etfWeight > 0 && isNum(p.score) ? esc(t("ui.pfScoreCover", { p: fmt(p.scoreCovered, "pct0") })) : "")}
         ${stat("ui.risk", scorePill(p.risk, true))}
         ${stat("ui.pfIncome", p.income ? money(inCur(p.income), cur) : "–", isNum(p.yield) && p.yield > 0 ? `(${fmt(p.yield, "pct")})` : "")}
@@ -1800,13 +1827,17 @@ async function renderPortfolio(prefill = "") {
     </div>
     <h2 class="section-title">${esc(t("ui.pfHoldings"))} <span class="muted">(${list.length})</span></h2>
     <div class="glass pf-hold">${head}${p.positions.map(holding).join("")}</div>
-    <p class="small muted" style="margin-top:12px">${esc(t("ui.pfNote", { d: updatedWhen(idx.generated, { lower: true }), c: cur }))}${p.etfWeight > 0 ? ` ${esc(t("ui.etfNote"))}` : ""}</p>
+    <p class="small muted" style="margin-top:12px">${esc(t("ui.pfNote", { d: updatedWhen(idx.generated, { lower: true }), c: cur }))}${p.etfWeight > 0 ? ` ${esc(t("ui.etfNote"))}` : ""} ${esc(t("ui.pfGainNote"))}</p>
     ${p.missingYield.length ? `<div class="notice" style="margin-top:10px"><span>ℹ️</span><span>${esc(t("ui.etfYieldMissing", { list: p.missingYield.map(dispT).join(", ") }))}</span></div>` : ""}
     <h2 class="section-title">${esc(t("ui.pfHistTitle"))}</h2>
     <div class="pf-move" id="pf-move">
       <div class="pf-periods" role="group" aria-label="${esc(t("ui.period"))}">${PERIODS.map((id) => `<button type="button" class="chip-toggle" data-period="${id}" aria-pressed="false">${esc(periodLabel(id))}</button>`).join("")}</div>
       <div id="pf-move-body"><div class="empty small">${esc(t("ui.pfHistLoading"))}</div></div>
     </div>
+    <h2 class="section-title">${esc(t("ui.pfRiskTitle"))}</h2>
+    <div id="pf-risk"><div class="glass pad empty small">${esc(t("ui.pfHistLoading"))}</div></div>
+    <h2 class="section-title">${esc(t("ui.pfDivTitle"))}</h2>
+    <div id="pf-div"><div class="glass pad empty small">${esc(t("ui.pfHistLoading"))}</div></div>
     <h2 class="section-title">${esc(t("ui.pfAllocTitle"))}</h2>
     <div class="donut-grid">
       ${donutChart(t("ui.pfByHolding"), byHolding, pct, String(p.positions.length))}
@@ -1862,17 +1893,29 @@ async function renderPortfolio(prefill = "") {
     for (const tk of getWatch()) if (rows.has(tk) && !cur.some((h) => h.t === tk)) cur.push({ t: tk, shares: 1 });
     save(cur);
   });
+  // An optional figure of a holding (empty: removed); the other fields are kept.
+  const setField = (tk, key, v) => save(getPortfolio().map((h) => { if (h.t !== tk) return h; const { [key]: _, ...rest } = h; return isNum(v) ? { ...rest, [key]: v } : rest; }));
   app.querySelectorAll(".pf-dy").forEach((inp) => inp.addEventListener("change", () => {
     const v = inp.value.trim() === "" ? null : Number(inp.value) / 100;
-    save(getPortfolio().map((h) => (h.t === inp.dataset.t ? { t: h.t, shares: h.shares, ...(isNum(v) && v >= 0 && v < 1 ? { dy: v } : {}) } : h)));
+    setField(inp.dataset.t, "dy", isNum(v) && v >= 0 && v < 1 ? v : null);
   }));
-  app.querySelectorAll(".pf-shares:not(.pf-dy)").forEach((inp) => inp.addEventListener("change", () => {
+  app.querySelectorAll(".pf-cost").forEach((inp) => inp.addEventListener("change", () => {
+    const v = inp.value.trim() === "" ? null : Number(inp.value);
+    setField(inp.dataset.t, "cost", isNum(v) && v > 0 ? v : null);
+  }));
+  app.querySelectorAll(".pf-shares:not(.pf-dy):not(.pf-cost)").forEach((inp) => inp.addEventListener("change", () => {
     const n = Number(inp.value);
     save(getPortfolio().map((h) => (h.t === inp.dataset.t ? { ...h, shares: n > 0 ? n : h.shares } : h)));
   }));
   app.querySelectorAll("[data-rm]").forEach((b) => b.addEventListener("click", () => save(getPortfolio().filter((h) => h.t !== b.dataset.rm))));
+  document.getElementById("pf-alerts-seen")?.addEventListener("click", () => {
+    const snaps = {};
+    for (const tk of pfCos) snaps[tk] = snapOf(rows.get(tk));
+    setPfSnaps(snaps);
+    renderPortfolio();
+  });
   document.getElementById("pf-cur")?.addEventListener("change", (e) => { try { localStorage.setItem("tsx-pf-cur", e.target.value); } catch {} renderPortfolio(); });
-  if (list.length) wireMovement(p, fx, cur, rate);
+  if (list.length) wireMovement(p, fx, cur, rate, rows.get("SPY"));
 }
 
 // ---------- Portfolio: how it moved ----------
@@ -1902,7 +1945,7 @@ function loadFundPrices(key) {
 
 // The movement section: every period is computed once the price and score histories are loaded; the buttons
 // switch between them (the choice is remembered in this browser).
-async function wireMovement(p, fx, cur, rate) {
+async function wireMovement(p, fx, cur, rate, spy) {
   const box = document.getElementById("pf-move");
   let sel = "1d";
   try { const s = localStorage.getItem("tsx-pf-period"); if (PERIODS.includes(s)) sel = s; } catch {}
@@ -1916,22 +1959,92 @@ async function wireMovement(p, fx, cur, rate) {
   };
   box.querySelectorAll("[data-period]").forEach((b) => b.addEventListener("click", () => { sel = b.dataset.period; try { localStorage.setItem("tsx-pf-period", sel); } catch {} show(); }));
   show();
-  try { data = await movementData(p, fx); } catch { data = null; }
+  try { data = await movementData(p, fx, spy); } catch { data = null; }
   if (!document.body.contains(box)) return;
-  if (!data) { document.getElementById("pf-move-body").innerHTML = `<div class="empty small">${esc(t("ui.notEnough"))}</div>`; return; }
+  if (!data) {
+    document.getElementById("pf-move-body").innerHTML = `<div class="empty small">${esc(t("ui.notEnough"))}</div>`;
+    for (const id of ["pf-risk", "pf-div"]) { const el = document.getElementById(id); if (el) el.innerHTML = `<div class="glass pad empty small">${esc(t("ui.notEnough"))}</div>`; }
+    return;
+  }
   show();
+  const rb = document.getElementById("pf-risk");
+  if (rb) rb.innerHTML = riskView(riskBreakdown(data.held.map((h) => ({ t: h.t, value: h.value })), data.series, { today: data.today, bench: data.bench }), data);
+  const divs = await loadDividends();
+  const db = document.getElementById("pf-div");
+  if (!db || !document.body.contains(box)) return;
+  const usdPer = (h) => (h.row?.ucits ? (isNum(h.row.pxLocal) && h.row.pxLocal > 0 && isNum(h.row.px) ? h.row.px / h.row.pxLocal : null) : 1);
+  const cal = dividendCalendar(data.held.map((h) => ({ t: h.t, shares: h.shares, value: h.value, dy: h.row?.dy, usdPer: usdPer(h), quarterly: data.compBy.get(h.t)?.quarterly })), divs, { today: data.today });
+  db.innerHTML = dividendCalView(cal, data, cur, rate);
 }
 
-async function movementData(p, fx) {
+// The dividend calendar of the Nasdaq listings (data/dividends.json; {} without it).
+let divCalCache = null;
+function loadDividends() {
+  divCalCache ||= fetch("data/dividends.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).then((j) => j?.d || {}).catch(() => ({}));
+  return divCalCache;
+}
+
+// Expected dividends of the next 12 months by month: from payment dates (solid) or estimated (light, marked *).
+function dividendCalView(cal, data, cur, rate) {
+  if (!(cal.total > 0)) return `<div class="glass pad empty small">${esc(t("ui.pfDivNone"))}</div>`;
+  const max = Math.max(...cal.months.map((m) => m.known + m.est), 1e-9);
+  const rows = cal.months.map((m) => {
+    const v = m.known + m.est;
+    return `<div class="dv-row"><span class="dv-m">${esc(monthLabel(m.ym))}</span>
+      <span class="dv-bar" aria-hidden="true"><span class="dv-k" style="width:${((m.known / max) * 100).toFixed(1)}%"></span><span class="dv-e" style="width:${((m.est / max) * 100).toFixed(1)}%"></span></span>
+      <span class="dv-v">${v > 0 ? ltr(compactMoney(v / rate, cur)) : "–"}</span>
+      <span class="dv-t">${m.items.map((i) => `${esc(data.names.get(i.t) || i.t)}${i.known ? "" : "*"}`).join(", ")}</span></div>`;
+  }).join("");
+  return `<div class="glass pad pf-div-card">
+      <div class="pf-subtitle">${esc(t("ui.pfDivTotal", { v: fullMoney(cal.total / rate, cur) }))}</div>
+      <div class="chart-legend"><span><i class="dv-lk"></i>${esc(t("ui.pfDivKnown"))}</span><span><i class="dv-le"></i>${esc(t("ui.pfDivEst"))} (*)</span></div>
+      <div class="dv-list">${rows}</div>
+      <p class="small muted" style="margin:14px 0 0">${esc(t("ui.pfDivNote"))}</p>
+    </div>`;
+}
+
+// Risk and diversification: the portfolio's volatility against the S&P 500's, how many independent holdings it is
+// worth, and each holding's share of the risk next to its weight.
+function riskView(r, data) {
+  const pct = (v) => `${num(v * 100, Math.abs(v) < 0.1 ? 1 : 0)}%`;
+  const names = (list) => list.map((k) => data.names.get(k) || k).join(", ");
+  const missing = r?.missing?.length ? t("ui.pfRiskShort", { list: names(r.missing) }) : "";
+  if (!r || !isNum(r.vol)) return `<div class="glass pad empty small">${esc(t("ui.notEnough"))}${missing ? ` ${esc(missing)}` : ""}</div>`;
+  const top = r.items[0];
+  const kpi = (k, v, sub) => `<div class="pf-kpi"><div class="k">${esc(t(k))}</div><div class="v">${v}</div><div class="s">${esc(sub)}</div></div>`;
+  const max = Math.max(...r.items.map((x) => Math.max(x.weight, x.share ?? 0)), 1e-9);
+  const rows = r.items.map((x) => {
+    const share = x.share ?? 0;
+    const hot = share > x.weight * 1.25 && share - x.weight > 0.03;
+    return `<div class="rk-row"><span class="rk-t">${esc(data.names.get(x.t) || x.t)}</span>
+      <span class="rk-bars" aria-hidden="true"><span class="rk-w" style="width:${((x.weight / max) * 100).toFixed(1)}%"></span><span class="rk-r${hot ? " hot" : ""}" style="width:${((Math.max(0, share) / max) * 100).toFixed(1)}%"></span></span>
+      <span class="rk-v">${esc(pct(x.weight))} → <b class="${hot ? "hot" : ""}">${esc(pct(share))}</b></span></div>`;
+  }).join("");
+  return `<div class="pf-kpis">
+      ${kpi("ui.pfVol", esc(pct(r.vol)), isNum(r.benchVol) ? t("ui.pfVolBench", { v: pct(r.benchVol) }) : "")}
+      ${kpi("ui.pfDivers", `${esc(num(r.independent, 1))} <span class="unit">${esc(t("ui.pfDiversUnit"))}</span>`, t("ui.pfDiversSub", { n: r.items.length, c: num(r.corr ?? 0, 2) }))}
+      ${kpi("ui.pfTopRisk", esc(data.names.get(top.t) || top.t), t("ui.pfTopRiskSub", { r: pct(top.share ?? 0), w: pct(top.weight) }))}
+    </div>
+    <div class="glass pad pf-risk-card">
+      <div class="chart-legend"><span><i class="rk-lw"></i>${esc(t("ui.pfWeight"))}</span><span><i class="rk-lr"></i>${esc(t("ui.pfRiskShare"))}</span></div>
+      <div class="rk-list">${rows}</div>
+      <p class="small muted" style="margin:14px 0 0">${esc(t("ui.pfRiskNote", { d: dayLabel(r.from, true) }))}${missing ? ` ${esc(missing)}` : ""}</p>
+    </div>`;
+}
+
+async function movementData(p, fx, spy) {
   const held = p.positions.filter((h) => h.row && isNum(h.shares) && h.shares > 0);
   const stocks = held.filter((h) => !h.row.etf), funds = held.filter((h) => h.row.etf);
-  const [comps, files, eh, pulse, bm] = await Promise.all([
+  const [comps, files, eh, pulse, bm, spyFile] = await Promise.all([
     Promise.all(stocks.map((h) => loadCompany(h.t).catch(() => null))),
     Promise.all(funds.map((h) => loadFundPrices(h.t))),
     funds.some((h) => !h.row.ucits) ? loadEtfHistory() : { h: {} },
     loadPulse(),
     loadBenchmarks(),
+    loadFundPrices("SPY"),
   ]);
+  // The S&P 500 for comparison: the SPY fund's price today and its closes.
+  const bench = spy && isNum(spy.px) ? { now: spy.px, dc: spy.dc, daily: spyFile?.daily || [], monthly: spyFile?.monthly || [] } : null;
   const series = new Map();
   stocks.forEach((h, i) => series.set(h.t, { now: h.row.px, fx: 1, daily: comps[i]?.prices?.daily || [], monthly: comps[i]?.prices?.data || [] }));
   funds.forEach((h, i) => {
@@ -1948,16 +2061,17 @@ async function movementData(p, fx) {
     if (!periods.has(id)) {
       if (id === "max") scored.forEach((x, i) => { x.fy ??= comps[i] ? scoreHistory(comps[i], { benchmarks: bm }).map((y) => [y.year, y.overall]) : []; });
       const move = periodMove(id, held, series, { today });
-      periods.set(id, { move, points: movePoints(move, held, series, { today }), score: scoreMove(id, scored, { today }) });
+      const points = movePoints(move, held, series, { today });
+      periods.set(id, { move, points, score: scoreMove(id, scored, { today }), bench: benchMove(move, points, bench, { today }) });
     }
     return periods.get(id);
   };
   const names = new Map(held.map((h) => [h.t, h.row.dt || h.t]));
-  return { get, today, names, session: pulse?.session || null, hasStocks: stocks.length > 0 };
+  return { get, today, names, session: pulse?.session || null, hasStocks: stocks.length > 0, series, held, bench, compBy: new Map(stocks.map((h, i) => [h.t, comps[i]])) };
 }
 
 function movementView(id, data, cur, rate, width) {
-  const { move, points, score } = data.get(id);
+  const { move, points, score, bench } = data.get(id);
   const { today } = data;
   const pctText = (v) => ltr(`${signOf(v)}${num(Math.abs(v * 100), 2)}%`);
   const since = id === "1d" ? t(data.session === "open" || data.session === "post" ? "pulse.when.day" : "pulse.when.last")
@@ -1977,6 +2091,11 @@ function movementView(id, data, cur, rate, width) {
       : `${ltr(`${num(to - c, 1)} → ${num(to, 1)}`)}${score.basis === "weekly" && score.since ? ` · ${t("ui.pfSince", { d: dayLabel(score.since, score.since.slice(0, 4) !== today.slice(0, 4)) })}` : ""}`;
   }
   const scoreKpi = `<div class="pf-kpi"><div class="k">${esc(t("ui.pfMoveScore"))}</div><div class="v">${sv}</div><div class="s">${esc(ss)}</div></div>`;
+  // The S&P 500 in the same period, and the portfolio against it in percentage points.
+  const gap = isNum(bench?.pct) && isNum(move.pct) ? Math.round((move.pct - bench.pct) * 1000) / 10 : null;
+  const benchKpi = `<div class="pf-kpi"><div class="k">${esc(t("ui.pfBench"))}</div>
+      ${isNum(bench?.pct) ? `<div class="v ${toneOf(bench.pct)}">${pctText(bench.pct)}</div>` : `<div class="v">–</div>`}
+      <div class="s">${esc(!isNum(gap) ? t("ui.notEnough") : gap > 0 ? t("ui.pfBenchBetter", { d: num(gap, 1) }) : gap < 0 ? t("ui.pfBenchWorse", { d: num(-gap, 1) }) : t("ui.pfBenchSame"))}</div></div>`;
   // Charts drawn at their on-screen width (two side by side from 900 px), so the labels keep their size.
   const two = width >= 900 && points.length >= 2 && score?.points?.length >= 2;
   const W = Math.max(260, Math.round((two ? (width - 14) / 2 : width) - 38)), H = 200;
@@ -1986,7 +2105,8 @@ function movementView(id, data, cur, rate, width) {
     return [...new Set(Array.from({ length: k }, (_, j) => Math.round((j * (n - 1)) / (k - 1))))].map((i) => [i, keys[i].length === 4 ? keys[i] : keyLabel(keys[i], today)]);
   };
   const opts = { W, H, label: (k) => keyLabel(k, today), ticks };
-  const valueChart = points.length >= 2 ? lineChart(t("ui.pfHistValue"), t("ui.pfMoveChartSub", { c: cur }), points.map(([k, v]) => [k, v / rate]), (v) => fullMoney(v, cur), t("ui.notEnough"), opts) : "";
+  const line2 = bench?.line ? { second: bench.line.map((v) => (isNum(v) ? v / rate : null)), names: [t("ui.navPortfolio"), "S&P 500"] } : {};
+  const valueChart = points.length >= 2 ? lineChart(t("ui.pfHistValue"), t("ui.pfMoveChartSub", { c: cur }), points.map(([k, v]) => [k, v / rate]), (v) => fullMoney(v, cur), t("ui.notEnough"), { ...opts, ...line2 }) : "";
   const scoreChart = score?.points?.length >= 2 ? lineChart(score.basis === "fy" ? t("ui.pfHistScoreYearly") : t("ui.pfHistScoreWeekly"), t("ui.pfHistScoreSub"), score.points, (v) => num(v, 1), t("ui.notEnough"), opts) : "";
   // What moved it: each holding's price change, its effect on the value and its TeraScore change.
   const max = Math.max(1e-9, ...move.items.map((x) => Math.abs(x.change)));
@@ -2001,7 +2121,7 @@ function movementView(id, data, cur, rate, width) {
   }).join("");
   const notes = [move.missing.length ? t("ui.pfHistMissing", { list: move.missing.map((k) => data.names.get(k) || k).join(", ") }) : "",
     move.approx.length ? t("ui.pfMoveMonthly", { list: move.approx.map((k) => data.names.get(k) || k).join(", ") }) : ""].filter(Boolean);
-  return `<div class="pf-kpis">${valueKpi}${scoreKpi}</div>
+  return `<div class="pf-kpis">${valueKpi}${benchKpi}${scoreKpi}</div>
     ${valueChart || scoreChart ? `<div class="charts pf-charts${two ? "" : " one"}">${valueChart}${scoreChart}</div>` : ""}
     ${rows || notes.length ? `<div class="glass pad pf-contrib-card">
       ${rows ? `<div class="pf-subtitle">${esc(t("ui.pfMoveTop"))}</div><p class="small muted pc-sub">${esc(t("ui.pfMoveTopSub"))}</p><div class="pf-contrib">${rows}</div>` : ""}
