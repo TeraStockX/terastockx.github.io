@@ -1,0 +1,67 @@
+dividends.json: 1872 tickers, 328 days, generated 2026-11-25T19:58:51.978Z; AAPL [["2026-08-10","2026-08-13",0.27],["2026-11-12","2026-11-16",0.27]] MSFT [["2026-08-20","2026-09-10",0.91],["2026-11-19","2026-12-10",0.98]]
+pf4-phone {
+ "overflow": 0,
+ "alerts": [
+  "XOM XOM: a TeraScore változása: 71 → 63"
+ ],
+ "gain": [
+  "7 026 489 Ft Portfólió értéke",
+  "+1 778 362 Ft +46,2% Nyereség/veszteség 9 tételből 7 bekerülési árral"
+ ],
+ "gains": [
+  "+596 E Ft · +97,0%",
+  "+120 E Ft · +16,8%",
+  "+361 E Ft · +55,7%"
+ ],
+ "kpis": [
+  "Értékváltozás −578 457 Ft −7,61% okt. 25. óta",
+  "S&P 500 ugyanebben az időszakban −5,81% A portfólió 1,8 százalékponttal gyengébb",
+  "TeraScore-változás – Még nincs elég előzmény: a jelenlegi módszer heti TeraScore-jait 2026. nov. 24. óta rögzítjük."
+ ],
+ "line2": 1,
+ "risk": [
+  "Ingadozás (éves) 13% S&P 500: 15%",
+  "Diverzifikáció 4,6 független tétel 8 tételből · átlagos korreláció: 0,09",
+  "Legnagyobb kockázati forrás NVDA a kockázat 39%-a, az érték 15%-a"
+ ],
+ "div": "Várható osztalék a következő 12 hónapban: 73 852 Ft",
+ "divRows": [
+  "2026. nov. 6,08 E Ft KO*, XOM*, JPM*",
+  "2026. dec. 9,46 E Ft KO*, NVDA, MSFT, XOM*, JPM*",
+  "2027. jan. 4,37 E Ft KO*, XOM*, JPM*",
+  "2027. febr. 5,29 E Ft KO*, XOM*, JPM*, AAPL"
+ ]
+} no errors
+pf4-desktop {
+ "overflow": 0,
+ "alerts": [
+  "XOM XOM: a TeraScore változása: 71 → 63"
+ ],
+ "gain": [
+  "7 026 489 Ft Portfólió értéke",
+  "+1 778 362 Ft +46,2% Nyereség/veszteség 9 tételből 7 bekerülési árral"
+ ],
+ "gains": [
+  "+596 E Ft · +97,0%",
+  "+120 E Ft · +16,8%",
+  "+361 E Ft · +55,7%"
+ ],
+ "kpis": [
+  "Értékváltozás −578 457 Ft −7,61% okt. 25. óta",
+  "S&P 500 ugyanebben az időszakban −5,81% A portfólió 1,8 százalékponttal gyengébb",
+  "TeraScore-változás – Még nincs elég előzmény: a jelenlegi módszer heti TeraScore-jait 2026. nov. 24. óta rögzítjük."
+ ],
+ "line2": 1,
+ "risk": [
+  "Ingadozás (éves) 13% S&P 500: 15%",
+  "Diverzifikáció 4,6 független tétel 8 tételből · átlagos korreláció: 0,09",
+  "Legnagyobb kockázati forrás NVDA a kockázat 39%-a, az érték 15%-a"
+ ],
+ "div": "Várható osztalék a következő 12 hónapban: 73 852 Ft",
+ "divRows": [
+  "2026. nov. 6,08 E Ft KO*, XOM*, JPM*",
+  "2026. dec. 9,46 E Ft KO*, NVDA, MSFT, XOM*, JPM*",
+  "2027. jan. 4,37 E Ft KO*, XOM*, JPM*",
+  "2027. febr. 5,29 E Ft KO*, XOM*, JPM*, AAPL"
+ ]
+} no errors

@@ -1,0 +1,23 @@
+pulse.json generated 2026-11-25T20:07:08.095Z (4 min ago), quotesAt 2026-11-25T20:06:57.739Z, session open
+  NTNX   results     2026-11-24T21:01:15.000Z (23 h) move -14.95 day since -14.95 | Nutanix Reports First Quarter Fiscal 2027 Financial Results
+  DE     results     2026-11-25T11:00:47.000Z (9 h) move 4.54 day since 4.54 | Deere Reports Net Income of $1.051 Billion for Fourth Quarter, $4.860 
+  HPQ    results     2026-11-24T21:17:57.000Z (23 h) move 10.45 day since 10.45 | HP Inc. Media Relations HP Inc. Investor Relations HP Inc. Reports Fis
+  NVDA   move        - (-) move -4.83 day since - | 
+  LRCX   move        - (-) move -6.89 day since - | 
+  MU     move        - (-) move -5.06 day since - | 
+  AMZN   move        - (-) move -2.73 day since - | 
+  CW     leadership  2026-11-24T19:09:55.000Z (25 h) move -0.3 day since -3.27 | As reported on a Form 8-K filed by Curtiss-Wright Corporation on Septe
+news.json generated 2026-11-25T20:07:12.550Z (4 min ago), events 331; newest: [["GSHD","2026-11-25","3.01"],["HCTI","2026-11-25","3.01"],["AREC","2026-11-24","4.02"]]
+home lines: [
+ "Fő hírek NTNX -14,95% a hír óta · Gyorsjelentés (tegnap) DE +4,54% a hír óta · Gyorsjelentés (ma) HPQ +10,45% a hír óta · Gyorsjelentés (tegnap) NVDA -4,83% ma · Nagy árfolyammozgás LRCX -6,89% ma · Nagy árfolyammozgás MU -5,06% ma · Nagy árfolyammozgás"
+]
+news page: [
+ "NTNX Nutanix, Inc. Gyorsjelentés Tegnap 21:01 Nutanix Reports First Quarter Fiscal 2027 Financial Results SEC ↗ -14,95% a hír óta",
+ "DE DEERE & CO Gyorsjelentés Ma 11:00 Deere Reports Net Income of $1.051 Billion for Fourth Quarter, $4.860 Billion for Fiscal Year SEC ↗ +4,54% a hír óta",
+ "HPQ HP INC Gyorsjelentés Tegnap 21:17 HP Inc. Media Relations HP Inc. Investor Relations HP Inc. Reports Fiscal 2026 Full Year and Fourth Quarter Results; Annou",
+ "NVDA NVIDIA CORP Nagy árfolyammozgás -4,83% ma",
+ "LRCX LAM RESEARCH CORP Nagy árfolyammozgás -6,89% ma",
+ "MU MICRON TECHNOLOGY INC Nagy árfolyammozgás -5,06% ma",
+ "AMZN AMAZON COM INC Nagy árfolyammozgás -2,73% ma",
+ "CW CURTISS WRIGHT CORP Vezetőváltás Tegnap 19:09 As reported on a Form 8-K filed by Curtiss-Wright Corporation on September 21, 2026, the Company announced, amo"
+]
