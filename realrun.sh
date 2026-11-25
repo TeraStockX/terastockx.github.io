@@ -6,7 +6,7 @@ rm -rf $W && cp -r code $W
 git fetch -q --depth=1 origin data && git archive FETCH_HEAD data | tar -x -C $W
 cd $W
 echo "=== tests"; node tests/run.mjs 2>&1 | grep -E "^# (pass|fail)"
-T="XOM,CLBK,XPRO,DMRC,CBAT,SPCX,ANT,SKHY,HONA,CBRS,BF.B,AAPL"
+T="BIP,XOM,ANT"
 echo "=== update --tickers $T"
 start=$(date +%s)
 node scripts/update-data.mjs --tickers "$T" --skip-insiders --skip-logos 2>&1 | grep -vE "DEP0|trace-deprecation|punycode" | cut -c1-260 | tail -40

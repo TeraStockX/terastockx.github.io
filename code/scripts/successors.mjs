@@ -11,6 +11,7 @@ export const PREDECESSORS = {
   "0002126198": "0001575828", // Expro Ltd (Cayman Islands) ← Expro Group Holdings N.V. (July 2026)
   "0002119322": "0001438231", // Digimarc Corp (new parent company) ← Old Digimarc Corp (May 2026)
   "0002086841": "0001117171", // CBAK Energy Technology Ltd (Cayman Islands) ← CBAK Energy Technology, Inc. (June 2026)
+  "0002155396": "0001406234", // Brookfield Infrastructure Partners Inc. ← Brookfield Infrastructure Partners L.P. (November 2026)
 };
 
 // A company name without its legal form, state suffix and punctuation: "Exxon Mobil Corp" and "ExxonMobil
