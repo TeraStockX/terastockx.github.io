@@ -1296,6 +1296,8 @@ test("Dividend store: days to read, merging a day, cuts from payments or quarter
   const q = (vals) => vals.map((v, i) => ({ periodEnd: ["2024-12-31", "2025-03-31", "2025-06-30", "2025-09-30", "2025-12-31", "2026-03-31", "2026-06-30", "2026-09-30"][i], dividendsPaid: v, sharesDiluted: i === 4 ? null : 100 }));
   assert.equal(dividendCut({ quarterly: q([50, 50, 50, 50, 50, 50, 25, 25]) }, now), "2026-09-30");
   assert.equal(dividendCut({ quarterly: q([50, 0, 50, 50, 100, 0, 50, 50]) }, now), null); // a payment that moved a quarter
+  assert.equal(dividendCut({ quarterly: q([50, 250, 50, 50, 50, 50, 50, 50]) }, now), null); // a special dividend last year
+  assert.equal(dividendCut({ quarterly: q([0, 900, 0, 0, 0, 0, 0, 0]) }, now), null); // special dividends only
   assert.equal(dividendCut({ quarterly: q([50, 50, 50, 50, 50, 50, 50, 50]).slice(1) }, now), null);
 });
 

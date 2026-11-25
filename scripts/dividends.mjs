@@ -67,7 +67,7 @@ export { regularDividends };
 //   before it.
 // - Otherwise from the quarterly cash dividends per share (quarterly: [{ periodEnd, dividendsPaid, sharesDiluted }]):
 //   the last four quarters more than 10% below the four before them (whole years, so a payment that moved from one
-//   quarter to the next is no cut).
+//   quarter to the next is no cut; special dividends count as a regular one).
 export function dividendCut({ list = null, quarterly = null } = {}, now = new Date()) {
   const recent = (day) => day && now - Date.parse(day) <= 183 * DAY && Date.parse(day) <= now.getTime() + DIV_AHEAD_DAYS * DAY;
   if (list?.length) {
@@ -81,8 +81,16 @@ export function dividendCut({ list = null, quarterly = null } = {}, now = new Da
   // A quarter without its share count (often the fourth, derived from the annual report) takes its neighbour's.
   const sh = q.map((x) => (isNum(x.sharesDiluted) && x.sharesDiluted > 0 ? x.sharesDiluted : isNum(x.sharesOutstanding) && x.sharesOutstanding > 0 ? x.sharesOutstanding : null));
   for (let i = 0; i < sh.length; i++) if (sh[i] === null) sh[i] = sh[i - 1] ?? sh.slice(i + 1).find((v) => v !== null) ?? null;
-  const dps = q.map((x, i) => (isNum(x.dividendsPaid) && isNum(sh[i]) ? Math.abs(x.dividendsPaid) / sh[i] : null));
-  if (dps.some((v) => v === null)) return null;
+  const raw = q.map((x, i) => (isNum(x.dividendsPaid) && isNum(sh[i]) ? Math.abs(x.dividendsPaid) / sh[i] : null));
+  if (raw.some((v) => v === null)) return null;
+  // Special dividends are not the regular payment: a quarter counts at most as much as the median paying quarter (a
+  // quarter with two regular payments is cut back too, but every four quarters hold one such quarter).
+  const paid = raw.filter((v) => v > 0).sort((a, b) => a - b);
+  const cap = paid.length ? paid[paid.length >> 1] : 0;
+  const dps = raw.map((v) => Math.min(v, cap));
+  // Regular payers only: at least three of the four earlier quarters paid (one-off special dividends, e.g.
+  // TransDigm's, are no regular dividend that could be cut).
+  if (raw.slice(0, 4).filter((v) => v > 0).length < 3) return null;
   const prev = dps.slice(0, 4).reduce((s, v) => s + v, 0), last = dps.slice(4).reduce((s, v) => s + v, 0);
   const end = q[7].periodEnd;
   return prev > 0 && last < prev * 0.9 && recent(end) ? end : null;
