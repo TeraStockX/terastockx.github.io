@@ -1,0 +1,28 @@
+KO summary HTTP 200 2224ms: {"Exchange":"NYSE","SpecialDividendDate":"N/A","SpecialDividendAmount":"N/A","SpecialDividendPaymentDate":"N/A"} 
+   info: {} {}
+JNJ summary HTTP 200 3079ms: {"Exchange":"NYSE","SpecialDividendDate":"N/A","SpecialDividendAmount":"N/A","SpecialDividendPaymentDate":"N/A"} 
+   info: {} {}
+XOM summary HTTP 200 1168ms: {"Exchange":"NYSE","SpecialDividendDate":"N/A","SpecialDividendAmount":"N/A","SpecialDividendPaymentDate":"N/A"} 
+   info: {} {}
+O summary HTTP 200 1042ms: {"Exchange":"NYSE","SpecialDividendDate":"N/A","SpecialDividendAmount":"N/A","SpecialDividendPaymentDate":"N/A"} 
+   info: {} {}
+PG summary HTTP 200 3087ms: {"Exchange":"NYSE","SpecialDividendDate":"N/A","SpecialDividendAmount":"N/A","SpecialDividendPaymentDate":"N/A"} 
+   info: {} {}
+T summary HTTP 200 2064ms: {"Exchange":"NYSE","SpecialDividendDate":"N/A","SpecialDividendAmount":"N/A","SpecialDividendPaymentDate":"N/A"} 
+   info: {} {}
+AAPL summary HTTP 200 1074ms: {"Exchange":"NASDAQ-GS","AnnualizedDividend":"$1.08","ExDividendDate":"Nov 12, 2026","DividendPaymentDate":"Nov 16, 2026","Yield":"0.31%"} 
+   info: {} {}
+BIP summary HTTP 200 3193ms: {"Exchange":"NYSE","SpecialDividendDate":"N/A","SpecialDividendAmount":"N/A","SpecialDividendPaymentDate":"N/A"} 
+   info: {} {}
+BF.B summary HTTP 200 3188ms: {"Exchange":"NYSE","SpecialDividendDate":"N/A","SpecialDividendAmount":"N/A","SpecialDividendPaymentDate":"N/A"} 
+   info: {} {}
+SPY summary HTTP 200 1407ms: {"ExpenseRatio":"N/A"} 
+   info: {} {}
+VOO summary HTTP 200 3054ms: {"ExpenseRatio":"N/A"} 
+   info: {} {}
+SCHD summary HTTP 200 3255ms: {"ExpenseRatio":"N/A"} 
+   info: {} {}
+JEPI summary HTTP 200 2336ms: {"ExpenseRatio":"N/A"} 
+   info: {} {}
+VYM summary HTTP 200 1949ms: {"ExpenseRatio":"N/A"} 
+   info: {} {}
