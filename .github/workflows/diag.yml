@@ -8,33 +8,33 @@ permissions:
 jobs:
   d:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with: { ref: diag }
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
-      - name: Deploy and AI-worker runs of f1d15261, then the live site
+      - name: Overnight intraday chain check
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p out
           repo=TeraStockX/terastockx.github.io
-          for id in 45494235077 45494235055; do
-            for i in $(seq 1 60); do
-              st=$(gh run view $id --repo $repo --json status,conclusion,name -q '.name + ": " + .status + " " + .conclusion' 2>/dev/null)
-              case "$st" in *completed*) break;; esac
-              sleep 15
-            done
-            echo "$st" | tee -a out/ai.txt
+          f=out/night.txt
+          echo "now $(date -u +%FT%TZ)" > $f
+          echo "=== intraday runs since 00:00Z" >> $f
+          gh run list --repo $repo --workflow intraday.yml --limit 20 --json databaseId,number,event,status,conclusion,createdAt,updatedAt -q '.[] | select(.createdAt >= "2026-11-25T00:00:00Z") | "\(.number) \(.databaseId) \(.event) \(.createdAt) \(.updatedAt) \(.status) \(.conclusion)"' >> $f
+          for job in 138968231302 138945424627; do
+            echo "=== build job $job" >> $f
+            gh api repos/$repo/actions/jobs/$job/logs > job.log 2>&1 || echo "log error" >> $f
+            echo "lines: $(wc -l < job.log)" >> $f
+            grep -E "Cache restored|new filings|refreshed:|quotes updated|top stories|rror|arning|ERR!|ailed" job.log | grep -vE "Node.js 20|punycode|DEP0|trace-deprecation|\./data/|\./assets/|\./scripts/|\./tests/" | cut -c1-500 | head -40 >> $f
           done
-          gh run view 45494235055 --repo $repo --log 2>&1 | grep -E "notice|not set up|rror" | grep -v "Node.js 20" | sed -E 's/^([a-z]+)\t[^\t]*\t/\1 /' | cut -c1-220 | head -5 | tee -a out/ai.txt
-          sleep 40
-          npm install --no-save --no-audit --no-fund playwright@1.49.1 >/dev/null 2>&1
-          npx playwright install --with-deps chromium >/dev/null 2>&1
-          node liveai.cjs 2>&1 | tee -a out/ai.txt
+          echo "=== live data" >> $f
+          node nightcheck.mjs >> $f 2>&1 || echo "nightcheck failed" >> $f
+          cat $f
       - name: Save results to the diag branch
         if: always()
         run: |
           git config user.name diag; git config user.email diag@users.noreply.github.com
-          git add out && git commit -qm "diag: AI helper deploy check" && git push -q origin HEAD:diag
+          git add out && git commit -qm "diag: overnight chain check" && git push -q origin HEAD:diag
