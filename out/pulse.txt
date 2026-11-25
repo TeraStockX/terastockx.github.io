@@ -1,0 +1,9 @@
+pulse.json generated 2026-11-25T21:23:08.251Z, session post
+  NTNX   results     2026-11-24T21:01:15.000Z | Nutanix Reports First Quarter Fiscal 2027 Financial Results
+  DE     results     2026-11-25T11:00:47.000Z | Deere Reports Net Income of $1.051 Billion for Fourth Quarter, $4.860 Billion for Fiscal Y
+  HPQ    results     2026-11-24T21:17:57.000Z | HP Inc. Reports Fiscal 2026 Full Year and Fourth Quarter Results; Announces Dividend Incre
+  NVDA   move        - | 
+  AMZN   move        - | 
+  LI     move        - | 
+  META   move        - | 
+  CW     leadership  2026-11-24T19:09:55.000Z | As reported on a Form 8-K filed by Curtiss-Wright Corporation on September 21, 2026, the C
