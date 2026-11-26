@@ -782,6 +782,7 @@ test("News headlines: press-release titles, the reported item, kinds of news", a
   assert.equal(h.tidyTitle("November 23, 2026 KT-621 Phase 2b Atopic Dermatitis Trial Results Exhibit 99.1"), "KT-621 Phase 2b Atopic Dermatitis Trial Results", "date and exhibit label left out");
   assert.equal(h.tidyTitle("HP Inc. Media Relations HP Inc. Investor Relations HP Inc. Reports Fiscal 2026 Full Year and Fourth Quarter Results"), "HP Inc. Reports Fiscal 2026 Full Year and Fourth Quarter Results", "press contacts above the headline left out");
   assert.equal(h.tidyTitle("Acme Names Jane Doe Vice President of Investor Relations"), "Acme Names Jane Doe Vice President of Investor Relations");
+  assert.equal(h.tidyTitle("For additional information: Media Investors"), "", "contact lines are no title");
   assert.equal(h.firstSentence("Harvey C. Jones was named Chair of the Board. He has served since 1993."), "Harvey C. Jones was named Chair of the Board.");
   assert.equal(h.firstSentence("Acme Inc. today reported results for the U.S. market. Revenue rose."), "Acme Inc. today reported results for the U.S. market.");
   assert.equal(h.classifyNews(["5.02", "9.01"], "NVIDIA Board Reinstates Jensen Huang as President, CEO and Board Director"), "leadership");
@@ -1313,4 +1314,14 @@ test("Top stories: today's news of a large company comes before yesterday's news
     { t: "HPQ", date: "2026-11-25", at: "2026-11-25T18:30:00Z", items: ["1.01"], kind: "deal", title: "HP agrees to buy", url: "c" },
   ];
   assert.deepEqual(buildStories({ rows, news, session: { session: "open" }, now }).map((x) => x.t), ["HPQ", "DE", "NVDA"]);
+});
+
+test("Top stories at night: the change since yesterday's news uses the last session's price until the history has its close", async () => {
+  const { sinceNews } = await import("../scripts/pulse.mjs");
+  const now = new Date("2026-11-26T02:03:00Z"); // Wednesday 21:03 in New York, after the after-hours session
+  const r = { t: "NTNX", px: 46.46, dc: -14.89 };
+  const n = { at: "2026-11-24T21:01:15Z", pb: 54.59, lc: 54.59, lcd: "2026-11-24" };
+  assert.equal(sinceNews(r, n, { now, session: "closed" }), -14.89, "the history still ends on the 24th: the kept price of the 25th");
+  assert.equal(sinceNews(r, { ...n, lc: 46.5, lcd: "2026-11-25" }, { now, session: "closed" }), -14.82, "once the 25th's close is in the history, that close");
+  assert.equal(sinceNews({ t: "X" }, n, { now, session: "closed" }), 0, "without a price of the row, the history's close");
 });

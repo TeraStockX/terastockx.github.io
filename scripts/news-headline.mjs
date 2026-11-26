@@ -59,6 +59,7 @@ const BOILERPLATE = [
   /^ex-?\d+(\.\d+)?$/i, /^\d{1,3}$/, /\.(htm|html|txt)$/i, /^exhibit\s+\d+(\.\d+)?\b/i,
   /^(press|news|media)\s+release\b/i, /^for immediate release\b/i, /\bdated\s+[A-Z][a-z]+\.?\s+\d{1,2},\s+\d{4}\.?$/i,
   /^(investor|media|press)\s+(relations|contacts?)\b/i, /^contacts?\s*:/i, /^(investors?|media)\s*:/i,
+  /^for (additional|further|more) information\b/i,
   /◆|♦/, /\b[A-Z]{2}\s+\d{5}(?:-\d{4})?\b/, /\(?\d{3}\)?[-.\s]\d{3}[-.\s]\d{4}/, /@|www\.|https?:\/\//i,
   new RegExp(`^${MONTH}\\.?\\s+\\d{0,2},?\\s*\\d{4}$`, "i"),
 ];
@@ -115,6 +116,8 @@ export function tidyTitle(s) {
     // (two or more of them in a row, so a title about an investor relations head stays).
     .replace(/^(?:(?:[A-Z][\w.&,'’ -]{0,60}?\s)?(?:Media|Investor|Press|Public)\s+(?:Relations|Contacts?|Inquiries)\s*[:-]?\s+){2,}/, "")
     .trim();
+  // Contact lines taken for a title ("For additional information: Media Investors"): no title.
+  if (/^for (additional|further|more) information\b/i.test(t) || /^(media|investors?|contacts?)(\s+(and\s+)?(media|investors?|contacts?))*\s*:?$/i.test(t)) return "";
   const letters = t.replace(/[^A-Za-z]/g, "");
   if (letters.length < 12 || letters.replace(/[^A-Z]/g, "").length / letters.length < 0.85) return t;
   return t.split(" ").map((w, i) => {

@@ -115,7 +115,8 @@ async function companyNews(sub, old) {
   const out = [];
   for (const f of recentFilings(sub)) {
     const hit = cached.get(f.url);
-    if (hit) { const title = tidyTitle(hit.title); out.push({ ...f, title, lede: hit.lede ?? null, kind: classifyNews(f.items, `${title} ${hit.lede || ""}`) }); continue; }
+    const kept = hit ? tidyTitle(hit.title) : "";
+    if (hit && kept) { out.push({ ...f, title: kept, lede: hit.lede ?? null, kind: classifyNews(f.items, `${kept} ${hit.lede || ""}`) }); continue; }
     const h = await headlineFor(f, async (url, type) => { const r = await get(url, type); await sleep(110); return r; });
     out.push({ ...f, ...h });
   }
@@ -834,7 +835,7 @@ async function storyBases(news, rows, now = new Date(), session = null, { budget
   for (const [t, l] of Object.entries(last)) if (!(age(l.at) <= 3 * 86400000)) delete last[t];
   for (const n of news) {
     if (Number.isFinite(kept[n.url]?.pb)) n.pb = kept[n.url].pb;
-    if (needLast && Number.isFinite(last[n.t]?.close)) n.lc = last[n.t].close;
+    if (needLast && Number.isFinite(last[n.t]?.close)) { n.lc = last[n.t].close; n.lcd = last[n.t].day; }
   }
   const out = JSON.stringify({ updated: now.toISOString(), items: kept, last }) + "\n";
   writeFileSync(join(DATA, STORY_PRICES), out);
@@ -915,7 +916,7 @@ async function buildIndex({ snapshot = false } = {}) {
       row.xs = c.market.ext.session;
       if (Number.isFinite(c.market.ext.price)) row.xp = c.market.ext.price;
     }
-    for (const n of c.news || []) if (now - new Date(n.at || n.date) <= STORY_DAYS * 86400000) recentNews.push({ t: c.ticker, ...n, title: n.title ? tidyTitle(n.title) : n.title });
+    for (const n of c.news || []) if (now - new Date(n.at || n.date) <= STORY_DAYS * 86400000) recentNews.push({ t: c.ticker, ...n, title: n.title ? tidyTitle(n.title) || null : n.title });
     if (c.firstSeen) row.fs = c.firstSeen;
     if (c.market?.ipoYear) row.ipo = c.market.ipoYear;
     if (c.lastReport?.date) row.lr = `${c.lastReport.date}|${c.lastReport.form}`;

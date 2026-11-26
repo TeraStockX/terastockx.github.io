@@ -80,12 +80,17 @@ export function freshness(n, now = new Date()) {
 }
 // The latest price for the change since a news item: the pre-market or after-hours trade of the largest
 // companies; during and right after the session the regular price; before the open, at night, at the weekend
-// (or when the session is unknown) the latest close from the daily history (n.lc), as the screener's price can
-// be days old then.
-function latestPrice(r, n, session) {
+// (or when the session is unknown) the latest close from the daily history (n.lc, of day n.lcd), as the
+// screener's price can be days old then. Until the history has the last session's close (Nasdaq adds it some hours
+// after the close), the price kept from that session's quotes (r.px): on 26 Nov the history still ended on the
+// 24th at night, and Nutanix showed 0.00% since its results instead of −15%.
+function latestPrice(r, n, session, now = new Date()) {
   const ext = (r.xs === "pre" || r.xs === "post") && isNum(r.xc) ? r.xc : null;
   if (ext !== null && isNum(r.xp) && r.xp > 0) return r.xp;
-  const close = session === "open" || session === "post" ? (isNum(r.px) && r.px > 0 ? r.px : null) : isNum(n?.lc) && n.lc > 0 ? n.lc : null;
+  const px = isNum(r.px) && r.px > 0 ? r.px : null;
+  const lc = isNum(n?.lc) && n.lc > 0 ? n.lc : null;
+  const behind = lc !== null && !!n.lcd && n.lcd < closeDayBefore(now) && px !== null;
+  const close = session === "open" || session === "post" ? px : behind ? px : lc;
   if (close === null) return null;
   return session === "open" ? close : close * (1 + (ext ?? 0) / 100);
 }
@@ -100,7 +105,7 @@ export function sinceNews(r, n, { now = new Date(), session = null } = {}) {
     if (session === "open") return isNum(r.dc) ? r.dc : null;
     return (r.xs === "pre" || r.xs === "post") && isNum(r.xc) ? r.xc : null;
   }
-  const cur = latestPrice(r, n, session);
+  const cur = latestPrice(r, n, session, now);
   return isNum(n.pb) && n.pb > 0 && isNum(cur) ? +((cur / n.pb - 1) * 100).toFixed(2) : null;
 }
 
