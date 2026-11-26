@@ -30,7 +30,7 @@ import { headlineFor, classifyNews, tidyTitle, isBackReference } from "./news-he
 import { fillMissingFilings } from "./xbrl-instance.mjs";
 import { buildSeo } from "./seo.mjs";
 import { buildPulse, INDEX_ETFS, STORY_CAP, isStoryNews, newsTime, closeDayBefore, closeOn } from "./pulse.mjs";
-import { usDay, nyDate } from "./us-calendar.mjs";
+import { usDay, nyDate, prevDay, isFilingDay } from "./us-calendar.mjs";
 import { dayQuotesFor, recordSession, recordAfterHours, lastSession, keptAfterHours, afterHoursQuote, quotesTime } from "./day-quotes.mjs";
 import { parseNasdaqListed, parseOtherListed, parseEtfs } from "./listings.mjs";
 import { insiderActivity } from "./insider.mjs";
@@ -816,7 +816,7 @@ async function storyBases(news, rows, now = new Date(), session = null, { budget
   const todo = new Map(); // ticker → news items still without their close
   for (const n of news) {
     const at = newsTime(n);
-    if (!n.url || !at || !isStoryNews(n) || (cap.get(n.t) ?? 0) < STORY_CAP) continue;
+    if (!n.url || !at || n.old || !isStoryNews(n) || (cap.get(n.t) ?? 0) < STORY_CAP) continue;
     const l = last[n.t];
     if (needLast && (!l || age(l.at) > 6 * 3600000 || (l.day < latest && age(l.at) > 20 * 60000))) todo.set(n.t, todo.get(n.t) || []);
     const k = kept[n.url];
@@ -882,7 +882,8 @@ async function buildIndex({ snapshot = false } = {}) {
 
   const news = [];
   const recentNews = []; // headlines of large companies for the top stories
-  const storySince = usDay(now).since;
+  // News of the filing day before the first one is kept as the reason behind a big move (old).
+  const storySince = usDay(now).since, reasonSince = prevDay(storySince, isFilingDay);
   let divCal = null;
   try { if (existsSync(DIVIDENDS)) divCal = readJson(DIVIDENDS).d || null; } catch {}
   const logos = logoSet(DATA);
@@ -925,11 +926,12 @@ async function buildIndex({ snapshot = false } = {}) {
       if (Number.isFinite(c.market.ext.price)) row.xp = c.market.ext.price;
     }
     for (const n of c.news || []) {
-      if (nyDate(newsTime(n)) < storySince) continue;
+      const day = nyDate(newsTime(n));
+      if (day < reasonSince) continue;
       const title = n.title ? tidyTitle(n.title) || null : n.title;
       // A headline that only refers back to an earlier filing is no new development.
       if (title && isBackReference(title)) continue;
-      recentNews.push({ t: c.ticker, ...n, title });
+      recentNews.push({ t: c.ticker, ...n, title, ...(day < storySince ? { old: true } : {}) });
     }
     if (c.firstSeen) row.fs = c.firstSeen;
     if (c.market?.ipoYear) row.ipo = c.market.ipoYear;

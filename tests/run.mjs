@@ -1392,3 +1392,27 @@ test("Top stories when the market is closed: an after-hours move is the last ses
   assert.equal(p.day.holiday, "thanksgiving");
   assert.equal(p.day.since, "2026-11-25");
 });
+
+test("Top stories: a big move with the news behind it, also when that news is older than the top stories", async () => {
+  const { buildStories, closeDayBefore, moveSince } = await import("../scripts/pulse.mjs");
+  // Thanksgiving evening: the last close is Wednesday's, not the holiday's.
+  assert.equal(closeDayBefore("2026-11-26T22:00:00Z"), "2026-11-25");
+  assert.equal(closeDayBefore("2026-11-27T22:00:00Z"), "2026-11-27");
+  const now = new Date("2026-11-26T18:00:00Z");
+  assert.equal(new Date(moveSince("last", now)).toISOString(), "2026-11-24T21:00:00.000Z", "Wednesday's move: news after Tuesday's close");
+  assert.equal(new Date(moveSince("lastPost", now)).toISOString(), "2026-11-25T21:00:00.000Z", "Wednesday's after-hours move: news after Wednesday's close");
+  const rows = [{ t: "NTNX", n: "Nutanix", mc: 1.3e10, dc: -14.89 }, { t: "DE", n: "Deere", mc: 1.3e11, dc: -0.48 }];
+  const news = [
+    { t: "NTNX", date: "2026-11-24", at: "2026-11-24T21:01:15Z", items: ["2.02"], kind: "results", title: "Nutanix Reports First Quarter Fiscal 2027 Financial Results", url: "n", old: true },
+    { t: "DE", date: "2026-11-25", at: "2026-11-25T11:00:47Z", items: ["2.02"], kind: "results", title: "Deere results", url: "d" },
+  ];
+  const by = Object.fromEntries(buildStories({ rows, news, session: { session: "closed" }, now }).map((x) => [x.t, x]));
+  assert.deepEqual([by.NTNX.kind, by.NTNX.when, by.NTNX.move, by.NTNX.title, by.NTNX.since], ["move", "last", -14.89, "Nutanix Reports First Quarter Fiscal 2027 Financial Results", null], "Tuesday's results: the reason, not a story of their own");
+  assert.equal(by.DE.kind, "results");
+  // During a session: a filing after yesterday's close is behind today's move, one from before it is not.
+  const open = new Date("2026-12-02T17:00:00Z");
+  const mv = [{ t: "ORCL", n: "Oracle", mc: 5e11, dc: -9 }];
+  const title = (at) => buildStories({ rows: mv, news: [{ t: "ORCL", date: at.slice(0, 10), at, items: ["8.01"], kind: "other", title: "Oracle update", url: "o" }], session: { session: "open" }, now: open })[0].title;
+  assert.equal(title("2026-12-01T21:30:00Z"), "Oracle update");
+  assert.equal(title("2026-12-01T15:00:00Z"), null);
+});

@@ -2,7 +2,7 @@
 // Built from index rows (price change since the previous close: dc, in percent; TeraScore change since
 // the previous day: d1; first day listed: fs; latest periodic report: lr) and the ETF quotes.
 
-import { usDay } from "./us-calendar.mjs";
+import { usDay, isTradingDay, prevDay, nyMoment } from "./us-calendar.mjs";
 
 const isNum = (x) => typeof x === "number" && Number.isFinite(x);
 const DAY = 86400000;
@@ -51,15 +51,22 @@ export function nyTime(when) {
   return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`;
 }
 const dayBefore = (day) => new Date(Date.parse(`${day}T12:00:00Z`) - DAY).toISOString().slice(0, 10);
-const isWeekday = (day) => { const g = new Date(`${day}T12:00:00Z`).getUTCDay(); return g >= 1 && g <= 5; };
-// The day of the last regular close (16:00 New York time, Monday to Friday) before a moment. Market holidays
-// are not known here: the price history decides (closeOn).
+// The day of the last regular close (16:00 New York time on a trading day) before a moment. The exchanges'
+// holidays come from their rules (us-calendar.mjs); a closure not known there is told by the price history
+// (closeOn).
 export function closeDayBefore(when) {
   const ny = nyTime(when);
   let day = ny.slice(0, 10);
   if (ny.slice(11) < "16:00") day = dayBefore(day);
-  while (!isWeekday(day)) day = dayBefore(day);
+  while (!isTradingDay(day)) day = dayBefore(day);
   return day;
+}
+// The moment after which news can be behind a move shown as `when`: the close before the move's session ("day",
+// "last"), or the close that the after-hours or pre-market trading follows ("post", "lastPost", "pre").
+export function moveSince(when, now = new Date()) {
+  const last = closeDayBefore(now);
+  const day = when === "day" ? prevDay(nyTime(now).slice(0, 10), isTradingDay) : when === "last" ? prevDay(last, isTradingDay) : last;
+  return nyMoment(day, "16:00").getTime();
 }
 // When a news item came out: the SEC's acceptance time, else its filing date (taken as before the open).
 export const newsTime = (n) => n?.at || (n?.date ? `${n.date}T05:00:00Z` : null);
@@ -131,13 +138,15 @@ export function buildStories({ rows, news = [], session = null, now = new Date()
     const move = extBig ? ext : dayBig ? day : ext || day;
     const big = extBig || dayBig;
     // The company's most important news, the newer the better (a new development comes before an older one).
+    // News of the filing day before the top stories' first day (n.old) is only the reason behind a move.
     const items = (byCo.get(r.t) || [])
-      .filter((n) => (KIND_WEIGHT[n.kind] ?? 0) > 0 && (n.kind !== "results" || mc >= 1e11 || big))
+      .filter((n) => !n.old && (KIND_WEIGHT[n.kind] ?? 0) > 0 && (n.kind !== "results" || mc >= 1e11 || big))
       .map((n) => ({ ...n, w: KIND_WEIGHT[n.kind] + freshness(n, now) }))
       .sort((a, b) => b.w - a.w || (newsTime(b) > newsTime(a) ? 1 : -1));
-    // A big move without such news gets the headline of the company's latest filing only if it is recent
-    // (within a day): an older one is unlikely to be behind today's move.
-    const item = items[0] || (big ? (byCo.get(r.t) || []).filter((n) => n.title && freshness(n, now) > 25).sort((a, b) => (newsTime(b) > newsTime(a) ? 1 : -1))[0] : null);
+    // A big move without such news gets the headline of the company's latest filing if it came out after the close
+    // before the move: on Thanksgiving Nutanix's −15% on Wednesday with its results of Tuesday evening.
+    const since = big ? moveSince(move.when, now) : null;
+    const item = items[0] || (big ? (byCo.get(r.t) || []).filter((n) => n.title && Date.parse(newsTime(n)) > since).sort((a, b) => (newsTime(b) > newsTime(a) ? 1 : -1))[0] : null);
     if (!items.length && !big) continue;
     // A big move happening now (before, during or after the session) is as current as fresh news.
     const live = ["pre", "open", "post"].includes(session?.session);
