@@ -380,12 +380,12 @@ export default {
    "post": "nabeurs",
    "day": "vandaag",
    "last": "laatste handelsdag"
-  },
+  , "lastPost": "na het laatste slot"},
   "preNote": "Voor de opening: de dagveranderingen hieronder zijn die van de vorige handelsdag ({d}). Voorbeursbewegingen van grote bedrijven staan bij Belangrijkste nieuws.",
   "postNote": "Na het slot: de dagveranderingen hieronder zijn die van de handel van vandaag; nabeursbewegingen van grote bedrijven staan bij Belangrijkste nieuws.",
   "readMore": "Persbericht (SEC)",
   "extLabel": "{w}: {p}",
-  "storiesNone": "Op dit moment geen groot nieuws van grote bedrijven.",
+  "storiesNone": "Op dit moment geen groot nieuws van grote bedrijven.", "holidayNote": "Vandaag is het een feestdag in de VS: de beurs is gesloten en de SEC neemt geen meldingen aan, dus er is geen nieuw bedrijfsnieuws. De volgende meldingen kunnen vanaf {d} komen.", "weekendNote": "In het weekend is de beurs gesloten en neemt de SEC geen meldingen aan, dus er is geen nieuw bedrijfsnieuws. De volgende meldingen kunnen vanaf {d} komen.", "marketHolidayNote": "De Amerikaanse beurs is vandaag gesloten wegens een feestdag; meldingen van bedrijven komen wel binnen.", "secHolidayNote": "De SEC neemt vandaag geen meldingen aan (federale feestdag), dus er is geen nieuw bedrijfsnieuws; de beurs is open. De volgende meldingen kunnen vanaf {d} komen.", "holidayShort": "Feestdag in de VS: beurs gesloten, geen nieuw bedrijfsnieuws.", "weekendShort": "Weekend: beurs gesloten, geen nieuw bedrijfsnieuws.", "checked": "Laatst gecontroleerd: {d}", "nextFilings": "volgende meldingen vanaf {d}",
   "moreNews": "Al het nieuws",
   "asOfShort": "Koersen: {d}, ca. 15 minuten vertraagd",
   "themesShort": {

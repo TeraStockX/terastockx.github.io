@@ -380,12 +380,12 @@ export default {
    "post": "after-market",
    "day": "hoje",
    "last": "último pregão"
-  },
+  , "lastPost": "após o último fechamento"},
   "preNote": "Antes da abertura: as variações diárias abaixo são as do pregão anterior ({d}). Os movimentos de pré-mercado das grandes empresas estão em Destaques.",
   "postNote": "Após o fechamento: as variações diárias abaixo são as do pregão de hoje; os movimentos de after-market das grandes empresas estão em Destaques.",
   "readMore": "Comunicado à imprensa (SEC)",
   "extLabel": "{w}: {p}",
-  "storiesNone": "Nenhuma grande notícia de grandes empresas no momento.",
+  "storiesNone": "Nenhuma grande notícia de grandes empresas no momento.", "holidayNote": "Hoje é feriado nos EUA: a bolsa está fechada e a SEC não aceita registros, por isso não há notícias novas das empresas. Os próximos registros podem chegar a partir de {d}.", "weekendNote": "No fim de semana a bolsa está fechada e a SEC não aceita registros, por isso não há notícias novas das empresas. Os próximos registros podem chegar a partir de {d}.", "marketHolidayNote": "A bolsa americana está fechada hoje por feriado; os registros das empresas continuam chegando.", "secHolidayNote": "A SEC não aceita registros hoje (feriado federal), por isso não há notícias novas das empresas; a bolsa está aberta. Os próximos registros podem chegar a partir de {d}.", "holidayShort": "Feriado nos EUA: bolsa fechada, sem notícias novas das empresas.", "weekendShort": "Fim de semana: bolsa fechada, sem notícias novas das empresas.", "checked": "Última verificação: {d}", "nextFilings": "próximos registros a partir de {d}",
   "moreNews": "Todas as notícias",
   "asOfShort": "Preços: {d}, com atraso de cerca de 15 minutos",
   "themesShort": {

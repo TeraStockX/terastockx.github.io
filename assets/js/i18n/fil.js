@@ -380,12 +380,12 @@ export default {
    "post": "after hours",
    "day": "ngayon",
    "last": "huling sesyon"
-  },
+  , "lastPost": "pagkatapos ng huling pagsasara"},
   "preNote": "Bago magbukas: ang mga pagbabago sa araw sa ibaba ay sa nakaraang araw ng kalakalan ({d}). Nasa Nangungunang balita ang mga galaw sa pre-market ng malalaking kumpanya.",
   "postNote": "Pagkatapos magsara: ang mga pagbabago sa araw sa ibaba ay sa sesyon ngayon; nasa Nangungunang balita ang mga galaw sa after hours ng malalaking kumpanya.",
   "readMore": "Press release (SEC)",
   "extLabel": "{w}: {p}",
-  "storiesNone": "Walang malaking balita mula sa malalaking kumpanya sa ngayon.",
+  "storiesNone": "Walang malaking balita mula sa malalaking kumpanya sa ngayon.", "holidayNote": "Holiday ngayon sa US: sarado ang stock market at hindi tumatanggap ng filing ang SEC, kaya walang bagong balita ng mga kumpanya. Maaaring dumating ang susunod na filing simula {d}.", "weekendNote": "Tuwing weekend sarado ang stock market at hindi tumatanggap ng filing ang SEC, kaya walang bagong balita ng mga kumpanya. Maaaring dumating ang susunod na filing simula {d}.", "marketHolidayNote": "Sarado ngayon ang stock market ng US dahil sa holiday; patuloy pa ring dumarating ang mga filing ng kumpanya.", "secHolidayNote": "Hindi tumatanggap ng filing ang SEC ngayon (federal holiday), kaya walang bagong balita ng mga kumpanya; bukas ang stock market. Maaaring dumating ang susunod na filing simula {d}.", "holidayShort": "Holiday sa US ngayon: sarado ang market, walang bagong balita ng kumpanya.", "weekendShort": "Weekend: sarado ang market, walang bagong balita ng kumpanya.", "checked": "Huling tsinek: {d}", "nextFilings": "susunod na filing simula {d}",
   "moreNews": "Lahat ng balita",
   "asOfShort": "Mga presyo: {d}, naantala nang mga 15 minuto",
   "themesShort": {

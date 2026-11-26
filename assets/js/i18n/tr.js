@@ -380,12 +380,12 @@ export default {
    "post": "seans sonrası",
    "day": "bugün",
    "last": "son seans"
-  },
+  , "lastPost": "son kapanıştan sonra"},
   "preNote": "Açılıştan önce: aşağıdaki günlük değişimler önceki işlem gününe ({d}) aittir. Büyük şirketlerin seans öncesi hareketleri Öne çıkanlar bölümündedir.",
   "postNote": "Kapanıştan sonra: aşağıdaki günlük değişimler bugünkü seansa aittir; büyük şirketlerin seans sonrası hareketleri Öne çıkanlar bölümündedir.",
   "readMore": "Basın bülteni (SEC)",
   "extLabel": "{w}: {p}",
-  "storiesNone": "Şu anda büyük şirketlerden önemli bir haber yok.",
+  "storiesNone": "Şu anda büyük şirketlerden önemli bir haber yok.", "holidayNote": "Bugün ABD'de resmî tatil: borsa kapalı ve SEC başvuru kabul etmiyor, bu yüzden yeni şirket haberi yok. Sonraki başvurular {d} itibarıyla gelebilir.", "weekendNote": "Hafta sonu borsa kapalı ve SEC başvuru kabul etmiyor, bu yüzden yeni şirket haberi yok. Sonraki başvurular {d} itibarıyla gelebilir.", "marketHolidayNote": "ABD borsası bugün tatil nedeniyle kapalı; şirketlerin başvuruları gelmeye devam ediyor.", "secHolidayNote": "SEC bugün başvuru kabul etmiyor (federal tatil), bu yüzden yeni şirket haberi yok; borsa açık. Sonraki başvurular {d} itibarıyla gelebilir.", "holidayShort": "ABD'de tatil: borsa kapalı, yeni şirket haberi yok.", "weekendShort": "Hafta sonu: borsa kapalı, yeni şirket haberi yok.", "checked": "Son kontrol: {d}", "nextFilings": "sonraki başvurular {d} itibarıyla",
   "moreNews": "Tüm haberler",
   "asOfShort": "Fiyatlar: {d}, yaklaşık 15 dakika gecikmeli",
   "themesShort": {

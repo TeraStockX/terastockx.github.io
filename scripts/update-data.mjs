@@ -26,10 +26,11 @@ import { sectorFromSic, sectorFromNasdaq, profileFor } from "./sectors.mjs";
 import { nasdaqScreener, nasdaqEtfScreener, etfSummary, priceHistory, priceBudgetLeft, fxToUsd, marketSession, extendedQuotes, browserJson, dailyCloses } from "./market.mjs";
 import { UCITS, ucitsQuote, ucitsHistory, nasdaqMonthlyRows, nasdaqDailyCloses } from "./ucits.mjs";
 import { majorEvents, recentFilings } from "./events.mjs";
-import { headlineFor, classifyNews, tidyTitle } from "./news-headline.mjs";
+import { headlineFor, classifyNews, tidyTitle, isBackReference } from "./news-headline.mjs";
 import { fillMissingFilings } from "./xbrl-instance.mjs";
 import { buildSeo } from "./seo.mjs";
 import { buildPulse, INDEX_ETFS, STORY_CAP, isStoryNews, newsTime, closeDayBefore, closeOn } from "./pulse.mjs";
+import { usDay, nyDate } from "./us-calendar.mjs";
 import { dayQuotesFor, recordSession, recordAfterHours, lastSession, keptAfterHours, afterHoursQuote, quotesTime } from "./day-quotes.mjs";
 import { parseNasdaqListed, parseOtherListed, parseEtfs } from "./listings.mjs";
 import { insiderActivity } from "./insider.mjs";
@@ -103,22 +104,28 @@ function latestReport(sub) {
 const BIG_NEWS_CAP = 1e10;
 const isBig = (marketCap) => (marketCap ?? 0) >= BIG_NEWS_CAP;
 const EVENT_DAYS = 365;
-const STORY_DAYS = 2; // news of the last two days for the top stories
+// The top stories hold the news of today and of the filing day before it (New York dates; weekends and the
+// SEC's holidays do not count: on Thanksgiving Wednesday's news, not Tuesday's), see usDay in us-calendar.mjs.
+// The closes kept for them are dropped after this many days.
+const STORY_KEEP_DAYS = 6;
 
 // How the news is read; companies read with an older version are read again by the intraday catch-up.
 const NEWS_VERSION = 2;
 
 // Recent 8-Ks with headlines; a headline is downloaded once and kept in the company file (the kind of news is
 // worked out again every time, so better rules apply to the kept headlines too).
+// A kept headline that only refers back to an earlier filing is read again once with the rules of this version
+// (the next sentence of the filing is the news).
+const HEADLINE_VERSION = 2;
 async function companyNews(sub, old) {
   const cached = new Map((old?.news || []).filter((n) => n.title).map((n) => [n.url, n]));
   const out = [];
   for (const f of recentFilings(sub)) {
     const hit = cached.get(f.url);
-    const kept = hit ? tidyTitle(hit.title) : "";
-    if (hit && kept) { out.push({ ...f, title: kept, lede: hit.lede ?? null, kind: classifyNews(f.items, `${kept} ${hit.lede || ""}`) }); continue; }
+    const kept = hit && !(isBackReference(hit.title) && hit.hv !== HEADLINE_VERSION) ? tidyTitle(hit.title) : "";
+    if (hit && kept) { out.push({ ...f, title: kept, lede: hit.lede ?? null, kind: classifyNews(f.items, `${kept} ${hit.lede || ""}`), ...(hit.hv ? { hv: hit.hv } : {}) }); continue; }
     const h = await headlineFor(f, async (url, type) => { const r = await get(url, type); await sleep(110); return r; });
-    out.push({ ...f, ...h });
+    out.push({ ...f, ...h, hv: HEADLINE_VERSION });
   }
   return out;
 }
@@ -831,7 +838,7 @@ async function storyBases(news, rows, now = new Date(), session = null, { budget
     }
     await sleep(150);
   }
-  for (const [url, k] of Object.entries(kept)) if (!(age(k.at) <= (STORY_DAYS + 3) * 86400000)) delete kept[url];
+  for (const [url, k] of Object.entries(kept)) if (!(age(k.at) <= STORY_KEEP_DAYS * 86400000)) delete kept[url];
   for (const [t, l] of Object.entries(last)) if (!(age(l.at) <= 3 * 86400000)) delete last[t];
   for (const n of news) {
     if (Number.isFinite(kept[n.url]?.pb)) n.pb = kept[n.url].pb;
@@ -875,6 +882,7 @@ async function buildIndex({ snapshot = false } = {}) {
 
   const news = [];
   const recentNews = []; // headlines of large companies for the top stories
+  const storySince = usDay(now).since;
   let divCal = null;
   try { if (existsSync(DIVIDENDS)) divCal = readJson(DIVIDENDS).d || null; } catch {}
   const logos = logoSet(DATA);
@@ -916,7 +924,13 @@ async function buildIndex({ snapshot = false } = {}) {
       row.xs = c.market.ext.session;
       if (Number.isFinite(c.market.ext.price)) row.xp = c.market.ext.price;
     }
-    for (const n of c.news || []) if (now - new Date(n.at || n.date) <= STORY_DAYS * 86400000) recentNews.push({ t: c.ticker, ...n, title: n.title ? tidyTitle(n.title) || null : n.title });
+    for (const n of c.news || []) {
+      if (nyDate(newsTime(n)) < storySince) continue;
+      const title = n.title ? tidyTitle(n.title) || null : n.title;
+      // A headline that only refers back to an earlier filing is no new development.
+      if (title && isBackReference(title)) continue;
+      recentNews.push({ t: c.ticker, ...n, title });
+    }
     if (c.firstSeen) row.fs = c.firstSeen;
     if (c.market?.ipoYear) row.ipo = c.market.ipoYear;
     if (c.lastReport?.date) row.lr = `${c.lastReport.date}|${c.lastReport.form}`;

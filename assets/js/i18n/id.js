@@ -380,12 +380,12 @@ export default {
    "post": "setelah jam bursa",
    "day": "hari ini",
    "last": "sesi terakhir"
-  },
+  , "lastPost": "setelah penutupan terakhir"},
   "preNote": "Sebelum pembukaan: perubahan harian di bawah adalah milik hari perdagangan sebelumnya ({d}). Pergerakan pra-pasar perusahaan besar ada di Berita utama.",
   "postNote": "Setelah penutupan: perubahan harian di bawah adalah milik sesi hari ini; pergerakan setelah jam bursa perusahaan besar ada di Berita utama.",
   "readMore": "Siaran pers (SEC)",
   "extLabel": "{w}: {p}",
-  "storiesNone": "Saat ini tidak ada berita besar dari perusahaan besar.",
+  "storiesNone": "Saat ini tidak ada berita besar dari perusahaan besar.", "holidayNote": "Hari ini libur di AS: bursa tutup dan SEC tidak menerima pengajuan, jadi tidak ada berita baru perusahaan. Pengajuan berikutnya bisa masuk mulai {d}.", "weekendNote": "Pada akhir pekan bursa tutup dan SEC tidak menerima pengajuan, jadi tidak ada berita baru perusahaan. Pengajuan berikutnya bisa masuk mulai {d}.", "marketHolidayNote": "Bursa AS tutup hari ini karena hari libur; pengajuan perusahaan tetap masuk.", "secHolidayNote": "SEC tidak menerima pengajuan hari ini (libur federal), jadi tidak ada berita baru perusahaan; bursa buka. Pengajuan berikutnya bisa masuk mulai {d}.", "holidayShort": "Libur di AS hari ini: bursa tutup, tidak ada berita baru perusahaan.", "weekendShort": "Akhir pekan: bursa tutup, tidak ada berita baru perusahaan.", "checked": "Terakhir diperiksa: {d}", "nextFilings": "pengajuan berikutnya mulai {d}",
   "moreNews": "Semua berita",
   "asOfShort": "Harga: {d}, tertunda sekitar 15 menit",
   "themesShort": {

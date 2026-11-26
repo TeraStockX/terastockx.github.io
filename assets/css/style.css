@@ -569,6 +569,10 @@ h1, h2, h3 { overflow-wrap: break-word; hyphens: auto; }
 .hp-story > b:first-child { color: var(--text); }
 .hp-kind { color: var(--text-3); }
 .hp-when { color: var(--text-3); font-size: 11px; margin-inline-start: -2px; }
+.hp-day { display: block; padding-top: 5px; border-top: 1px solid var(--border); font-size: 12px; line-height: 1.4; color: var(--text-2); text-decoration: none; }
+.hp-day:hover { text-decoration: none; color: var(--text); }
+.stories-checked { margin: -6px 0 10px; }
+.day-note { border-inline-start: 3px solid var(--accent); }
 .pulse-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; margin: 8px 0 12px; }
 .index-strip { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); gap: 10px; }
 .index-chip { padding: 10px 14px; }

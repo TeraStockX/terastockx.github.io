@@ -380,12 +380,12 @@ export default {
    "post": "etter stengning",
    "day": "i dag",
    "last": "siste handelsdag"
-  },
+  , "lastPost": "etter siste stenging"},
   "preNote": "Før åpning: de daglige endringene nedenfor er fra forrige handelsdag ({d}). Store selskapers bevegelser før åpning finnes under Toppsaker.",
   "postNote": "Etter stengning: de daglige endringene nedenfor er fra dagens handel; store selskapers bevegelser etter stengning finnes under Toppsaker.",
   "readMore": "Pressemelding (SEC)",
   "extLabel": "{w}: {p}",
-  "storiesNone": "Ingen store nyheter fra store selskaper akkurat nå.",
+  "storiesNone": "Ingen store nyheter fra store selskaper akkurat nå.", "holidayNote": "I dag er det helligdag i USA: børsen er stengt, og SEC tar ikke imot innleveringer, så det er ingen nye selskapsnyheter. De neste innleveringene kan komme fra {d}.", "weekendNote": "I helgen er børsen stengt, og SEC tar ikke imot innleveringer, så det er ingen nye selskapsnyheter. De neste innleveringene kan komme fra {d}.", "marketHolidayNote": "Den amerikanske børsen er stengt i dag på grunn av helligdag; selskapenes innleveringer kommer likevel inn.", "secHolidayNote": "SEC tar ikke imot innleveringer i dag (føderal helligdag), så det er ingen nye selskapsnyheter; børsen er åpen. De neste innleveringene kan komme fra {d}.", "holidayShort": "Helligdag i USA: børsen stengt, ingen nye selskapsnyheter.", "weekendShort": "Helg: børsen stengt, ingen nye selskapsnyheter.", "checked": "Sist sjekket: {d}", "nextFilings": "neste innleveringer fra {d}",
   "moreNews": "Alle nyheter",
   "asOfShort": "Kurser: {d}, forsinket ca. 15 minutter",
   "themesShort": {

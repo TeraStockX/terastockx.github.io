@@ -380,12 +380,12 @@ export default {
    "post": "selepas waktu dagangan",
    "day": "hari ini",
    "last": "sesi terakhir"
-  },
+  , "lastPost": "selepas penutupan terakhir"},
   "preNote": "Sebelum pasaran dibuka: perubahan harian di bawah ialah perubahan hari dagangan sebelumnya ({d}). Pergerakan pra-pasaran syarikat besar ada dalam Berita utama.",
   "postNote": "Selepas pasaran ditutup: perubahan harian di bawah ialah perubahan sesi hari ini; pergerakan selepas waktu dagangan syarikat besar ada dalam Berita utama.",
   "readMore": "Kenyataan media (SEC)",
   "extLabel": "{w}: {p}",
-  "storiesNone": "Tiada berita besar daripada syarikat besar buat masa ini.",
+  "storiesNone": "Tiada berita besar daripada syarikat besar buat masa ini.", "holidayNote": "Hari ini cuti umum di AS: bursa ditutup dan SEC tidak menerima pemfailan, jadi tiada berita baharu syarikat. Pemfailan seterusnya boleh tiba mulai {d}.", "weekendNote": "Pada hujung minggu bursa ditutup dan SEC tidak menerima pemfailan, jadi tiada berita baharu syarikat. Pemfailan seterusnya boleh tiba mulai {d}.", "marketHolidayNote": "Bursa AS ditutup hari ini kerana cuti umum; pemfailan syarikat masih diterima.", "secHolidayNote": "SEC tidak menerima pemfailan hari ini (cuti persekutuan), jadi tiada berita baharu syarikat; bursa dibuka. Pemfailan seterusnya boleh tiba mulai {d}.", "holidayShort": "Cuti umum di AS hari ini: bursa ditutup, tiada berita baharu syarikat.", "weekendShort": "Hujung minggu: bursa ditutup, tiada berita baharu syarikat.", "checked": "Kali terakhir disemak: {d}", "nextFilings": "pemfailan seterusnya mulai {d}",
   "moreNews": "Semua berita",
   "asOfShort": "Harga: {d}, lewat kira-kira 15 minit",
   "themesShort": {

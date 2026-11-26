@@ -380,12 +380,12 @@ export default {
    "post": "after-hours",
    "day": "oggi",
    "last": "ultima seduta"
-  },
+  , "lastPost": "dopo l'ultima chiusura"},
   "preNote": "Prima dell'apertura: le variazioni giornaliere qui sotto sono quelle della seduta precedente ({d}). I movimenti pre-mercato delle grandi società sono In primo piano.",
   "postNote": "Dopo la chiusura: le variazioni giornaliere qui sotto sono quelle della seduta di oggi; i movimenti after-hours delle grandi società sono In primo piano.",
   "readMore": "Comunicato stampa (SEC)",
   "extLabel": "{w}: {p}",
-  "storiesNone": "Al momento nessuna grande notizia dalle grandi società.",
+  "storiesNone": "Al momento nessuna grande notizia dalle grandi società.", "holidayNote": "Oggi negli Stati Uniti è festa: la Borsa è chiusa e la SEC non accetta comunicazioni, quindi non ci sono nuove notizie sulle società. Le prossime comunicazioni possono arrivare da {d}.", "weekendNote": "Nel fine settimana la Borsa è chiusa e la SEC non accetta comunicazioni, quindi non ci sono nuove notizie sulle società. Le prossime comunicazioni possono arrivare da {d}.", "marketHolidayNote": "Oggi la Borsa statunitense è chiusa per festività; le comunicazioni delle società continuano ad arrivare.", "secHolidayNote": "Oggi la SEC non accetta comunicazioni (festività federale), quindi non ci sono nuove notizie sulle società; la Borsa è aperta. Le prossime comunicazioni possono arrivare da {d}.", "holidayShort": "Festa negli USA: Borsa chiusa, nessuna nuova notizia sulle società.", "weekendShort": "Fine settimana: Borsa chiusa, nessuna nuova notizia sulle società.", "checked": "Ultimo controllo: {d}", "nextFilings": "prossime comunicazioni da {d}",
   "moreNews": "Tutte le notizie",
   "asOfShort": "Prezzi: {d}, ritardo di circa 15 minuti",
   "themesShort": {

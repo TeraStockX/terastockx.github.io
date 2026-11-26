@@ -365,12 +365,12 @@ export default {
    "post": "盘后",
    "day": "今日",
    "last": "上一交易日"
-  },
+  , "lastPost": "上一交易日收盘后"},
   "preNote": "开盘前：下方的每日变化为上一交易日（{d}）的数据。大公司的盘前波动见“要闻”。",
   "postNote": "收盘后：下方的每日变化为今日交易时段的数据；大公司的盘后波动见“要闻”。",
   "readMore": "公告（SEC）",
   "extLabel": "{w}：{p}",
-  "storiesNone": "目前大公司没有重大新闻。",
+  "storiesNone": "目前大公司没有重大新闻。", "holidayNote": "今天是美国假日：股市休市，SEC 也不接受申报，因此没有新的公司消息。下一批申报最早可在{d}之后到来。", "weekendNote": "周末股市休市，SEC 也不接受申报，因此没有新的公司消息。下一批申报最早可在{d}之后到来。", "marketHolidayNote": "美国股市今天因假日休市；公司申报仍在陆续提交。", "secHolidayNote": "SEC 今天不接受申报（联邦假日），因此没有新的公司消息；股市照常开盘。下一批申报最早可在{d}之后到来。", "holidayShort": "今天美国假日：股市休市，没有新的公司消息。", "weekendShort": "周末：股市休市，没有新的公司消息。", "checked": "最近检查：{d}", "nextFilings": "下一批申报在{d}之后",
   "moreNews": "全部新闻",
   "asOfShort": "价格：{d}，约延迟 15 分钟",
   "themesShort": {

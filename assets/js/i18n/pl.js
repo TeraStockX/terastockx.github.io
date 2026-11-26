@@ -380,12 +380,12 @@ export default {
    "post": "po sesji",
    "day": "dziś",
    "last": "ostatnia sesja"
-  },
+  , "lastPost": "po ostatnim zamknięciu"},
   "preNote": "Przed otwarciem: dzienne zmiany poniżej dotyczą poprzedniej sesji ({d}). Ruchy dużych spółek przed sesją są w sekcji Najważniejsze.",
   "postNote": "Po zamknięciu: dzienne zmiany poniżej dotyczą dzisiejszej sesji; ruchy dużych spółek po sesji są w sekcji Najważniejsze.",
   "readMore": "Komunikat prasowy (SEC)",
   "extLabel": "{w}: {p}",
-  "storiesNone": "W tej chwili brak dużych wiadomości od dużych spółek.",
+  "storiesNone": "W tej chwili brak dużych wiadomości od dużych spółek.", "holidayNote": "Dziś w USA jest święto: giełda jest zamknięta, a SEC nie przyjmuje zgłoszeń, więc nie ma nowych wiadomości o spółkach. Kolejne zgłoszenia mogą pojawić się od {d}.", "weekendNote": "W weekend giełda jest zamknięta, a SEC nie przyjmuje zgłoszeń, więc nie ma nowych wiadomości o spółkach. Kolejne zgłoszenia mogą pojawić się od {d}.", "marketHolidayNote": "Amerykańska giełda jest dziś zamknięta z powodu święta; zgłoszenia spółek nadal napływają.", "secHolidayNote": "SEC nie przyjmuje dziś zgłoszeń (święto federalne), więc nie ma nowych wiadomości o spółkach; giełda jest otwarta. Kolejne zgłoszenia mogą pojawić się od {d}.", "holidayShort": "Święto w USA: giełda zamknięta, brak nowych wiadomości o spółkach.", "weekendShort": "Weekend: giełda zamknięta, brak nowych wiadomości o spółkach.", "checked": "Ostatnie sprawdzenie: {d}", "nextFilings": "kolejne zgłoszenia od {d}",
   "moreNews": "Wszystkie wiadomości",
   "asOfShort": "Kursy: {d}, opóźnione o ok. 15 minut",
   "themesShort": {

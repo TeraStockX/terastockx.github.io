@@ -712,12 +712,12 @@ test("Intraday quotes: the evening's after-hours quotes are kept between runs un
   assert.equal(q.lastSession(wed, "closed").DELL[1], -11.82);
   assert.equal(q.keptAfterHours(wed, "closed").DELL[1], -5.01);
   assert.equal(q.quotesTime(wed, "closed"), "2026-11-25T00:55:00Z");
-  // The reaction to the results shows next to them, as the move after hours.
+  // The reaction to the results shows next to them, as the move after the last close (the market is closed at night).
   const row = { t: "DELL", n: "Dell", mc: 2.1e11, px: 295.31, dc: -11.82 };
   const x = q.afterHoursQuote(wed, q.keptAfterHours(wed, "closed"), "DELL");
   const [story] = buildStories({ rows: [{ ...row, xc: x.changePct, xp: x.price, xs: x.session }], news: [{ t: "DELL", date: "2026-11-24", at: "2026-11-24T21:09:13Z", items: ["2.02"], kind: "results", title: "Dell results", url: "d" }], session: { session: "closed" }, now: new Date("2026-11-25T06:30:00Z") });
   assert.equal(story.since, -5.01);
-  assert.deepEqual([story.move, story.when], [-5.01, "post"]);
+  assert.deepEqual([story.move, story.when], [-5.01, "lastPost"]);
   // Before the open the pre-market quotes are the latest; the new session replaces the old quotes.
   assert.equal(q.keptAfterHours(wed, "pre"), null);
   assert.equal(q.quotesTime(wed, "pre", new Date("2026-11-25T10:00:00Z")), "2026-11-25T10:00:00.000Z");
@@ -1324,4 +1324,71 @@ test("Top stories at night: the change since yesterday's news uses the last sess
   assert.equal(sinceNews(r, n, { now, session: "closed" }), -14.89, "the history still ends on the 24th: the kept price of the 25th");
   assert.equal(sinceNews(r, { ...n, lc: 46.5, lcd: "2026-11-25" }, { now, session: "closed" }), -14.82, "once the 25th's close is in the history, that close");
   assert.equal(sinceNews({ t: "X" }, n, { now, session: "closed" }), 0, "without a price of the row, the history's close");
+});
+
+test("US calendar: exchange and SEC holidays from their rules", async () => {
+  const c = await import("../scripts/us-calendar.mjs");
+  const list = (y, f) => { const out = []; for (let d = `${y}-01-01`; d <= `${y}-12-31`; d = c.addDays(d, 1)) if (f(d)) out.push(d.slice(5)); return out; };
+  // NYSE's published calendars for 2026 and 2027.
+  assert.deepEqual(list(2026, c.marketHoliday), ["01-01", "01-19", "02-16", "04-03", "05-25", "06-19", "07-03", "09-07", "11-26", "12-25"]);
+  assert.deepEqual(list(2027, c.marketHoliday), ["01-01", "01-18", "02-15", "03-26", "05-31", "06-18", "07-05", "09-06", "11-25", "12-24"]);
+  // Federal holidays: no Good Friday, but Columbus Day and Veterans Day; New Year's Day 2028 (a Saturday) on 31 December 2027.
+  assert.deepEqual(list(2027, c.secHoliday), ["01-01", "01-18", "02-15", "05-31", "06-18", "07-05", "09-06", "10-11", "11-11", "11-25", "12-24", "12-31"]);
+  assert.equal(c.marketHoliday("2027-12-31"), null, "the exchanges stay open on 31 December when New Year's Day is a Saturday");
+  assert.equal(c.easter(2026), "2026-04-05");
+  assert.equal(c.nyMoment("2026-11-27", "06:00").toISOString(), "2026-11-27T11:00:00.000Z");
+  assert.equal(c.nyMoment("2026-07-06", "06:00").toISOString(), "2026-07-06T10:00:00.000Z", "daylight saving time");
+});
+
+test("US market day: holidays, weekends, EDGAR's hours and the top stories' first day", async () => {
+  const { usDay } = await import("../scripts/us-calendar.mjs");
+  // Thanksgiving: exchanges and EDGAR closed; Tuesday's news is no longer among the top stories, Wednesday's is.
+  assert.deepEqual(usDay(new Date("2026-11-26T17:50:00Z")), { day: "2026-11-26", market: "holiday", sec: "holiday", holiday: "thanksgiving", next: "2026-11-27", filingsFrom: "2026-11-27T11:00:00.000Z", since: "2026-11-25" });
+  // The Friday after: Wednesday's and Friday's news; EDGAR opens at 6:00 New York time.
+  const fri = usDay(new Date("2026-11-27T08:00:00Z"));
+  assert.deepEqual([fri.market, fri.sec, fri.since, fri.filingsFrom], [null, null, "2026-11-25", "2026-11-27T11:00:00.000Z"]);
+  assert.equal(usDay(new Date("2026-11-27T12:00:00Z")).filingsFrom, null, "EDGAR open");
+  assert.equal(usDay(new Date("2026-11-28T03:30:00Z")).filingsFrom, "2026-11-30T11:00:00.000Z", "Friday 22:30 in New York: EDGAR closed until Monday");
+  // The weekend: Friday's news; Monday morning: Friday's and Monday's.
+  const sun = usDay(new Date("2026-11-29T15:00:00Z"));
+  assert.deepEqual([sun.market, sun.sec, sun.holiday, sun.since, sun.next], ["weekend", "weekend", null, "2026-11-27", "2026-11-30"]);
+  assert.equal(usDay(new Date("2026-11-30T08:00:00Z")).since, "2026-11-27");
+  // A normal Wednesday: Tuesday's and Wednesday's news.
+  assert.equal(usDay(new Date("2026-12-02T15:00:00Z")).since, "2026-12-01");
+  // Good Friday: the exchanges are closed, EDGAR is open; Columbus Day: the other way round.
+  const gf = usDay(new Date("2027-03-26T15:00:00Z"));
+  assert.deepEqual([gf.market, gf.sec, gf.holiday, gf.filingsFrom], ["holiday", null, "goodFriday", null]);
+  const col = usDay(new Date("2026-10-12T15:00:00Z"));
+  assert.deepEqual([col.market, col.sec, col.holiday, col.since], [null, "holiday", "columbus", "2026-10-09"]);
+});
+
+test("Headlines: a sentence that refers back to an earlier filing is passed over", async () => {
+  const h = await import("../scripts/news-headline.mjs");
+  assert.ok(h.isBackReference("As reported on a Form 8-K filed by Curtiss-Wright Corporation on September 21, 2026, the Company announced …"));
+  assert.ok(h.isBackReference("As previously disclosed on in its Current Report on Form 8-K, filed August 17, 2026, Ronald Taylor did not seek re-election"));
+  assert.ok(!h.isBackReference("As announced in the press release attached as Exhibit 99.1, the Board appointed Jane Doe as Chief Executive Officer."));
+  assert.ok(!h.isBackReference("Acme Reports Third Quarter Results"));
+  // Curtiss-Wright's 8-K of 24 November 2026 (item 5.02): the CEO's retirement had been announced in September.
+  const html = `<html><body><p>Item 5.02 Departure of Directors or Certain Officers; Election of Directors; Appointment of Certain Officers; Compensatory Arrangements of Certain Officers</p>
+    <p>As reported on a Form 8-K filed by Curtiss-Wright Corporation (the “Company”) on September 21, 2026, the Company announced, among other things, that Lynn M. Bamford, Chair and Chief Executive Officer of the Company, will retire from her position as Chief Executive Officer on December 31, 2026, and will transition to the position of Executive Chair effective as of January 1, 2027.</p>
+    <p>In connection with Ms. Bamford’s transition to Executive Chair, the Executive Compensation Committee of the Board of Directors of the Company on November 18, 2026 approved changes to Ms. Bamford’s compensation. Effective January 1, 2027, Ms. Bamford will not receive a new annual incentive award bonus opportunity.</p>
+    <p>SIGNATURE</p></body></html>`;
+  const title = h.itemSentence(html, ["5.02"]);
+  assert.equal(title, "In connection with Ms. Bamford’s transition to Executive Chair, the Executive Compensation Committee of the Board of Directors of the Company on November 18, 2026 approved changes to Ms. Bamford’s compensation.");
+  assert.equal(h.classifyNews(["5.02"], title), "board", "a pay change, no leadership change: no top story");
+  // With nothing after it, the reference itself.
+  const only = `<p>Item 8.01 Other Events</p><p>As previously announced, the Company completed the sale of its European business to Acme Holdings on November 20, 2026 for $1.2 billion.</p>`;
+  assert.match(h.itemSentence(only, ["8.01"]), /^As previously announced, the Company completed the sale/);
+  assert.deepEqual(h.sentences("One sentence by Mr. Smith. Two in the U.S. market. Three."), ["One sentence by Mr. Smith.", "Two in the U.S. market.", "Three."]);
+});
+
+test("Top stories when the market is closed: an after-hours move is the last session's; pulse.json says why there is no news", async () => {
+  const { buildStories, buildPulse } = await import("../scripts/pulse.mjs");
+  const now = new Date("2026-11-26T17:50:00Z"); // Thanksgiving
+  const rows = [{ t: "DLR", n: "Digital Realty", mc: 6e10, dc: 0.2, xc: 10.19, xs: "post" }];
+  assert.equal(buildStories({ rows, news: [], session: { session: "closed" }, now })[0].when, "lastPost");
+  assert.equal(buildStories({ rows, news: [], session: { session: "post" }, now })[0].when, "post");
+  const p = buildPulse({ rows, now, session: { session: "closed" } });
+  assert.equal(p.day.holiday, "thanksgiving");
+  assert.equal(p.day.since, "2026-11-25");
 });

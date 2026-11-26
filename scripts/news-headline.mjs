@@ -69,19 +69,41 @@ const words = (s) => s.split(/\s+/).filter(Boolean).length;
 
 // Sentence end: not after an abbreviation ("Inc.", "Calif.", "U.S.") or an initial ("Harvey C. Jones").
 const ABBR = new Set(["inc", "corp", "co", "ltd", "llc", "plc", "mr", "mrs", "ms", "dr", "jr", "sr", "st", "no", "nos", "vs", "etc", "calif", "fla", "mass", "conn", "penn", "wash", "ill", "mich", "minn", "ariz", "colo", "tenn", "jan", "feb", "mar", "apr", "jun", "jul", "aug", "sep", "sept", "oct", "nov", "dec", "approx", "dept", "est", "fig", "gov", "intl", "n.v", "s.a", "l.p", "u.s", "u.k", "e.g", "i.e"]);
-export function firstSentence(text, max = 240) {
-  const s = String(text || "").trim();
+function sentenceEnd(s) {
   const re = /[.!?](?=["”’)]?\s+["“‘(]?[A-Z0-9])/g;
-  let end = s.length;
   for (let m; (m = re.exec(s));) {
     const before = s.slice(0, m.index).match(/([A-Za-z.]+)$/)?.[1] || "";
     const w = before.toLowerCase().replace(/^\./, "");
     if (ABBR.has(w) || /^[A-Z]$/.test(before) || /^([A-Za-z]\.)+[A-Za-z]$/.test(before)) continue;
-    end = m.index + 1;
-    break;
+    return m.index + 1;
   }
-  return clip(s.slice(0, end), max);
+  return s.length;
 }
+export function firstSentence(text, max = 240) {
+  const s = String(text || "").trim();
+  return clip(s.slice(0, sentenceEnd(s)), max);
+}
+// The sentences of a text, in order.
+export function sentences(text) {
+  const out = [];
+  let s = String(text || "").trim();
+  while (s) {
+    const end = sentenceEnd(s);
+    out.push(s.slice(0, end).trim());
+    s = s.slice(end).trim();
+  }
+  return out;
+}
+
+// A sentence that only refers back to an earlier filing or announcement ("As reported on a Form 8-K filed by
+// Curtiss-Wright Corporation on September 21, 2026, …", "As previously disclosed, …"): the news, if any, follows
+// it. ("As announced in the press release attached …" is the news itself.)
+const BACK_REFERENCE = [
+  /^as\s+(?:was\s+|has\s+been\s+)?(?:previously|originally|initially|earlier)\s+(?:reported|disclosed|announced|described|stated)\b/i,
+  /^as\s+(?:was\s+)?(?:reported|disclosed|announced|described)\b[^.]{0,80}?\bform\s+8-k\b/i,
+  /^(?:reference\s+is\s+made\s+to|further\s+to)\b/i,
+];
+export const isBackReference = (s) => BACK_REFERENCE.some((re) => re.test(String(s || "").trim()));
 export function clip(s, max = 240) {
   s = String(s || "").replace(/\s+/g, " ").trim();
   if (s.length <= max) return s;
@@ -156,10 +178,14 @@ export function pressHeadline(html) {
 const ITEM_ORDER = ["1.03", "4.02", "5.01", "1.05", "2.01", "1.01", "5.02", "2.05", "2.06", "3.01", "2.04", "4.01", "2.02", "8.01", "7.01", "1.02"];
 const SKIP_SENTENCE = /^(as provided in general instruction|the information (in|contained in|furnished)|a copy of the|the foregoing|pursuant to the requirements|in accordance with general instruction|cautionary|forward-looking|this current report)/i;
 
-// The first sentence of the most telling item of an 8-K ("The Board … reinstated Jen-Hsun Huang as …").
+// The first sentence of the most telling item of an 8-K ("The Board … reinstated Jen-Hsun Huang as …"). A
+// sentence that refers back to an earlier filing is passed over for the next one: on 24 November Curtiss-Wright's
+// 8-K began with "As reported on a Form 8-K filed … on September 21, 2026, …" (its CEO's retirement, announced
+// two months before); the news was the change to her pay after it.
 export function itemSentence(html, items = []) {
   const blocks = htmlBlocks(html);
   const wanted = ITEM_ORDER.filter((x) => items.includes(x));
+  let fallback = "";
   for (const item of wanted.length ? wanted : ITEM_ORDER) {
     const re = new RegExp(`^Item\\s*${item.replace(".", "\\.")}\\b`, "i");
     const at = blocks.findIndex((b) => re.test(b.text));
@@ -170,10 +196,15 @@ export function itemSentence(html, items = []) {
       if (/^Item\s*\d\.\d\d/i.test(text) && i > at) break;
       if (words(text) < 8 || /^(departure of directors|entry into a material|results of operations|regulation fd|other events|completion of acquisition|financial statements and exhibits|termination of a material|costs associated|material impairments|notice of delisting|changes in registrant|non-reliance|bankruptcy|material cybersecurity)/i.test(text)) continue;
       if (SKIP_SENTENCE.test(text)) continue;
-      return firstSentence(tidySentence(text));
+      for (const sentence of sentences(text)) {
+        if (isBackReference(sentence)) { fallback ||= sentence; continue; }
+        if (words(sentence) < 6 || SKIP_SENTENCE.test(sentence)) continue;
+        return firstSentence(tidySentence(sentence));
+      }
     }
+    if (fallback) break;
   }
-  return "";
+  return fallback ? firstSentence(tidySentence(fallback)) : "";
 }
 
 // ---------- Filing index ----------

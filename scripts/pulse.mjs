@@ -2,6 +2,8 @@
 // Built from index rows (price change since the previous close: dc, in percent; TeraScore change since
 // the previous day: d1; first day listed: fs; latest periodic report: lr) and the ETF quotes.
 
+import { usDay } from "./us-calendar.mjs";
+
 const isNum = (x) => typeof x === "number" && Number.isFinite(x);
 const DAY = 86400000;
 
@@ -120,7 +122,9 @@ export function buildStories({ rows, news = [], session = null, now = new Date()
     // the close the after-hours change or the day's change, whichever is big news; at night and on
     // weekends the last session's change.
     const limit = bigMove(mc);
-    const ext = isNum(r.xc) && (r.xs === "pre" || r.xs === "post") ? { v: r.xc, when: r.xs } : null;
+    // When the market is closed (at night, at the weekend, on a holiday), an after-hours change is the last
+    // session's ("after the last close"), not one happening now.
+    const ext = isNum(r.xc) && (r.xs === "pre" || r.xs === "post") ? { v: r.xc, when: r.xs === "post" && session?.session === "closed" ? "lastPost" : r.xs } : null;
     const day = session?.session !== "pre" && isNum(r.dc) ? { v: r.dc, when: session?.session === "closed" ? "last" : "day" } : null;
     const extBig = !!ext && Math.abs(ext.v) >= limit;
     const dayBig = !!day && Math.abs(day.v) >= limit;
@@ -190,5 +194,7 @@ export function buildPulse({ rows, etfs = [], now = new Date(), quotesAt = null,
   hl.sort((a, b) => b.w - a.w);
 
   const stories = buildStories({ rows, news, session, now });
-  return { generated: now.toISOString(), quotesAt, session: session?.session ?? null, prevDay: session?.previousTradeDate ?? null, stories, indices, themes, sectors, gainers, losers, reports, scoreMoves, newListings, headlines: hl.slice(0, 12).map(({ w, ...x }) => x) };
+  // The US market day: a weekend or holiday (the exchanges, EDGAR), the next trading day, when EDGAR takes
+  // filings again; the pages say from it why there is no new news.
+  return { generated: now.toISOString(), quotesAt, session: session?.session ?? null, prevDay: session?.previousTradeDate ?? null, day: usDay(now), stories, indices, themes, sectors, gainers, losers, reports, scoreMoves, newListings, headlines: hl.slice(0, 12).map(({ w, ...x }) => x) };
 }

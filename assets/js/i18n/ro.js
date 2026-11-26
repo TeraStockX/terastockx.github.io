@@ -380,12 +380,12 @@ export default {
    "post": "după închidere",
    "day": "azi",
    "last": "ultima ședință"
-  },
+  , "lastPost": "după ultima închidere"},
   "preNote": "Înainte de deschidere: variațiile zilnice de mai jos sunt cele din ședința anterioară ({d}). Mișcările companiilor mari înainte de deschidere sunt la Știri principale.",
   "postNote": "După închidere: variațiile zilnice de mai jos sunt cele din ședința de azi; mișcările companiilor mari după închidere sunt la Știri principale.",
   "readMore": "Comunicat de presă (SEC)",
   "extLabel": "{w}: {p}",
-  "storiesNone": "În acest moment nu există știri mari de la companiile mari.",
+  "storiesNone": "În acest moment nu există știri mari de la companiile mari.", "holidayNote": "Astăzi este sărbătoare în SUA: bursa este închisă, iar SEC nu acceptă depuneri, așa că nu există știri noi despre companii. Următoarele depuneri pot apărea de la {d}.", "weekendNote": "În weekend bursa este închisă, iar SEC nu acceptă depuneri, așa că nu există știri noi despre companii. Următoarele depuneri pot apărea de la {d}.", "marketHolidayNote": "Bursa americană este închisă astăzi din cauza unei sărbători; depunerile companiilor continuă să sosească.", "secHolidayNote": "SEC nu acceptă depuneri astăzi (sărbătoare federală), așa că nu există știri noi despre companii; bursa este deschisă. Următoarele depuneri pot apărea de la {d}.", "holidayShort": "Sărbătoare în SUA: bursa închisă, nicio știre nouă despre companii.", "weekendShort": "Weekend: bursa închisă, nicio știre nouă despre companii.", "checked": "Ultima verificare: {d}", "nextFilings": "următoarele depuneri de la {d}",
   "moreNews": "Toate știrile",
   "asOfShort": "Prețuri: {d}, întârziate cu aproximativ 15 minute",
   "themesShort": {

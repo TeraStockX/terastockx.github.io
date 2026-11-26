@@ -380,12 +380,12 @@ export default {
    "post": "po uzavření",
    "day": "dnes",
    "last": "poslední obchodní den"
-  },
+  , "lastPost": "po posledním uzavření"},
   "preNote": "Před otevřením: denní změny níže jsou z předchozího obchodního dne ({d}). Pohyby velkých společností před otevřením najdete v Hlavních zprávách.",
   "postNote": "Po uzavření: denní změny níže jsou z dnešního obchodování; pohyby velkých společností po uzavření najdete v Hlavních zprávách.",
   "readMore": "Tisková zpráva (SEC)",
   "extLabel": "{w}: {p}",
-  "storiesNone": "Od velkých společností teď nejsou žádné velké zprávy.",
+  "storiesNone": "Od velkých společností teď nejsou žádné velké zprávy.", "holidayNote": "Dnes je v USA svátek: burza je zavřená a SEC nepřijímá žádná podání, proto nejsou nové zprávy o firmách. Další podání mohou přijít od {d}.", "weekendNote": "O víkendu je burza zavřená a SEC nepřijímá žádná podání, proto nejsou nové zprávy o firmách. Další podání mohou přijít od {d}.", "marketHolidayNote": "Americká burza je dnes kvůli svátku zavřená; podání firem stále přicházejí.", "secHolidayNote": "SEC dnes nepřijímá žádná podání (federální svátek), proto nejsou nové zprávy o firmách; burza je otevřená. Další podání mohou přijít od {d}.", "holidayShort": "Svátek v USA: burza zavřená, žádné nové zprávy o firmách.", "weekendShort": "Víkend: burza zavřená, žádné nové zprávy o firmách.", "checked": "Naposledy zkontrolováno: {d}", "nextFilings": "další podání od {d}",
   "moreNews": "Všechny zprávy",
   "asOfShort": "Ceny: {d}, zpožděné asi o 15 minut",
   "themesShort": {

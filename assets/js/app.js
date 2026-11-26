@@ -878,6 +878,39 @@ function storyMove(s) {
   return isNum(s.move) ? { v: s.move, label: t(`pulse.when.${s.when || "day"}`) } : null;
 }
 
+// ---------- Weekends and holidays ----------
+
+// The New York date by the visitor's clock: the day pulse.json describes (p.day) holds only while it is today.
+const NY_DAY = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" });
+const usDayOf = (p) => (p?.day?.day && p.day.day === NY_DAY.format(new Date()) ? p.day : null);
+// When something will happen, in the visitor's time: "today 12:00", else the weekday and the time ("Friday 12:00").
+function laterWhen(iso) {
+  const d = new Date(iso);
+  if (isNaN(d)) return "–";
+  const dayStart = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const day = dayStart(d) <= dayStart(new Date()) ? t("ui.today").toLocaleLowerCase(locale()) : d.toLocaleDateString(locale(), { weekday: "long" });
+  return `${day} ${ltr(d.toLocaleTimeString(locale(), { hour: "2-digit", minute: "2-digit" }))}`;
+}
+// Why there is no new news: the stock market and the SEC at the weekend or on a holiday (short: for the home page).
+function dayNote(p, { short = false } = {}) {
+  const d = usDayOf(p);
+  if (!d) return "";
+  const from = d.filingsFrom && Date.parse(d.filingsFrom) > Date.now() ? laterWhen(d.filingsFrom) : "–";
+  if (d.market === "weekend") return t(short ? "pulse.weekendShort" : "pulse.weekendNote", { d: from });
+  if (d.market === "holiday" && d.sec === "holiday") return t(short ? "pulse.holidayShort" : "pulse.holidayNote", { d: from });
+  if (short) return "";
+  if (d.market === "holiday") return t("pulse.marketHolidayNote");
+  if (d.sec === "holiday") return t("pulse.secHolidayNote", { d: from });
+  return "";
+}
+// When the site last looked for news, and while EDGAR is closed (at night too) when the next filings can come.
+function checkedLine(p) {
+  if (!p?.generated) return "";
+  const d = usDayOf(p);
+  const next = d?.filingsFrom && Date.parse(d.filingsFrom) > Date.now() && !dayNote(p) ? ` · ${t("pulse.nextFilings", { d: laterWhen(d.filingsFrom) })}` : "";
+  return `${t("pulse.checked", { d: newsWhen(p.generated, { lower: true }) })}${next}`;
+}
+
 // One line per story: company, move, kind and time, then the headline (three lines at most).
 function storyRow(s) {
   const row = fullRow(s);
@@ -896,7 +929,10 @@ function storyRow(s) {
 }
 function storiesView(p, { limit = 8 } = {}) {
   const list = (p?.stories || []).slice(0, limit);
+  const note = dayNote(p), checked = checkedLine(p);
   return `<h2 class="section-title news-sec">${esc(t("pulse.storiesTitle"))} ${infoTip(`${t("pulse.storiesNote")} ${t("pulse.sinceNote")}`)}</h2>
+    ${checked ? `<p class="small muted stories-checked">${esc(checked)}</p>` : ""}
+    ${note ? `<p class="glass session-note small day-note">${esc(note)}</p>` : ""}
     ${list.length ? `<div class="glass nlist">${list.map(storyRow).join("")}</div>` : `<div class="glass empty small">${esc(t("pulse.storiesNone"))}</div>`}`;
 }
 
@@ -969,12 +1005,15 @@ function homePulse(p) {
     return `<a class="hp-story" href="#/c/${encodeURIComponent(s.t)}" title="${esc(`${t(`pulse.kind.${s.kind}`)}${s.title ? `: ${s.title}` : ""}`)}"><b>${esc(s.t)}</b>${m ? `${chg(m.v)}<span class="hp-when">${esc(m.label)}</span><span class="hp-when" aria-hidden="true">·</span>` : ""}<span class="hp-kind">${esc(t(`pulse.kind.${s.kind}`))}${s.kind !== "move" && (s.at || s.date) ? ` (${esc(newsWhen(s.at || `${s.date}T12:00:00`, { clock: false, lower: true }))})` : ""}</span></a>`;
   });
   if (!market.length && !stories.length) return "";
+  // At the weekend and on holidays: why there is no new news.
+  const note = dayNote(p, { short: true });
   // Before the open the pre-market changes are shown; when the market is closed, the last session's.
   const session = pre ? t("pulse.when.pre") : p.session === "closed" ? t("pulse.when.last") : "";
   return `<div class="glass home-pulse">
     <a class="hp-title" href="#/news"><span>${esc(t("ui.marketToday"))}${session ? ` <span class="muted">· ${esc(session)}</span>` : ""}</span><span class="hp-more" aria-hidden="true">›</span></a>
     ${market.length ? `<div class="hp-items hp-market">${market.join("")}</div>` : ""}
     ${stories.length ? `<div class="hp-line"><a class="hp-label" href="#/news">${esc(t("pulse.storiesTitle"))}</a><div class="hp-items scroll">${stories.join("")}</div></div>` : ""}
+    ${note ? `<a class="hp-day" href="#/news">${esc(note)}</a>` : ""}
   </div>`;
 }
 
@@ -1005,7 +1044,7 @@ function marketView(p) {
       <span class="small muted">${esc(t("pulse.asOfShort", { d: updatedWhen(p.quotesAt || p.generated, { lower: true }) }))}</span>
     </div>
     ${p.session === "pre" ? `<p class="glass session-note small">${esc(t("pulse.preNote", { d: p.prevDay ? date(p.prevDay) : "–" }))}</p>` : p.session === "post" ? `<p class="glass session-note small">${esc(t("pulse.postNote"))}</p>` : ""}
-    <div class="theme-chips">${(p.indices || []).filter((e) => isNum(e.dc) || isNum(e.xc)).map((e) => `<span class="theme-chip index" title="${esc(`${e.t} · ${fmt(e.px, "usd")}`)}">${esc(INDEX_NAMES[e.t] || e.t)} ${dayChange(e.dc)}${isNum(e.xc) && e.xs ? `<span class="small muted">${esc(t(`pulse.when.${e.xs}`))}</span>${dayChange(e.xc)}` : ""}</span>`).join("")}${themes}</div>
+    <div class="theme-chips">${(p.indices || []).filter((e) => isNum(e.dc) || isNum(e.xc)).map((e) => `<span class="theme-chip index" title="${esc(`${e.t} · ${fmt(e.px, "usd")}`)}">${esc(INDEX_NAMES[e.t] || e.t)} ${dayChange(e.dc)}${isNum(e.xc) && e.xs ? `<span class="small muted">${esc(t(`pulse.when.${e.xs === "post" && p.session === "closed" ? "lastPost" : e.xs}`))}</span>${dayChange(e.xc)}` : ""}</span>`).join("")}${themes}</div>
     <div class="market-cols">
       ${sectorBars ? `<div><div class="score-name">${esc(t("pulse.sectorsTitle"))}</div><div class="glass pad sec-list compact">${sectorBars}</div></div>` : ""}
       ${pulseTable(t("pulse.gainers"), p.gainers || [], t("pulse.today"), (r) => dayChange(r.dc))}

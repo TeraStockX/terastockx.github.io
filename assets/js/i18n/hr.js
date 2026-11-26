@@ -380,12 +380,12 @@ export default {
    "post": "nakon zatvaranja",
    "day": "danas",
    "last": "posljednja sesija"
-  },
+  , "lastPost": "nakon posljednjeg zatvaranja"},
   "preNote": "Prije otvaranja: dnevne promjene ispod su promjene prethodnog trgovinskog dana ({d}). Kretanja velikih tvrtki prije otvaranja nalaze se u glavnim vijestima.",
   "postNote": "Nakon zatvaranja: dnevne promjene ispod su promjene današnje sesije; kretanja velikih tvrtki nakon zatvaranja nalaze se u glavnim vijestima.",
   "readMore": "Priopćenje za javnost (SEC)",
   "extLabel": "{w}: {p}",
-  "storiesNone": "Trenutačno nema velikih vijesti velikih tvrtki.",
+  "storiesNone": "Trenutačno nema velikih vijesti velikih tvrtki.", "holidayNote": "Danas je u SAD-u praznik: burza je zatvorena, a SEC ne prima podneske, pa nema novih vijesti o tvrtkama. Sljedeći podnesci mogu stići od {d}.", "weekendNote": "Vikendom je burza zatvorena, a SEC ne prima podneske, pa nema novih vijesti o tvrtkama. Sljedeći podnesci mogu stići od {d}.", "marketHolidayNote": "Američka burza danas je zatvorena zbog praznika; podnesci tvrtki i dalje stižu.", "secHolidayNote": "SEC danas ne prima podneske (savezni praznik), pa nema novih vijesti o tvrtkama; burza je otvorena. Sljedeći podnesci mogu stići od {d}.", "holidayShort": "Praznik u SAD-u: burza zatvorena, nema novih vijesti o tvrtkama.", "weekendShort": "Vikend: burza zatvorena, nema novih vijesti o tvrtkama.", "checked": "Zadnja provjera: {d}", "nextFilings": "sljedeći podnesci od {d}",
   "moreNews": "Sve vijesti",
   "asOfShort": "Cijene: {d}, s odgodom od oko 15 minuta",
   "themesShort": {

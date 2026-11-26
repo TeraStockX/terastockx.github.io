@@ -380,12 +380,12 @@ export default {
    "post": "jälkimarkkina",
    "day": "tänään",
    "last": "edellinen kauppapäivä"
-  },
+  , "lastPost": "viimeisen sulkemisen jälkeen"},
   "preNote": "Ennen avausta: alla olevat päivämuutokset ovat edelliseltä kauppapäivältä ({d}). Suurten yhtiöiden liikkeet ennen avausta löytyvät Tärkeimmistä uutisista.",
   "postNote": "Sulkemisen jälkeen: alla olevat päivämuutokset ovat tämän päivän kaupankäynnistä; suurten yhtiöiden jälkimarkkinaliikkeet löytyvät Tärkeimmistä uutisista.",
   "readMore": "Lehdistötiedote (SEC)",
   "extLabel": "{w}: {p}",
-  "storiesNone": "Suurilta yhtiöiltä ei ole juuri nyt suuria uutisia.",
+  "storiesNone": "Suurilta yhtiöiltä ei ole juuri nyt suuria uutisia.", "holidayNote": "Tänään on Yhdysvalloissa juhlapäivä: pörssi on kiinni eikä SEC ota vastaan ilmoituksia, joten uusia yhtiöuutisia ei ole. Seuraavat ilmoitukset voivat tulla {d} alkaen.", "weekendNote": "Viikonloppuna pörssi on kiinni eikä SEC ota vastaan ilmoituksia, joten uusia yhtiöuutisia ei ole. Seuraavat ilmoitukset voivat tulla {d} alkaen.", "marketHolidayNote": "Yhdysvaltain pörssi on tänään kiinni juhlapäivän vuoksi; yhtiöiden ilmoituksia tulee silti.", "secHolidayNote": "SEC ei ota tänään vastaan ilmoituksia (liittovaltion juhlapäivä), joten uusia yhtiöuutisia ei ole; pörssi on auki. Seuraavat ilmoitukset voivat tulla {d} alkaen.", "holidayShort": "Juhlapäivä Yhdysvalloissa: pörssi kiinni, ei uusia yhtiöuutisia.", "weekendShort": "Viikonloppu: pörssi kiinni, ei uusia yhtiöuutisia.", "checked": "Viimeksi tarkistettu: {d}", "nextFilings": "seuraavat ilmoitukset {d} alkaen",
   "moreNews": "Kaikki uutiset",
   "asOfShort": "Hinnat: {d}, noin 15 minuutin viiveellä",
   "themesShort": {

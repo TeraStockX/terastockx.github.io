@@ -380,12 +380,12 @@ export default {
    "post": "sau giờ",
    "day": "hôm nay",
    "last": "phiên gần nhất"
-  },
+  , "lastPost": "sau phiên đóng cửa gần nhất"},
   "preNote": "Trước giờ mở cửa: thay đổi trong ngày bên dưới là của phiên giao dịch trước ({d}). Biến động trước phiên của các công ty lớn nằm trong Tin nổi bật.",
   "postNote": "Sau giờ đóng cửa: thay đổi trong ngày bên dưới là của phiên hôm nay; biến động sau giờ của các công ty lớn nằm trong Tin nổi bật.",
   "readMore": "Thông cáo báo chí (SEC)",
   "extLabel": "{w}: {p}",
-  "storiesNone": "Hiện không có tin lớn nào từ các công ty lớn.",
+  "storiesNone": "Hiện không có tin lớn nào từ các công ty lớn.", "holidayNote": "Hôm nay là ngày lễ ở Mỹ: sàn chứng khoán đóng cửa và SEC không nhận hồ sơ, nên không có tin mới về doanh nghiệp. Các hồ sơ tiếp theo có thể đến từ {d}.", "weekendNote": "Vào cuối tuần sàn chứng khoán đóng cửa và SEC không nhận hồ sơ, nên không có tin mới về doanh nghiệp. Các hồ sơ tiếp theo có thể đến từ {d}.", "marketHolidayNote": "Sàn chứng khoán Mỹ hôm nay đóng cửa vì ngày lễ; hồ sơ của doanh nghiệp vẫn tiếp tục được nộp.", "secHolidayNote": "SEC hôm nay không nhận hồ sơ (ngày lễ liên bang), nên không có tin mới về doanh nghiệp; sàn chứng khoán vẫn mở cửa. Các hồ sơ tiếp theo có thể đến từ {d}.", "holidayShort": "Ngày lễ ở Mỹ: sàn đóng cửa, không có tin mới về doanh nghiệp.", "weekendShort": "Cuối tuần: sàn đóng cửa, không có tin mới về doanh nghiệp.", "checked": "Kiểm tra lần cuối: {d}", "nextFilings": "hồ sơ tiếp theo từ {d}",
   "moreNews": "Tất cả tin tức",
   "asOfShort": "Giá: {d}, trễ khoảng 15 phút",
   "themesShort": {
