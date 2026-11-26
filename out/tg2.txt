@@ -1,0 +1,22 @@
+pulse.json generated 2026-11-26T18:11:01.562Z (2 min ago), quotesAt 2026-11-26T00:54:00.074Z, session closed, day {"day":"2026-11-26","market":"holiday","sec":"holiday","holiday":"thanksgiving","next":"2026-11-27","filingsFrom":"2026-11-27T11:00:00.000Z","since":"2026-11-25"}
+  NTNX   move        - (-) move -14.89 last since - | 
+  DE     results     2026-11-25T11:00:47.000Z (31 h) move -0.48 lastPost since 4.44 | Deere Reports Net Income of $1.051 Billion for Fourth Quarter, $4.860 
+  HPQ    move        - (-) move 12.15 last since - | 
+  DLR    move        - (-) move 10.19 lastPost since - | 
+  NVDA   move        - (-) move -4 last since - | 
+news.json generated 2026-11-26T18:11:20.004Z (2 min ago), events 332; newest: [["BZAI","2026-11-25","4.02"],["LEGO","2026-11-25","4.02"],["AVZO","2026-11-25","1.01,2.01,4.01,5.01"]]
+home lines: [
+ "Fő hírek NTNX -14,89% az utolsó kereskedési napon · Nagy árfolyammozgás DE +4,44% a hír óta · Gyorsjelentés (tegnap) HPQ +12,15% az utolsó kereskedési napon · Nagy árfolyammozgás DLR +10,19% az utolsó zárás után · Nagy árfolyammozgás NVDA -4,00% az utolsó kereskedési napon · Nagy árfolyammozgás"
+]
+home note: Ma ünnepnap az USA-ban: zárva a tőzsde, nincs új céghír.
+news checked: Utolsó ellenőrzés: most | note: Ma ünnepnap van az USA-ban: a tőzsde zárva, és a SEC sem fogad bejelentéseket, ezért nincs új céghír. A következő bejelentések péntek 12:00 után érkezhetnek.
+news page: [
+ "NTNX Nutanix, Inc. Nagy árfolyammozgás -14,89% az utolsó kereskedési napon",
+ "DE DEERE & CO Gyorsjelentés Tegnap 12:00 Deere Reports Net Income of $1.051 Billion for Fourth Quarter, $4.860 Billion for Fiscal Year SEC ↗ +4,44% a hír óta",
+ "HPQ HP INC Nagy árfolyammozgás +12,15% az utolsó kereskedési napon",
+ "DLR DIGITAL REALTY TRUST, INC. Nagy árfolyammozgás +10,19% az utolsó zárás után",
+ "NVDA NVIDIA CORP Nagy árfolyammozgás -4,00% az utolsó kereskedési napon",
+ "NVDA NVIDIA CORP Jelentős 2026. nov. 23. Vezetőváltás (vezérigazgató, pénzügyi igazgató vagy elnök) – NVIDIA Board Reinstates Jensen Huang as President, CEO and",
+ "LEGO Legato Merger Corp. IV Kritikus 2026. nov. 25. Pénzügyi kimutatások helyesbítése 8-K ↗",
+ "BMY BRISTOL MYERS SQUIBB CO Jelentős 2026. nov. 23. Vezetőváltás (vezérigazgató, pénzügyi igazgató vagy elnök) – Bristol Myers Squibb Announces Planned Chief Fi"
+]
