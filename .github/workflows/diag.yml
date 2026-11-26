@@ -14,13 +14,18 @@ jobs:
         with: { ref: diag }
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
-      - name: Live top stories
+      - name: After-hours quotes kept overnight
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p out
-          node pulsecheck.mjs > out/pulse.txt 2>&1 || echo "pulsecheck failed" >> out/pulse.txt
-          cat out/pulse.txt
+          ./ahcheck.sh > out/ah.txt 2>&1 || echo "ahcheck failed" >> out/ah.txt
+          npm install --no-save --no-audit --no-fund playwright@1.49.1 >/dev/null 2>&1
+          npx playwright install --with-deps chromium >/dev/null 2>&1
+          node ahlive.cjs >> out/ah.txt 2>&1 || echo "ahlive failed" >> out/ah.txt
+          cat out/ah.txt
       - name: Save results to the diag branch
         if: always()
         run: |
           git config user.name diag; git config user.email diag@users.noreply.github.com
-          git add out && git commit -qm "diag: live top stories" && git push -q origin HEAD:diag
+          git add out && git commit -qm "diag: after-hours quotes kept overnight" && git push -q origin HEAD:diag
