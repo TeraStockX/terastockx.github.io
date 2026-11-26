@@ -1,0 +1,57 @@
+=== run 45731865050 (2026-11-26T00:52:46Z completed success), build job 139615586116
+hint: to use in all of your new repositories, which will suppress this warning,
+  new filings: 331 in the SEC feed, 0 companies to refresh (165 kept from earlier runs today)
+  quotes updated: 5859 companies (1885 with a quote of the day), 0 ETFs in the screener, 4 funds asked for (turn 5/6); session: post; live quotes: 304, kept from today's session: 7816; after-hours quotes saved: 293
+data/index.json: 5879 companies; data/news.json: 332 events; data/benchmarks.json: 11 sectors.
+./data/news.json
+./scripts/news-headline.mjs
+##[end-action id=__actions_upload-pages-artifact.__run_2;outcome=skipped;conclusion=skipped;duration_ms=0]
+##[end-action id=__actions_upload-pages-artifact.__run_3;outcome=skipped;conclusion=skipped;duration_ms=0]
+  if-no-files-found: error
+=== run 45733015774 (2026-11-26T01:02:49Z completed success), build job 139619411589
+hint: to use in all of your new repositories, which will suppress this warning,
+  new filings: 331 in the SEC feed, 0 companies to refresh (165 kept from earlier runs today)
+  quotes updated: 5859 companies (1885 with a quote of the day), 0 ETFs in the screener, 4 funds asked for (turn 1/6); session: closed; live quotes: 0, kept from today's session: 7816; after-hours quotes of 2026-11-25: 293
+  top stories: daily closes read for 16 of 16 companies
+data/index.json: 5879 companies; data/news.json: 332 events; data/benchmarks.json: 11 sectors.
+./data/news.json
+./scripts/news-headline.mjs
+##[end-action id=__actions_upload-pages-artifact.__run_2;outcome=skipped;conclusion=skipped;duration_ms=0]
+##[end-action id=__actions_upload-pages-artifact.__run_3;outcome=skipped;conclusion=skipped;duration_ms=0]
+  if-no-files-found: error
+=== run 45739784371 (2026-11-26T02:02:51Z in_progress ), build job 139641672562
+hint: to use in all of your new repositories, which will suppress this warning,
+  new filings: 322 in the SEC feed, 0 companies to refresh (165 kept from earlier runs today)
+  quotes updated: 5859 companies (1885 with a quote of the day), 0 ETFs in the screener, 4 funds asked for (turn 1/6); session: closed; live quotes: 0, kept from today's session: 7816; after-hours quotes of 2026-11-25: 293
+  European ETFs: 26 of 26 prices
+  top stories: daily closes read for 16 of 16 companies
+data/index.json: 5879 companies; data/news.json: 332 events; data/benchmarks.json: 11 sectors.
+./data/news.json
+./scripts/news-headline.mjs
+##[end-action id=__actions_upload-pages-artifact.__run_2;outcome=skipped;conclusion=skipped;duration_ms=0]
+##[end-action id=__actions_upload-pages-artifact.__run_3;outcome=skipped;conclusion=skipped;duration_ms=0]
+  if-no-files-found: error
+index generated 2026-11-26T02:03:37.733Z: rows 5879, xs=post 289, xs=pre 0
+  NVDA: px 149.17 dc -4 xs post xc 1.51 xp 151.4241
+  AAPL: px 356.12 dc 0.58 xs post xc -0.31 xp 355.0135
+  MSFT: px 490.73 dc -1.09 xs post xc 0.17 xp 491.56
+  DELL: px 297.245 dc 0.67 xs post xc 1.8 xp 302.5986
+  HPQ: px 31.335 dc 12.15 xs undefined xc undefined xp undefined
+  NTNX: px 46.46 dc -14.89 xs undefined xc undefined xp undefined
+  DE: px 644.13 dc 4.95 xs post xc -0.48 xp 641.03
+pulse generated 2026-11-26T02:03:35.016Z, quotesAt 2026-11-26T00:54:00.074Z, session closed, prevDay 2026-11-24
+  index {"t":"SPY","n":"State Street SPDR S&P 500 ETF Trust","px":717.56,"dc":-0.17,"xc":0.41,"xs":"post"}
+  index {"t":"QQQ","n":"Invesco QQQ Trust, Series 1","px":634.44,"dc":-0.57,"xc":0.42,"xs":"post"}
+  index {"t":"DIA","n":"State Street SPDR Dow Jones Industrial Average ETF Trust","px":502.12,"dc":0.48,"xc":0.36,"xs":"post"}
+  index {"t":"IWM","n":"iShares Russell 2000 Index Fund","px":269.25,"dc":0.79,"xc":0.37,"xs":"post"}
+  story NTNX   results     2026-11-24T21:01:15.000Z move -14.89 last since 0 | Nutanix Reports First Quarter Fiscal 2027 Financial Results
+  story DE     results     2026-11-25T11:00:47.000Z move -0.48 post since 4.44 | Deere Reports Net Income of $1.051 Billion for Fourth Quarter, $4.860 
+  story HPQ    results     2026-11-24T21:17:57.000Z move 12.15 last since 0 | HP Inc. Reports Fiscal 2026 Full Year and Fourth Quarter Results; Anno
+  story CW     leadership  2026-11-24T19:09:55.000Z move -0.13 last since -2.98 | As reported on a Form 8-K filed by Curtiss-Wright Corporation on Septe
+  story CF     deal        2026-11-24T19:49:53.000Z move 0.85 last since 0.67 | For additional information: Media Investors
+  story ADI    results     2026-11-24T12:03:22.000Z move 6.06 last since -11.7 | Analog Devices Reports Record Fourth Quarter and Fiscal 2026 Financial
+  story DELL   results     2026-11-24T21:09:13.000Z move 1.8 post since 2.48 | Dell Technologies Delivers Third Quarter Fiscal 2027 Financial Results
+  story INSM   deal        2026-11-24T11:04:08.000Z move 0.09 last since 14.13 | Sanofi to Acquire Insmed in Strategic Step that Strengthens Long-Term 
+home lines: [
+ "Fő hírek NTNX 0,00% a hír óta · Gyorsjelentés (2026. nov. 24.) DE +4,44% a hír óta · Gyorsjelentés (tegnap) HPQ 0,00% a hír óta · Gyorsjelentés (2026. nov. 24.) CW -2,98% a hír óta · Vezetőváltás (2026. nov. 24.) CF +0,67% a hír óta · Felvásárlás vagy egyesülés (2026. nov. 24.) ADI -11,70% a hír óta · Gyorsjelentés (2026. nov. 24.)"
+] no errors
