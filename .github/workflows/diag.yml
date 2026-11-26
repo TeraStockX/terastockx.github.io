@@ -14,7 +14,7 @@ jobs:
         with: { ref: diag }
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
-      - name: Live news with move reasons
+      - name: Live news final
         run: |
           mkdir -p out
           : > out/tg2.txt
@@ -26,4 +26,4 @@ jobs:
         if: always()
         run: |
           git config user.name diag; git config user.email diag@users.noreply.github.com
-          git add out && git commit -qm "diag: live news with move reasons" && git push -q origin HEAD:diag
+          git add out && git commit -qm "diag: live news final" && git push -q origin HEAD:diag
