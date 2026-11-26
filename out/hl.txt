@@ -1,0 +1,32 @@
+news titles: 205, back-references: 2
+  CW 2026-11-24 leadership mc=16B | As reported on a Form 8-K filed by Curtiss-Wright Corporation on September 21, 2026, the Company announced, among other things, that Lynn M. Bamford,  | https://www.sec.gov/Archives/edgar/data/26324/000162828026075678/cw-20261118.htm
+  RMD 2026-11-19 board mc=34B | As previously disclosed on in its Current Report on Form 8-K, filed August 17, 2026, Ronald Taylor did not seek re-election at the 2026 annual meeting | https://www.sec.gov/Archives/edgar/data/943819/000119312526468603/d44582d8k.htm
+
+https://www.sec.gov/Archives/edgar/data/26324/000162828026075678/cw-20261118.htm
+ itemSentence now: As reported on a Form 8-K filed by Curtiss-Wright Corporation on September 21, 2026, the Company announced, among other things, that Lynn M. Bamford, Chair and Chief Executive Officer of the Company, will retire from her position as Chief…
+  > Item 5.02 Departure of Directors or Certain Officers; Election of Directors; Appointment of Certain Officers; Compensatory Arrangements of Certain Officers
+  > As reported on a Form 8-K filed by Curtiss-Wright Corporation (the “Company”) on September 21, 2026, the Company announced, among other things, that Lynn M. Bamford, Chair and Chief Executive Officer of the Company, will retire from her position as Chief Executive Officer on December 31, 2026, and will transition to the position of Executive Chair effective as of January 1, 2027.
+  > In connection with Ms. Bamford’s transition to Executive Chair, the Executive Compensation Committee of the Board of Directors of the Company on November 18, 2026 approved changes to Ms. Bamford’s compensation. Effective January 1, 2027, Ms. Bamford will not receive a new annual incentive award bonus opportunity or a new long-term incentive award opportunity. There were no changes made to Ms. Bamford’s current annual base salary.
+  > SIGNATURE
+  > Pursuant to the requirements of the Securities Exchange Act of 1934, the registrant has duly caused this report to be signed on its behalf by the undersigned hereunto duly authorized.
+  > CURTISS-WRIGHT CORPORATION
+
+https://www.sec.gov/Archives/edgar/data/26324/000162828026075678/cw-20261118.htm
+ itemSentence now: As reported on a Form 8-K filed by Curtiss-Wright Corporation on September 21, 2026, the Company announced, among other things, that Lynn M. Bamford, Chair and Chief Executive Officer of the Company, will retire from her position as Chief…
+  > Item 5.02 Departure of Directors or Certain Officers; Election of Directors; Appointment of Certain Officers; Compensatory Arrangements of Certain Officers
+  > As reported on a Form 8-K filed by Curtiss-Wright Corporation (the “Company”) on September 21, 2026, the Company announced, among other things, that Lynn M. Bamford, Chair and Chief Executive Officer of the Company, will retire from her position as Chief Executive Officer on December 31, 2026, and will transition to the position of Executive Chair effective as of January 1, 2027.
+  > In connection with Ms. Bamford’s transition to Executive Chair, the Executive Compensation Committee of the Board of Directors of the Company on November 18, 2026 approved changes to Ms. Bamford’s compensation. Effective January 1, 2027, Ms. Bamford will not receive a new annual incentive award bonus opportunity or a new long-term incentive award opportunity. There were no changes made to Ms. Bamford’s current annual base salary.
+  > SIGNATURE
+  > Pursuant to the requirements of the Securities Exchange Act of 1934, the registrant has duly caused this report to be signed on its behalf by the undersigned hereunto duly authorized.
+  > CURTISS-WRIGHT CORPORATION
+
+https://www.sec.gov/Archives/edgar/data/943819/000119312526468603/d44582d8k.htm
+ itemSentence now: As previously disclosed on in its Current Report on Form 8-K, filed August 17, 2026, Ronald Taylor did not seek re-election at the 2026 annual meeting of stockholders of ResMed Inc. held on November 18, 2026 and his term expired at the…
+  > Item 5.02.
+  > Departure of Directors or Certain Officers; Election of Directors; Appointment of Certain Officers; Compensatory Arrangements of Certain Officers.
+  > (b) Director Retirement
+  > As previously disclosed on in its Current Report on Form 8-K, filed August 17, 2026, Ronald Taylor did not seek re-election at the 2026 annual meeting of stockholders of ResMed Inc. (the “Company”) held on November 18, 2026 (the “Annual Meeting”) and his term expired at the conclusion of the Annual Meeting. Effective November 18, 2026, the size of board of directors of the Company (the “Board”) was reduced from eleven (11) to ten (10) directors.
+  > (e) FY2027 Performance-Based Restricted Stock Unit Awards
+  > On November 19, 2026, the Compensation and Leadership Development Committee (the “CLDC”) of the Board approved a new form of Performance-Based Restricted Stock Unit Award Agreement for performance-based restricted stock units (“PSUs”) under the ResMed Inc. 2009 Incentive Award Plan, as amended and restated (the “Plan”), and approved fiscal year 2027 grants under the new form to the Company’s named executive officers. The PSUs granted in fiscal year 2027 under the new form reflect a change from the PSU design used in recent years, under which PSU awards vested based on the Company’s absolute to
+
+market-info: {"data":{"country":"U.S.","clndr_dt":"2026-11-26T00:00:00","trade_Date":"2026-11-25T00:00:00","marketIndicator":"Market Closed","uiMarketIndicator":"Market Closed","marketCountDown":"Market Opens in 20H 32M","preMidOpeningTime":null,"preMidClosingTime":null,"postMidOpeningTime":null,"postMidClosingTime":null,"preMarketOpeningTime":"Nov 25, 2026 04:00 AM ET","preMarketClosingTime":"Nov 25, 2026 09:30 AM ET","marketOpeningTime":"Nov 25, 2026 09:30 AM ET","marketClosingTime":"Nov 25, 2026 04:00 PM ET","afterHoursMarketOpeningTime":"Nov 25, 2026 04:00 PM ET","afterHoursMarketClosingTime":"Nov 25, 2026 08:00 PM ET","previousTradeDate":"Nov 24, 2026","nextTradeDate":"Nov 27, 2026","isBusinessDay":false,"mrktStatus":"Closed","mrktCountDown":"Opens in 20H 32M","marketCountDownInfo":"The Market is closed. The Global Trading Session begins trading in 15H 02M.","pmOpenRaw":"2026-11-25T04:00:00","ahCloseRaw":"2026-11-25T20:00:00","openRaw":"2026-11-25T09:30:00","closeRaw":"2026-11-25T16:00:00","prevTrdDTRaw":"2026-11-24T00:00:00","isTradingHours":false,"is235Enabled":false},"message":null,"status":{"rCode":200,"bCodeMessage":null,"developerMessage":null}}
