@@ -14,19 +14,19 @@ jobs:
         with: { ref: diag }
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
-      - name: After-hours quotes kept overnight
+      - name: Live news on Thanksgiving
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p out
-          sleep 200
-          : > out/ah.txt
+          : > out/tg.txt
+          node seccheck.mjs >> out/tg.txt 2>&1 || echo "seccheck failed" >> out/tg.txt
           npm install --no-save --no-audit --no-fund playwright@1.49.1 >/dev/null 2>&1
           npx playwright install --with-deps chromium >/dev/null 2>&1
-          node ahlive.cjs >> out/ah.txt 2>&1 || echo "ahlive failed" >> out/ah.txt
-          cat out/ah.txt
+          node newscheck.cjs >> out/tg.txt 2>&1 || echo "newscheck failed" >> out/tg.txt
+          cat out/tg.txt
       - name: Save results to the diag branch
         if: always()
         run: |
           git config user.name diag; git config user.email diag@users.noreply.github.com
-          git add out && git commit -qm "diag: top stories at night after the fix" && git push -q origin HEAD:diag
+          git add out && git commit -qm "diag: live news on Thanksgiving" && git push -q origin HEAD:diag
