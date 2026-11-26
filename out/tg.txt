@@ -1,0 +1,25 @@
+8-K: HTTP 200, newest 2026-11-25T17:26:14-05:00, oldest on page 2026-11-25T16:00:33-05:00, per day {"2026-11-25":100}
+10-Q: HTTP 200, newest 2026-11-25T17:18:30-05:00, oldest on page 2026-11-24T06:34:52-05:00, per day {"2026-11-25":8,"2026-11-24":16}
+pulse.json generated 2026-11-26T17:48:13.942Z (5 min ago), quotesAt 2026-11-26T00:54:00.074Z, session closed
+  NTNX   results     2026-11-24T21:01:15.000Z (45 h) move -14.89 last since -15.19 | Nutanix Reports First Quarter Fiscal 2027 Financial Results
+  HPQ    results     2026-11-24T21:17:57.000Z (45 h) move 12.15 last since 11.49 | HP Inc. Reports Fiscal 2026 Full Year and Fourth Quarter Results; Anno
+  CW     leadership  2026-11-24T19:09:55.000Z (47 h) move -0.13 last since -3.4 | As reported on a Form 8-K filed by Curtiss-Wright Corporation on Septe
+  DE     results     2026-11-25T11:00:47.000Z (31 h) move -0.48 post since 4.44 | Deere Reports Net Income of $1.051 Billion for Fourth Quarter, $4.860 
+  CF     deal        2026-11-24T19:49:53.000Z (46 h) move 0.85 last since 1.33 | CF Industries Holdings, Inc. Announces Agreement to Acquire Faustina A
+  DLR    move        - (-) move 10.19 post since - | 
+  NVDA   move        - (-) move -4 last since - | 
+  VRTX   move        - (-) move -7.33 post since - | 
+news.json generated 2026-11-26T17:48:16.885Z (5 min ago), events 332; newest: [["BZAI","2026-11-25","4.02"],["LEGO","2026-11-25","4.02"],["AVZO","2026-11-25","1.01,2.01,4.01,5.01"]]
+home lines: [
+ "Fő hírek NTNX -15,19% a hír óta · Gyorsjelentés (2026. nov. 24.) HPQ +11,49% a hír óta · Gyorsjelentés (2026. nov. 24.) CW -3,40% a hír óta · Vezetőváltás (2026. nov. 24.) DE +4,44% a hír óta · Gyorsjelentés (tegnap) CF +1,33% a hír óta · Felvásárlás vagy egyesülés (2026. nov. 24.) DLR +10,19% zárás után · Nagy árfolyammozgás"
+]
+news page: [
+ "NTNX Nutanix, Inc. Gyorsjelentés 2026. nov. 24. Nutanix Reports First Quarter Fiscal 2027 Financial Results SEC ↗ -15,19% a hír óta",
+ "HPQ HP INC Gyorsjelentés 2026. nov. 24. HP Inc. Reports Fiscal 2026 Full Year and Fourth Quarter Results; Announces Dividend Increase SEC ↗ +11,49% a hír óta",
+ "CW CURTISS WRIGHT CORP Vezetőváltás 2026. nov. 24. As reported on a Form 8-K filed by Curtiss-Wright Corporation on September 21, 2026, the Company announced, a",
+ "DE DEERE & CO Gyorsjelentés Tegnap 11:00 Deere Reports Net Income of $1.051 Billion for Fourth Quarter, $4.860 Billion for Fiscal Year SEC ↗ +4,44% a hír óta",
+ "CF CF Industries Holdings, Inc. Felvásárlás vagy egyesülés 2026. nov. 24. CF Industries Holdings, Inc. Announces Agreement to Acquire Faustina Ammonia Productio",
+ "DLR DIGITAL REALTY TRUST, INC. Nagy árfolyammozgás +10,19% zárás után",
+ "NVDA NVIDIA CORP Nagy árfolyammozgás -4,00% az utolsó kereskedési napon",
+ "VRTX VERTEX PHARMACEUTICALS INC / MA Nagy árfolyammozgás -7,33% zárás után"
+]
